@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
 const InteractiveLab = () => {
-  const [labMode, setLabMode] = useState('free') // 'free', 'guided', 'challenge'
+  const [labMode, setLabMode] = useState('free') 
   const [inputValue, setInputValue] = useState('')
   const [fromBase, setFromBase] = useState(10)
   const [toBase, setToBase] = useState(2)
@@ -80,7 +80,6 @@ const InteractiveLab = () => {
         throw new Error(`Valor inválido para base ${fromBase}`)
       }
       
-      // Convertir a decimal
       const decimalValue = parseInt(value, fromBase)
       if (isNaN(decimalValue)) {
         throw new Error('Error en la conversión')
@@ -112,7 +111,7 @@ const InteractiveLab = () => {
         result: result,
         timestamp: new Date().toLocaleTimeString()
       }
-      setHistory(prev => [newEntry, ...prev.slice(0, 9)]) // Mantener solo 10 entradas
+      setHistory(prev => [newEntry, ...prev.slice(0, 9)]) 
       
     } catch (error) {
       setFeedback(`Error: ${error.message}`)
@@ -196,18 +195,8 @@ const InteractiveLab = () => {
         </p>
       </div>
 
-      {/* Selector de modo */}
       <div className="flex justify-center space-x-4 mb-8">
-        <button
-          onClick={() => setLabMode('free')}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            labMode === 'free'
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Modo Libre
-        </button>
+       
         <button
           onClick={() => setLabMode('guided')}
           className={`px-6 py-2 rounded-lg font-medium transition-colors ${

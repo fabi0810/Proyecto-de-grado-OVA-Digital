@@ -20,9 +20,9 @@ function NumericConverter() {
   ]
 
   const tabs = [
+    { id: 'theory', name: 'Teoría', icon: '📚', description: 'Conceptos y fundamentos' },
     { id: 'converter', name: 'Convertidor', icon: '🔄', description: 'Conversión rápida entre sistemas' },
     { id: 'stepbystep', name: 'Paso a Paso', icon: '📝', description: 'Aprende el proceso detallado' },
-    { id: 'theory', name: 'Teoría', icon: '📚', description: 'Conceptos y fundamentos' },
     { id: 'lab', name: 'Laboratorio', icon: '🧪', description: 'Experimenta libremente' },
     { id: 'quiz', name: 'Evaluación', icon: '🎯', description: 'Pon a prueba tus conocimientos' }
   ]
@@ -121,8 +121,8 @@ function NumericConverter() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                 activeTab === tab.id
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-gray-200'
               }`}
             >
               <span className="mr-2">{tab.icon}</span>

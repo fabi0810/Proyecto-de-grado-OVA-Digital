@@ -36,32 +36,35 @@ const ControlPanel = ({
   return (
     <div className="space-y-4">
       {/* Controles de Entrada */}
-      <div className="card">
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Controles de Entrada
         </h3>
         
         <div className="space-y-3">
           {/* Entradas existentes */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
             {Object.entries(inputs).map(([name, value]) => (
-              <div key={name} className="flex items-center space-x-2">
-                <label className="text-sm font-medium text-gray-700 min-w-[60px]">
+              <div key={name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <label className="text-sm font-medium text-gray-700">
                   {name}:
                 </label>
-                <button
-                  onClick={() => onInputChange(name, !value)}
-                  className={`w-12 h-8 rounded-full border-2 font-bold text-sm transition-all duration-200 ${getInputColor(value)}`}
-                >
-                  {value ? '1' : '0'}
-                </button>
-                <button
-                  onClick={() => onRemoveInput(name)}
-                  className="text-red-500 hover:text-red-700 text-sm"
-                  title="Eliminar entrada"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => onInputChange(name, !value)}
+                    className={`w-12 h-8 rounded-full border-2 font-bold text-sm transition-all duration-200 ${getInputColor(value)} hover:scale-105`}
+                    title={`Cambiar ${name} a ${value ? '0' : '1'}`}
+                  >
+                    {value ? '1' : '0'}
+                  </button>
+                  <button
+                    onClick={() => onRemoveInput(name)}
+                    className="text-red-500 hover:text-red-700 text-sm p-1 hover:bg-red-100 rounded"
+                    title="Eliminar entrada"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -72,22 +75,28 @@ const ControlPanel = ({
               type="text"
               value={newInputName}
               onChange={(e) => setNewInputName(e.target.value)}
-              placeholder="Nombre de entrada"
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="Nombre de entrada (ej: L1, L2)"
+              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               onKeyPress={(e) => e.key === 'Enter' && handleAddInput()}
             />
             <button
               onClick={handleAddInput}
-              className="px-3 py-1 bg-primary-600 text-white text-sm rounded hover:bg-primary-700"
+              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
             >
-              Agregar
+              +
             </button>
+          </div>
+          
+          {/* Instrucciones */}
+          <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+            💡 <strong>Instrucciones:</strong> Haz clic en los botones 0/1 para cambiar los valores. 
+            Los cambios se reflejan inmediatamente en el circuito.
           </div>
         </div>
       </div>
 
       {/* Estadísticas del Circuito */}
-      <div className="card">
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Estadísticas del Circuito
         </h3>
@@ -124,7 +133,7 @@ const ControlPanel = ({
       </div>
 
       {/* Controles del Circuito */}
-      <div className="card">
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Controles del Circuito
         </h3>
@@ -173,7 +182,7 @@ const ControlPanel = ({
                   value={circuitName}
                   onChange={(e) => setCircuitName(e.target.value)}
                   placeholder="Mi circuito lógico"
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
                 />
               </div>
@@ -181,7 +190,7 @@ const ControlPanel = ({
               <div className="flex space-x-3">
                 <button
                   onClick={handleSaveCircuit}
-                  className="flex-1 px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   Guardar
                 </button>

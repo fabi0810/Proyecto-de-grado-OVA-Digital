@@ -2,122 +2,243 @@ import { memo } from 'react'
 import { Handle, Position } from 'reactflow'
 
 const LogicGateNode = ({ data, isConnectable }) => {
-  const { type, inputs = [], output, label, isActive = false } = data
+  const { gateType, output = 0, inputValues = [], label, isActive = false } = data
 
-  const getGateSymbol = (gateType) => {
-    const symbols = {
-      AND: '&',
-      OR: '≥1',
-      NOT: '1',
-      NAND: '&',
-      NOR: '≥1',
-      XOR: '=1',
-      XNOR: '=1'
+  // Función para obtener el diseño SVG de cada compuerta
+  const getGateDesign = (type) => {
+    const designs = {
+      AND: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          {/* Forma rectangular con lado derecho curvo */}
+          <path 
+            d="M10 10 L70 10 Q90 10 90 40 Q90 70 70 70 L10 70 Z" 
+            fill="white" 
+            stroke="#3b82f6" 
+            strokeWidth="2"
+          />
+          {/* Símbolo AND */}
+          <text x="50" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e40af">
+            &
+          </text>
+        </svg>
+      ),
+      OR: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          {/* Forma curva característica de OR */}
+          <path 
+            d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 90 40 Q50 20 10 10" 
+            fill="white" 
+            stroke="#10b981" 
+            strokeWidth="2"
+          />
+          {/* Símbolo OR */}
+          <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#047857">
+            ≥1
+          </text>
+        </svg>
+      ),
+      NOT: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          {/* Triángulo */}
+          <path 
+            d="M10 10 L10 70 L70 40 Z" 
+            fill="white" 
+            stroke="#8b5cf6" 
+            strokeWidth="2"
+          />
+          {/* Círculo de negación */}
+          <circle cx="75" cy="40" r="8" fill="white" stroke="#8b5cf6" strokeWidth="2"/>
+          {/* Símbolo NOT */}
+          <text x="40" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#6d28d9">
+            1
+          </text>
+        </svg>
+      ),
+      NAND: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          {/* Forma rectangular con lado derecho curvo */}
+          <path 
+            d="M10 10 L70 10 Q85 10 85 40 Q85 70 70 70 L10 70 Z" 
+            fill="white" 
+            stroke="#f97316" 
+            strokeWidth="2"
+          />
+          {/* Círculo de negación */}
+          <circle cx="90" cy="40" r="8" fill="white" stroke="#f97316" strokeWidth="2"/>
+          {/* Símbolo NAND */}
+          <text x="50" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#ea580c">
+            &
+          </text>
+        </svg>
+      ),
+      NOR: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          {/* Forma curva característica de OR */}
+          <path 
+            d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 85 40 Q50 20 10 10" 
+            fill="white" 
+            stroke="#ef4444" 
+            strokeWidth="2"
+          />
+          {/* Círculo de negación */}
+          <circle cx="90" cy="40" r="8" fill="white" stroke="#ef4444" strokeWidth="2"/>
+          {/* Símbolo NOR */}
+          <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#dc2626">
+            ≥1
+          </text>
+        </svg>
+      ),
+      XOR: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          {/* Línea curva adicional para XOR */}
+          <path 
+            d="M5 10 Q20 10 30 40 Q20 70 5 70" 
+            fill="none" 
+            stroke="#eab308" 
+            strokeWidth="2"
+          />
+          {/* Forma curva principal */}
+          <path 
+            d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 90 40 Q50 20 10 10" 
+            fill="white" 
+            stroke="#eab308" 
+            strokeWidth="2"
+          />
+          {/* Símbolo XOR */}
+          <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#ca8a04">
+            =1
+          </text>
+        </svg>
+      ),
+      XNOR: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          {/* Línea curva adicional para XNOR */}
+          <path 
+            d="M5 10 Q20 10 30 40 Q20 70 5 70" 
+            fill="none" 
+            stroke="#ec4899" 
+            strokeWidth="2"
+          />
+          {/* Forma curva principal */}
+          <path 
+            d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 85 40 Q50 20 10 10" 
+            fill="white" 
+            stroke="#ec4899" 
+            strokeWidth="2"
+          />
+          {/* Círculo de negación */}
+          <circle cx="90" cy="40" r="8" fill="white" stroke="#ec4899" strokeWidth="2"/>
+          {/* Símbolo XNOR */}
+          <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#be185d">
+            =1
+          </text>
+        </svg>
+      )
     }
-    return symbols[gateType] || '?'
+    return designs[type] || designs.AND
   }
 
-  const getGateColor = (gateType) => {
-    const colors = {
-      AND: 'bg-blue-100 border-blue-300 text-blue-800',
-      OR: 'bg-green-100 border-green-300 text-green-800',
-      NOT: 'bg-purple-100 border-purple-300 text-purple-800',
-      NAND: 'bg-orange-100 border-orange-300 text-orange-800',
-      NOR: 'bg-red-100 border-red-300 text-red-800',
-      XOR: 'bg-yellow-100 border-yellow-300 text-yellow-800',
-      XNOR: 'bg-pink-100 border-pink-300 text-pink-800'
-    }
-    return colors[gateType] || 'bg-gray-100 border-gray-300 text-gray-800'
+  // Obtener número de entradas según el tipo de compuerta
+  const getInputCount = (type) => {
+    return type === 'NOT' ? 1 : 2
   }
 
-  const getInputPositions = (inputCount) => {
-    if (inputCount === 1) return [{ x: 0, y: 0.5 }]
-    if (inputCount === 2) return [{ x: 0, y: 0.3 }, { x: 0, y: 0.7 }]
-    if (inputCount === 3) return [{ x: 0, y: 0.2 }, { x: 0, y: 0.5 }, { x: 0, y: 0.8 }]
-    return []
-  }
-
-  const inputPositions = getInputPositions(inputs.length)
-
+  const inputCount = getInputCount(gateType)
+  
   return (
-    <div className={`relative min-w-[120px] min-h-[80px] border-2 rounded-lg p-3 transition-all duration-200 ${
-      getGateColor(type)
-    } ${isActive ? 'shadow-lg scale-105' : 'shadow-md'}`}>
-      {/* Input handles */}
-      {inputs.map((input, index) => (
+    <div className={`relative transition-all duration-200 ${
+      isActive ? 'drop-shadow-lg scale-105' : 'drop-shadow-md'
+    }`}>
+      {/* Handles de entrada */}
+      {Array.from({ length: inputCount }, (_, index) => (
         <Handle
           key={`input-${index}`}
           type="target"
           position={Position.Left}
           id={`input-${index}`}
           style={{
-            left: -8,
-            top: `${inputPositions[index]?.y * 100 || 50}%`,
-            background: input.value ? '#10b981' : '#ef4444',
+            left: -6,
+            top: inputCount === 1 ? '50%' : `${30 + (index * 40)}%`,
+            background: inputValues[index] ? '#10b981' : '#ef4444',
             border: '2px solid white',
             width: 12,
-            height: 12
+            height: 12,
+            zIndex: 10
           }}
           isConnectable={isConnectable}
         />
       ))}
 
-      {/* Gate content */}
-      <div className="text-center">
-        <div className="text-lg font-bold mb-1">
-          {getGateSymbol(type)}
-        </div>
-        <div className="text-xs font-medium">
-          {type}
-        </div>
-        {label && (
-          <div className="text-xs text-gray-600 mt-1">
-            {label}
-          </div>
-        )}
+      {/* Diseño de la compuerta */}
+      <div className="relative">
+        {getGateDesign(gateType)}
       </div>
 
-      {/* Output handle */}
+      {/* Handle de salida */}
       <Handle
         type="source"
         position={Position.Right}
         id="output"
         style={{
-          right: -8,
+          right: -6,
           top: '50%',
           background: output ? '#10b981' : '#ef4444',
           border: '2px solid white',
           width: 12,
-          height: 12
+          height: 12,
+          zIndex: 10
         }}
         isConnectable={isConnectable}
       />
 
-      {/* Input labels */}
-      {inputs.map((input, index) => (
+      {/* Etiqueta de la compuerta */}
+      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-gray-600 bg-white px-2 py-1 rounded shadow-sm">
+        {label || gateType}
+      </div>
+
+      {/* Indicadores de estado */}
+      {inputValues.map((value, index) => (
         <div
-          key={`label-${index}`}
-          className="absolute text-xs font-medium"
+          key={`input-indicator-${index}`}
+          className="absolute text-xs font-bold"
           style={{
-            left: -30,
-            top: `${inputPositions[index]?.y * 100 || 50}%`,
-            transform: 'translateY(-50%)'
+            left: -25,
+            top: inputCount === 1 ? '50%' : `${30 + (index * 40)}%`,
+            transform: 'translateY(-50%)',
+            color: value ? '#10b981' : '#ef4444',
+            background: 'white',
+            borderRadius: '50%',
+            width: 16,
+            height: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid #e5e7eb'
           }}
         >
-          {input.label || `I${index + 1}`}
+          {value}
         </div>
       ))}
 
-      {/* Output label */}
+      {/* Indicador de salida */}
       <div
-        className="absolute text-xs font-medium"
+        className="absolute text-xs font-bold"
         style={{
-          right: -30,
+          right: -25,
           top: '50%',
-          transform: 'translateY(-50%)'
+          transform: 'translateY(-50%)',
+          color: output ? '#10b981' : '#ef4444',
+          background: 'white',
+          borderRadius: '50%',
+          width: 16,
+          height: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid #e5e7eb'
         }}
       >
-        {data.outputLabel || 'O'}
+        {output}
       </div>
     </div>
   )
