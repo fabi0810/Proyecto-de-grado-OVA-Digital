@@ -5,8 +5,11 @@ const InputNode = ({ data, isConnectable }) => {
   const { label, value = 0, onValueChange } = data
 
   const handleClick = () => {
+    console.log('InputNode clicked:', { label, currentValue: value, newValue: !value })
     if (onValueChange) {
       onValueChange(label, !value)
+    } else {
+      console.error('onValueChange function not provided')
     }
   }
 
