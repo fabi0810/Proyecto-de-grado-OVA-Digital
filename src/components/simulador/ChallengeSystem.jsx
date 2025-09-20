@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const ChallengeSystem = () => {
+const ChallengeSystem = ({ onStartChallenge }) => {
   const [selectedChallenge, setSelectedChallenge] = useState(null)
   const [completedChallenges, setCompletedChallenges] = useState(new Set())
 
@@ -124,6 +124,9 @@ const ChallengeSystem = () => {
 
   const handleStartChallenge = (challenge) => {
     setSelectedChallenge(challenge)
+    if (onStartChallenge) {
+      onStartChallenge(challenge)
+    }
   }
 
   const handleCompleteChallenge = (challengeId) => {

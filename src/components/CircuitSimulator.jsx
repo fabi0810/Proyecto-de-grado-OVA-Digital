@@ -6,7 +6,9 @@ import ReactFlow, {
   useNodesState, 
   useEdgesState, 
   addEdge,
-  ReactFlowProvider 
+  ReactFlowProvider,
+  Handle,
+  Position
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
@@ -19,123 +21,10 @@ import TruthTableGenerator from './simulador/TruthTableGenerator'
 import ChallengeSystem from './simulador/ChallengeSystem'
 import CircuitAnalyzer from './simulador/CircuitAnalyzer'
 import ResultsDisplay from './simulador/ResultsDisplay'
-import InputTester from './simulador/InputTester'
-import GateLogicTester from './simulador/GateLogicTester'
+import TheoryModule from './simulador/TheoryModule'
+import AdvancedQuestionGenerator from './simulador/AdvancedQuestionGenerator'
 
-// Función para simular el circuito
-const simulateCircuit = (nodes, edges, inputs) => {
-  console.log('=== SIMULANDO CIRCUITO ===')
-  console.log('Nodos:', nodes.map(n => ({ id: n.id, type: n.type, data: n.data })))
-  console.log('Conexiones:', edges)
-  console.log('Entradas:', inputs)
-  
-  // Crear un mapa de valores de nodos
-  const nodeValues = new Map()
-  
-  // Inicializar valores de entrada desde nodos de entrada
-  nodes.forEach(node => {
-    if (node.type === 'input') {
-      const value = node.data.value
-      nodeValues.set(node.id, value)
-      console.log(`Entrada ${node.id}: ${value}`)
-    }
-  })
-  
-  // También inicializar desde el objeto inputs para compatibilidad
-  Object.entries(inputs).forEach(([name, value]) => {
-    nodeValues.set(`input-${name}`, value)
-    console.log(`Entrada input-${name}: ${value}`)
-  })
-  
-  // Función para calcular el valor de una compuerta
-  const calculateGateValue = (gateType, inputValues) => {
-    console.log(`Calculando ${gateType} con entradas:`, inputValues)
-    
-    let result = 0
-    switch (gateType) {
-      case 'AND':
-        result = inputValues.every(val => val === 1) ? 1 : 0
-        break
-      case 'OR':
-        result = inputValues.some(val => val === 1) ? 1 : 0
-        break
-      case 'NOT':
-        result = inputValues[0] === 1 ? 0 : 1
-        break
-      case 'NAND':
-        result = inputValues.every(val => val === 1) ? 0 : 1
-        break
-      case 'NOR':
-        result = inputValues.some(val => val === 1) ? 0 : 1
-        break
-      case 'XOR':
-        result = inputValues.reduce((a, b) => a ^ b, 0)
-        break
-      case 'XNOR':
-        result = inputValues.reduce((a, b) => a ^ b, 0) === 0 ? 1 : 0
-        break
-      default:
-        result = 0
-    }
-    
-    console.log(`Resultado ${gateType}: ${result}`)
-    return result
-  }
-  
-  // Procesar nodos en orden topológico
-  const processedNodes = new Set()
-  let changed = true
-  let iterations = 0
-  
-  while (changed && iterations < 10) {
-    changed = false
-    iterations++
-    console.log(`Iteración ${iterations}`)
-    
-    nodes.forEach(node => {
-      if (processedNodes.has(node.id) || node.type === 'input') return
-      
-      const inputEdges = edges.filter(edge => edge.target === node.id)
-      console.log(`Procesando nodo ${node.id}, conexiones de entrada:`, inputEdges)
-      
-      const inputValues = inputEdges.map(edge => {
-        const sourceNode = nodes.find(n => n.id === edge.source)
-        const value = nodeValues.get(sourceNode?.id) || 0
-        console.log(`  Conexión de ${edge.source} a ${edge.target}: ${value}`)
-        return value
-      })
-      
-      if (inputValues.length === 0) {
-        console.log(`Nodo ${node.id} no tiene entradas conectadas`)
-        return
-      }
-      
-      if (inputValues.some(val => val === undefined)) {
-        console.log(`Nodo ${node.id} tiene entradas indefinidas`)
-        return
-      }
-      
-      const outputValue = calculateGateValue(node.data.gateType, inputValues)
-      nodeValues.set(node.id, outputValue)
-      
-      // Actualizar el nodo con los nuevos valores
-      node.data.output = outputValue
-      node.data.inputValues = inputValues
-      
-      console.log(`Nodo ${node.id} actualizado: salida = ${outputValue}`)
-      
-      processedNodes.add(node.id)
-      changed = true
-    })
-  }
-  
-  console.log('=== RESULTADOS FINALES ===')
-  console.log('Valores de nodos:', Array.from(nodeValues.entries()))
-  
-  return nodeValues
-}
-
-// Componente principal
+// ============= COMPONENTE PRINCIPAL =============
 function CircuitSimulator() {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -143,14 +32,16 @@ function CircuitSimulator() {
   const [selectedGate, setSelectedGate] = useState(null)
   const [inputs, setInputs] = useState({ A: 0, B: 0 })
   const [circuitStats, setCircuitStats] = useState({
-      gateCount: 0,
-      connectionCount: 0,
-      inputCount: 0,
-      outputCount: 0,
+    gateCount: 0,
+    connectionCount: 0,
+    inputCount: 0,
+    outputCount: 0,
     complexity: 'Básico'
   })
   const [activeTab, setActiveTab] = useState('design')
-    const [simulationResults, setSimulationResults] = useState({})
+  const [simulationResults, setSimulationResults] = useState({})
+  const [currentChallenge, setCurrentChallenge] = useState(null)
+  const [showFinishButton, setShowFinishButton] = useState(false)
 
   const nodeTypes = {
     logicGate: LogicGateNode,
@@ -158,34 +49,157 @@ function CircuitSimulator() {
   }
 
   const tabs = [
+    { id: 'theory', label: 'Teoría', icon: '📚' },
     { id: 'design', label: 'Diseño', icon: '🎨' },
     { id: 'simulate', label: 'Simular', icon: '⚡' },
     { id: 'analyze', label: 'Analizar', icon: '🔍' },
-    { id: 'challenges', label: 'Retos', icon: '🎯' }
+    { id: 'challenges', label: 'Retos', icon: '🎯' },
+    { id: 'questions', label: 'Preguntas', icon: '❓' }
   ]
+
+  // Función para calcular el valor de una compuerta
+  const calculateGateValue = (gateType, inputValues) => {
+    if (!inputValues || inputValues.length === 0) return undefined
+    if (inputValues.some(val => val === undefined || val === null)) return undefined
+
+    switch (gateType) {
+      case 'AND':
+        return inputValues.every(val => val === 1) ? 1 : 0
+      case 'OR':
+        return inputValues.some(val => val === 1) ? 1 : 0
+      case 'NOT':
+        return inputValues[0] === 1 ? 0 : 1
+      case 'NAND':
+        return inputValues.every(val => val === 1) ? 0 : 1
+      case 'NOR':
+        return inputValues.some(val => val === 1) ? 0 : 1
+      case 'XOR':
+        return inputValues.filter(val => val === 1).length % 2 === 1 ? 1 : 0
+      case 'XNOR':
+        return inputValues.filter(val => val === 1).length % 2 === 0 ? 1 : 0
+      default:
+        return 0
+    }
+  }
+
+  // Función para simular el circuito
+  const simulateCircuit = useCallback(() => {
+    console.log('=== SIMULANDO CIRCUITO ===')
+    console.log('Nodos:', nodes.map(n => ({ id: n.id, type: n.type, data: n.data })))
+    console.log('Conexiones:', edges)
+    console.log('Entradas:', inputs)
+
+    const nodeValues = new Map()
+    
+    // Inicializar valores de entrada
+    nodes.forEach(node => {
+      if (node.type === 'input') {
+        nodeValues.set(node.id, node.data.value || 0)
+        console.log(`Entrada ${node.id}: ${node.data.value}`)
+      }
+    })
+    
+    // Procesar compuertas en orden topológico
+    let changed = true
+    let iterations = 0
+    const maxIterations = 10
+    
+    while (changed && iterations < maxIterations) {
+      changed = false
+      iterations++
+      console.log(`Iteración ${iterations}`)
+      
+      nodes.forEach(node => {
+        if (node.type === 'logicGate') {
+          const inputEdges = edges.filter(edge => edge.target === node.id)
+          const inputValues = []
+          
+          // Obtener valores de entrada según el índice del handle
+          const inputCount = node.data.gateType === 'NOT' ? 1 : 2
+          for (let i = 0; i < inputCount; i++) {
+            const edge = inputEdges.find(e => e.targetHandle === `input-${i}`)
+            if (edge) {
+              const sourceValue = nodeValues.get(edge.source)
+              inputValues[i] = sourceValue !== undefined ? sourceValue : undefined
+              console.log(`  Conexión de ${edge.source} a ${node.id} (input-${i}): ${sourceValue}`)
+            } else {
+              inputValues[i] = undefined
+              console.log(`  No hay conexión para input-${i} de ${node.id}`)
+            }
+          }
+          
+          // Calcular salida
+          const output = calculateGateValue(node.data.gateType, inputValues)
+          console.log(`Calculando ${node.data.gateType} con entradas:`, inputValues, '→', output)
+          
+          // Si el valor cambió, actualizar
+          if (nodeValues.get(node.id) !== output) {
+            nodeValues.set(node.id, output)
+            changed = true
+            console.log(`Nodo ${node.id} actualizado: salida = ${output}`)
+          }
+        }
+      })
+    }
+    
+    // Actualizar los nodos con los valores calculados
+    setNodes(prevNodes => 
+      prevNodes.map(node => {
+        if (node.type === 'logicGate') {
+          const inputEdges = edges.filter(edge => edge.target === node.id)
+          const inputValues = []
+          
+          const inputCount = node.data.gateType === 'NOT' ? 1 : 2
+          for (let i = 0; i < inputCount; i++) {
+            const edge = inputEdges.find(e => e.targetHandle === `input-${i}`)
+            if (edge) {
+              const sourceValue = nodeValues.get(edge.source)
+              inputValues[i] = sourceValue !== undefined ? sourceValue : undefined
+            } else {
+              inputValues[i] = undefined
+            }
+          }
+          
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              inputValues,
+              output: nodeValues.get(node.id)
+            }
+          }
+        }
+        return node
+      })
+    )
+    
+    setSimulationResults(nodeValues)
+    console.log('=== RESULTADOS FINALES ===')
+    console.log('Valores de nodos:', Array.from(nodeValues.entries()))
+  }, [nodes, edges, setNodes])
 
   // Actualizar estadísticas
   useEffect(() => {
-      const gateCount = nodes.filter(node => node.type === 'logicGate').length
-      const connectionCount = edges.length
-      const inputCount = Object.keys(inputs).length
-      const outputCount = nodes.filter(node => 
-        edges.some(edge => edge.source === node.id) && 
-        !edges.some(edge => edge.target === node.id)
-      ).length
-    
+    const gateCount = nodes.filter(node => node.type === 'logicGate').length
+    const connectionCount = edges.length
+    const inputCount = Object.keys(inputs).length
+    const outputCount = nodes.filter(node => 
+      edges.some(edge => edge.source === node.id) && 
+      !edges.some(edge => edge.target === node.id)
+    ).length
+  
     setCircuitStats({
-        gateCount,
-        connectionCount,
-        inputCount,
-        outputCount,
-        complexity: gateCount <= 3 ? 'Básico' : gateCount <= 7 ? 'Intermedio' : 'Avanzado'
-      })
-    }, [nodes, edges, inputs])
+      gateCount,
+      connectionCount,
+      inputCount,
+      outputCount,
+      complexity: gateCount <= 3 ? 'Básico' : gateCount <= 7 ? 'Intermedio' : 'Avanzado'
+    })
+  }, [nodes, edges, inputs])
 
   // Inicializar entradas por defecto
   useEffect(() => {
-    if (Object.keys(inputs).length === 0) {
+    if (nodes.filter(n => n.type === 'input').length === 0) {
       // Crear entradas por defecto
       const defaultInputs = { A: 0, B: 0 }
       setInputs(defaultInputs)
@@ -212,27 +226,12 @@ function CircuitSimulator() {
       
       setNodes(prev => [...prev, ...inputNodes])
     }
-  }, [])
+  }, [nodes, setInputs, setNodes])
 
-  // Simular circuito cuando cambian las entradas
+  // Simular circuito cuando cambian las entradas o conexiones
   useEffect(() => {
-    if (nodes.length > 0) {
-      const results = simulateCircuit(nodes, edges, inputs)
-      setSimulationResults(results)
-      
-      // Actualizar nodos con nuevos valores
-      setNodes(prevNodes => 
-        prevNodes.map(node => ({
-          ...node,
-          data: {
-            ...node.data,
-            output: results.get(node.id) || node.data.output,
-            inputValues: node.data.inputValues || []
-          }
-        }))
-      )
-    }
-  }, [inputs, nodes, edges])
+    simulateCircuit()
+  }, [simulateCircuit])
 
   // Manejar conexiones
   const onConnect = useCallback((params) => {
@@ -243,16 +242,16 @@ function CircuitSimulator() {
   const onDrop = useCallback((event) => {
     event.preventDefault()
     
-      const gateData = event.dataTransfer.getData('application/reactflow')
-      if (!gateData || !reactFlowInstance) return
+    const gateData = event.dataTransfer.getData('application/reactflow')
+    if (!gateData || !reactFlowInstance) return
 
-      let gateType
-      try {
-        const parsed = JSON.parse(gateData)
-        gateType = parsed.id
-      } catch {
-        gateType = gateData
-      }
+    let gateType
+    try {
+      const parsed = JSON.parse(gateData)
+      gateType = parsed.id
+    } catch {
+      gateType = gateData
+    }
 
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
@@ -266,8 +265,8 @@ function CircuitSimulator() {
       data: { 
         gateType,
         output: 0,
-          inputValues: gateType === 'NOT' ? [0] : [0, 0],
-          label: gateType
+        inputValues: gateType === 'NOT' ? [0] : [0, 0],
+        label: gateType
       },
     }
 
@@ -307,23 +306,6 @@ function CircuitSimulator() {
     setNodes(prev => [...prev, inputNode])
   }, [inputs, setNodes])
 
-  const handleRemoveInput = useCallback((inputName) => {
-    setInputs(prev => {
-      const newInputs = { ...prev }
-      delete newInputs[inputName]
-      return newInputs
-    })
-    
-    // Remover nodo de entrada visual
-    setNodes(prev => prev.filter(node => node.id !== `input-${inputName}`))
-    
-    // Remover conexiones relacionadas
-    setEdges(prev => prev.filter(edge => 
-      edge.source !== `input-${inputName}` && 
-      edge.target !== `input-${inputName}`
-    ))
-  }, [setNodes, setEdges])
-
   const handleInputChange = useCallback((inputName, value) => {
     console.log('handleInputChange called:', { inputName, value })
     setInputs(prev => ({ ...prev, [inputName]: value }))
@@ -336,6 +318,18 @@ function CircuitSimulator() {
     ))
   }, [setNodes])
 
+  const handleRemoveInput = useCallback((inputName) => {
+    setInputs(prev => {
+      const newInputs = { ...prev }
+      delete newInputs[inputName]
+      return newInputs
+    })
+    
+    // Remover nodo de entrada visual y sus conexiones
+    setNodes(prev => prev.filter(node => node.id !== `input-${inputName}`))
+    setEdges(prev => prev.filter(edge => edge.source !== `input-${inputName}`))
+  }, [setNodes, setEdges])
+
   const handleClearCircuit = useCallback(() => {
     // Limpiar compuertas pero mantener entradas
     setNodes(prev => prev.filter(node => node.type === 'input'))
@@ -343,44 +337,84 @@ function CircuitSimulator() {
     setSimulationResults({})
   }, [setNodes, setEdges])
 
-    const handleSaveCircuit = useCallback((circuitName) => {
-      const circuitData = {
-        name: circuitName,
-        nodes,
-        edges,
-        inputs,
-        timestamp: new Date().toISOString()
-      }
-      localStorage.setItem(`circuit-${circuitName}`, JSON.stringify(circuitData))
-      alert(`Circuito "${circuitName}" guardado exitosamente`)
-    }, [nodes, edges, inputs])
+  const handleSaveCircuit = useCallback((circuitName) => {
+    const circuitData = {
+      name: circuitName,
+      nodes,
+      edges,
+      inputs,
+      timestamp: new Date().toISOString()
+    }
+    // En un entorno real usarías una API, aquí simulo con console
+    console.log(`Guardando circuito "${circuitName}":`, circuitData)
+    alert(`Circuito "${circuitName}" guardado exitosamente`)
+  }, [nodes, edges, inputs])
 
-    const handleLoadCircuit = useCallback(() => {
-      const savedCircuits = Object.keys(localStorage)
-        .filter(key => key.startsWith('circuit-'))
-        .map(key => {
-          const data = JSON.parse(localStorage.getItem(key))
-          return { name: key.replace('circuit-', ''), ...data }
-        })
-      
-      if (savedCircuits.length === 0) {
-        alert('No hay circuitos guardados')
-        return
-      }
-      
-      const circuitName = prompt(`Circuitos disponibles:\n${savedCircuits.map(c => c.name).join('\n')}\n\nIngresa el nombre del circuito a cargar:`)
-      if (circuitName) {
-        const circuitData = savedCircuits.find(c => c.name === circuitName)
-        if (circuitData) {
-          setNodes(circuitData.nodes || [])
-          setEdges(circuitData.edges || [])
-          setInputs(circuitData.inputs || { A: 0, B: 0 })
-          alert(`Circuito "${circuitName}" cargado exitosamente`)
-        } else {
-          alert('Circuito no encontrado')
-        }
-      }
-    }, [setNodes, setEdges, setInputs])
+  // Función para iniciar un desafío
+  const handleStartChallenge = useCallback((challenge) => {
+    setCurrentChallenge(challenge)
+    setShowFinishButton(true)
+    setActiveTab('design')
+    // Limpiar el circuito actual
+    setNodes(prev => prev.filter(node => node.type === 'input'))
+    setEdges([])
+    setSimulationResults({})
+  }, [setNodes, setEdges])
+
+  // Función para finalizar un desafío
+  const handleFinishChallenge = useCallback(() => {
+    if (!currentChallenge) return
+
+    // Verificar si el circuito cumple con los requisitos del desafío
+    const isCorrect = validateChallenge(currentChallenge, nodes, edges, inputs)
+    
+    if (isCorrect) {
+      alert('¡Excelente! Has completado el desafío correctamente. 🎉')
+      setCurrentChallenge(null)
+      setShowFinishButton(false)
+    } else {
+      alert('El circuito no cumple con los requisitos del desafío. Revisa tu diseño e intenta de nuevo.')
+    }
+  }, [currentChallenge, nodes, edges, inputs])
+
+  // Función para validar un desafío
+  const validateChallenge = (challenge, nodes, edges, inputs) => {
+    // Verificar que se usen las compuertas requeridas
+    const usedGates = nodes
+      .filter(node => node.type === 'logicGate')
+      .map(node => node.data.gateType)
+    
+    const requiredGates = challenge.requirements.gates
+    const hasRequiredGates = requiredGates.every(gate => usedGates.includes(gate))
+    
+    // Verificar que se usen las entradas requeridas
+    const inputNames = Object.keys(inputs)
+    const requiredInputs = challenge.requirements.inputs
+    const hasRequiredInputs = requiredInputs.every(input => inputNames.includes(input))
+    
+    // Verificar que el circuito tenga al menos una salida
+    const hasOutput = nodes.some(node => 
+      edges.some(edge => edge.source === node.id) && 
+      !edges.some(edge => edge.target === node.id)
+    )
+    
+    return hasRequiredGates && hasRequiredInputs && hasOutput
+  }
+
+  // Obtener resultados de las compuertas
+  const getResults = () => {
+    return nodes
+      .filter(node => node.type === 'logicGate')
+      .map(node => ({
+        id: node.id,
+        type: node.data.gateType,
+        label: node.data.label || node.data.gateType,
+        output: node.data.output,
+        inputs: node.data.inputValues || []
+      }))
+  }
+
+  const results = getResults()
 
   return (
     <div className="max-w-7xl mx-auto p-4">
@@ -416,27 +450,48 @@ function CircuitSimulator() {
 
       {/* Content */}
       <div className="min-h-96">
+        {activeTab === 'theory' && (
+          <TheoryModule />
+        )}
+
         {activeTab === 'design' && (
           <div className="grid lg:grid-cols-4 gap-6">
             <div className="lg:col-span-1 space-y-4">
+              {/* Paleta de Compuertas */}
               <GatePalette 
+                onGateSelect={setSelectedGate}
                 selectedGate={selectedGate}
-                onGateSelect={setSelectedGate} 
                 onAddInput={handleAddInput}
               />
-              <ControlPanel 
+
+              {/* Control Panel */}
+              <ControlPanel
                 inputs={inputs}
-                onAddInput={handleAddInput}
-                onRemoveInput={handleRemoveInput}
                 onInputChange={handleInputChange}
+                onRemoveInput={handleRemoveInput}
                 onClearCircuit={handleClearCircuit}
                 onSaveCircuit={handleSaveCircuit}
-                onLoadCircuit={handleLoadCircuit}
-                circuitStats={circuitStats}
               />
-              <InputTester />
-              <GateLogicTester />
+
+              {/* Botón de finalizar desafío */}
+              {showFinishButton && currentChallenge && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                    Desafío Activo: {currentChallenge.title}
+                  </h3>
+                  <p className="text-yellow-800 text-sm mb-3">
+                    {currentChallenge.description}
+                  </p>
+                  <button
+                    onClick={handleFinishChallenge}
+                    className="w-full px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors font-semibold"
+                  >
+                    ✅ Finalizar Desafío
+                  </button>
+                </div>
+              )}
             </div>
+            
             <div className="lg:col-span-3">
               <div className="h-96 border border-gray-300 rounded-lg bg-gray-50">
                 <ReactFlowProvider>
@@ -451,11 +506,11 @@ function CircuitSimulator() {
                     onDragOver={onDragOver}
                     nodeTypes={nodeTypes}
                     fitView
-                      connectionLineType="smoothstep"
-                      defaultEdgeOptions={{
-                        style: { strokeWidth: 2, stroke: '#3b82f6' },
-                        type: 'smoothstep'
-                      }}
+                    connectionLineType="smoothstep"
+                    defaultEdgeOptions={{
+                      style: { strokeWidth: 2, stroke: '#3b82f6' },
+                      type: 'smoothstep'
+                    }}
                   >
                     <Controls />
                     <MiniMap />
@@ -479,11 +534,11 @@ function CircuitSimulator() {
                   onConnect={onConnect}
                   nodeTypes={nodeTypes}
                   fitView
-                    connectionLineType="smoothstep"
-                    defaultEdgeOptions={{
-                      style: { strokeWidth: 2, stroke: '#3b82f6' },
-                      type: 'smoothstep'
-                    }}
+                  connectionLineType="smoothstep"
+                  defaultEdgeOptions={{
+                    style: { strokeWidth: 2, stroke: '#3b82f6' },
+                    type: 'smoothstep'
+                  }}
                 >
                   <Controls />
                   <MiniMap />
@@ -492,29 +547,36 @@ function CircuitSimulator() {
               </ReactFlowProvider>
             </div>
             <div>
-                <ResultsDisplay 
-                  simulationResults={simulationResults}
-                  inputs={inputs}
-                  circuitStats={circuitStats}
-                />
+              <ResultsDisplay results={results} />
             </div>
           </div>
         )}
 
         {activeTab === 'analyze' && (
           <div className="grid lg:grid-cols-2 gap-6">
-            <TruthTableGenerator nodes={nodes} inputs={inputs} />
-              <CircuitAnalyzer 
+            <div>
+              <TruthTableGenerator 
+                inputs={inputs}
+                results={results}
                 circuitStats={circuitStats}
-                simulationResults={simulationResults}
               />
             </div>
-          )}
-
-          {activeTab === 'challenges' && (
-          <div className="min-h-96">
-            <ChallengeSystem />
+            <div>
+              <CircuitAnalyzer 
+                circuitStats={circuitStats}
+                nodes={nodes}
+                edges={edges}
+              />
+            </div>
           </div>
+        )}
+
+        {activeTab === 'challenges' && (
+          <ChallengeSystem onStartChallenge={handleStartChallenge} />
+        )}
+
+        {activeTab === 'questions' && (
+          <AdvancedQuestionGenerator />
         )}
       </div>
 

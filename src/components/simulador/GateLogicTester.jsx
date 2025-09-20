@@ -1,136 +1,237 @@
-import { useState } from 'react'
+import { memo } from 'react'
+import { Handle, Position } from 'reactflow'
 
-const GateLogicTester = () => {
-  const [testResults, setTestResults] = useState([])
+const LogicGateNode = ({ data, isConnectable }) => {
+  const { gateType, output = 0, inputValues = [], label } = data
 
-  const testGateLogic = () => {
-    const results = []
-    
-    // Función para calcular el valor de una compuerta
-    const calculateGateValue = (gateType, inputValues) => {
-      switch (gateType) {
-        case 'AND':
-          return inputValues.every(val => val === 1) ? 1 : 0
-        case 'OR':
-          return inputValues.some(val => val === 1) ? 1 : 0
-        case 'NOT':
-          return inputValues[0] === 1 ? 0 : 1
-        case 'NAND':
-          return inputValues.every(val => val === 1) ? 0 : 1
-        case 'NOR':
-          return inputValues.some(val => val === 1) ? 0 : 1
-        case 'XOR':
-          return inputValues.reduce((a, b) => a ^ b, 0)
-        case 'XNOR':
-          return inputValues.reduce((a, b) => a ^ b, 0) === 0 ? 1 : 0
-        default:
-          return 0
-      }
+  // Función para obtener el diseño SVG de cada compuerta
+  const getGateDesign = (type) => {
+    const designs = {
+      AND: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          <path 
+            d="M10 10 L70 10 Q90 10 90 40 Q90 70 70 70 L10 70 Z" 
+            fill="white" 
+            stroke="#3b82f6" 
+            strokeWidth="2"
+          />
+          <text x="50" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e40af">
+            &
+          </text>
+        </svg>
+      ),
+      OR: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          <path 
+            d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 90 40 Q50 20 10 10" 
+            fill="white" 
+            stroke="#10b981" 
+            strokeWidth="2"
+          />
+          <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#047857">
+            ≥1
+          </text>
+        </svg>
+      ),
+      NOT: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          <path 
+            d="M10 10 L10 70 L70 40 Z" 
+            fill="white" 
+            stroke="#8b5cf6" 
+            strokeWidth="2"
+          />
+          <circle cx="75" cy="40" r="8" fill="white" stroke="#8b5cf6" strokeWidth="2"/>
+          <text x="40" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#6d28d9">
+            1
+          </text>
+        </svg>
+      ),
+      NAND: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          <path 
+            d="M10 10 L70 10 Q85 10 85 40 Q85 70 70 70 L10 70 Z" 
+            fill="white" 
+            stroke="#f97316" 
+            strokeWidth="2"
+          />
+          <circle cx="90" cy="40" r="8" fill="white" stroke="#f97316" strokeWidth="2"/>
+          <text x="50" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#ea580c">
+            &
+          </text>
+        </svg>
+      ),
+      NOR: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          <path 
+            d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 85 40 Q50 20 10 10" 
+            fill="white" 
+            stroke="#ef4444" 
+            strokeWidth="2"
+          />
+          <circle cx="90" cy="40" r="8" fill="white" stroke="#ef4444" strokeWidth="2"/>
+          <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#dc2626">
+            ≥1
+          </text>
+        </svg>
+      ),
+      XOR: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          <path 
+            d="M5 10 Q20 10 30 40 Q20 70 5 70" 
+            fill="none" 
+            stroke="#eab308" 
+            strokeWidth="2"
+          />
+          <path 
+            d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 90 40 Q50 20 10 10" 
+            fill="white" 
+            stroke="#eab308" 
+            strokeWidth="2"
+          />
+          <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#ca8a04">
+            =1
+          </text>
+        </svg>
+      ),
+      XNOR: (
+        <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
+          <path 
+            d="M5 10 Q20 10 30 40 Q20 70 5 70" 
+            fill="none" 
+            stroke="#ec4899" 
+            strokeWidth="2"
+          />
+          <path 
+            d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 85 40 Q50 20 10 10" 
+            fill="white" 
+            stroke="#ec4899" 
+            strokeWidth="2"
+          />
+          <circle cx="90" cy="40" r="8" fill="white" stroke="#ec4899" strokeWidth="2"/>
+          <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#be185d">
+            =1
+          </text>
+        </svg>
+      )
     }
-
-    // Probar compuerta AND
-    const andTests = [
-      { inputs: [0, 0], expected: 0 },
-      { inputs: [0, 1], expected: 0 },
-      { inputs: [1, 0], expected: 0 },
-      { inputs: [1, 1], expected: 1 }
-    ]
-    
-    andTests.forEach(test => {
-      const result = calculateGateValue('AND', test.inputs)
-      results.push({
-        gate: 'AND',
-        inputs: test.inputs,
-        expected: test.expected,
-        actual: result,
-        correct: result === test.expected
-      })
-    })
-
-    // Probar compuerta OR
-    const orTests = [
-      { inputs: [0, 0], expected: 0 },
-      { inputs: [0, 1], expected: 1 },
-      { inputs: [1, 0], expected: 1 },
-      { inputs: [1, 1], expected: 1 }
-    ]
-    
-    orTests.forEach(test => {
-      const result = calculateGateValue('OR', test.inputs)
-      results.push({
-        gate: 'OR',
-        inputs: test.inputs,
-        expected: test.expected,
-        actual: result,
-        correct: result === test.expected
-      })
-    })
-
-    // Probar compuerta NOT
-    const notTests = [
-      { inputs: [0], expected: 1 },
-      { inputs: [1], expected: 0 }
-    ]
-    
-    notTests.forEach(test => {
-      const result = calculateGateValue('NOT', test.inputs)
-      results.push({
-        gate: 'NOT',
-        inputs: test.inputs,
-        expected: test.expected,
-        actual: result,
-        correct: result === test.expected
-      })
-    })
-
-    setTestResults(results)
+    return designs[type] || designs.AND
   }
 
+  // Obtener número de entradas según el tipo de compuerta
+  const getInputCount = (type) => {
+    return type === 'NOT' ? 1 : 2
+  }
+
+  const inputCount = getInputCount(gateType)
+  
+  // Asegurar que inputValues tenga el tamaño correcto
+  const displayInputValues = [...inputValues]
+  if (gateType === 'NOT') {
+    if (displayInputValues.length === 0) displayInputValues[0] = 0
+  } else {
+    if (displayInputValues[0] === undefined) displayInputValues[0] = 0
+    if (displayInputValues[1] === undefined) displayInputValues[1] = 0
+  }
+  
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Prueba de Lógica de Compuertas
-      </h3>
-      
-      <button
-        onClick={testGateLogic}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mb-4"
-      >
-        Probar Lógica de Compuertas
-      </button>
-      
-      {testResults.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="font-semibold text-gray-700">Resultados:</h4>
-          {testResults.map((result, index) => (
-            <div 
-              key={index} 
-              className={`p-2 rounded text-sm ${
-                result.correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span>
-                  {result.gate}({result.inputs.join(', ')}) = {result.actual}
-                </span>
-                <span>
-                  {result.correct ? '✅' : '❌'} Esperado: {result.expected}
-                </span>
-              </div>
-            </div>
-          ))}
-          
-          <div className="mt-4 p-3 bg-gray-50 rounded">
-            <div className="text-sm">
-              <strong>Correctos:</strong> {testResults.filter(r => r.correct).length} / {testResults.length}
-            </div>
+    <div className="relative">
+      {/* Handles de entrada */}
+      {Array.from({ length: inputCount }, (_, index) => (
+        <Handle
+          key={`input-${index}`}
+          type="target"
+          position={Position.Left}
+          id={`input-${index}`}
+          style={{
+            left: -6,
+            top: inputCount === 1 ? '50%' : `${30 + (index * 40)}%`,
+            background: displayInputValues[index] === 1 ? '#10b981' : '#ef4444',
+            border: '2px solid white',
+            width: 12,
+            height: 12,
+            zIndex: 10
+          }}
+          isConnectable={isConnectable}
+        />
+      ))}
+
+      {/* Diseño de la compuerta */}
+      <div className="relative">
+        {getGateDesign(gateType)}
+      </div>
+
+      {/* Handle de salida */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="output"
+        style={{
+          right: -6,
+          top: '50%',
+          background: output === 1 ? '#10b981' : '#ef4444',
+          border: '2px solid white',
+          width: 12,
+          height: 12,
+          zIndex: 10
+        }}
+        isConnectable={isConnectable}
+      />
+
+      {/* Etiqueta de la compuerta */}
+      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-gray-600 bg-white px-2 py-1 rounded shadow-sm">
+        {label || gateType}
+      </div>
+
+      {/* Indicadores de valores de entrada */}
+      {displayInputValues.map((value, index) => {
+        if (index >= inputCount) return null
+        return (
+          <div
+            key={`input-indicator-${index}`}
+            className="absolute text-xs font-bold"
+            style={{
+              left: -25,
+              top: inputCount === 1 ? '50%' : `${30 + (index * 40)}%`,
+              transform: 'translateY(-50%)',
+              color: value === 1 ? '#10b981' : '#ef4444',
+              background: 'white',
+              borderRadius: '50%',
+              width: 16,
+              height: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid #e5e7eb'
+            }}
+          >
+            {value}
           </div>
-        </div>
-      )}
+        )
+      })}
+
+      {/* Indicador de salida */}
+      <div
+        className="absolute text-xs font-bold"
+        style={{
+          right: -25,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          color: output === 1 ? '#10b981' : '#ef4444',
+          background: 'white',
+          borderRadius: '50%',
+          width: 16,
+          height: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid #e5e7eb'
+        }}
+      >
+        {output}
+      </div>
     </div>
   )
 }
 
-export default GateLogicTester
-
-
+export default memo(LogicGateNode)

@@ -3,211 +3,129 @@ import { useState } from 'react'
 const ControlPanel = ({ 
   inputs, 
   onInputChange, 
-  onAddInput, 
   onRemoveInput, 
-  onClearCircuit,
-  onSaveCircuit,
-  onLoadCircuit,
-  circuitStats
+  onClearCircuit, 
+  onSaveCircuit 
 }) => {
   const [newInputName, setNewInputName] = useState('')
-  const [showSaveDialog, setShowSaveDialog] = useState(false)
-  const [circuitName, setCircuitName] = useState('')
 
   const handleAddInput = () => {
     if (newInputName.trim() && !inputs[newInputName.trim()]) {
-      onAddInput(newInputName.trim())
+      onInputChange(newInputName.trim(), 0)
       setNewInputName('')
     }
   }
 
-  const handleSaveCircuit = () => {
-    if (circuitName.trim()) {
+  const handleSave = () => {
+    const circuitName = prompt('Nombre del circuito:')
+    if (circuitName && circuitName.trim()) {
       onSaveCircuit(circuitName.trim())
-      setShowSaveDialog(false)
-      setCircuitName('')
     }
   }
 
-  const getInputColor = (value) => {
-    return value ? 'bg-green-500 border-green-600' : 'bg-red-500 border-red-600'
-  }
-
   return (
-    <div className="space-y-4">
-      {/* Controles de Entrada */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Controles de Entrada
-        </h3>
-        
-        <div className="space-y-3">
-          {/* Entradas existentes */}
-          <div className="space-y-2">
-            {Object.entries(inputs).map(([name, value]) => (
-              <div key={name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <label className="text-sm font-medium text-gray-700">
-                  {name}:
-                </label>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => onInputChange(name, !value)}
-                    className={`w-12 h-8 rounded-full border-2 font-bold text-sm transition-all duration-200 ${getInputColor(value)} hover:scale-105`}
-                    title={`Cambiar ${name} a ${value ? '0' : '1'}`}
-                  >
-                    {value ? '1' : '0'}
-                  </button>
-                  <button
-                    onClick={() => onRemoveInput(name)}
-                    className="text-red-500 hover:text-red-700 text-sm p-1 hover:bg-red-100 rounded"
-                    title="Eliminar entrada"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Agregar nueva entrada */}
-          <div className="flex space-x-2 pt-2 border-t">
-            <input
-              type="text"
-              value={newInputName}
-              onChange={(e) => setNewInputName(e.target.value)}
-              placeholder="Nombre de entrada (ej: L1, L2)"
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyPress={(e) => e.key === 'Enter' && handleAddInput()}
-            />
-            <button
-              onClick={handleAddInput}
-              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-            >
-              +
-            </button>
-          </div>
-          
-          {/* Instrucciones */}
-          <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-            💡 <strong>Instrucciones:</strong> Haz clic en los botones 0/1 para cambiar los valores. 
-            Los cambios se reflejan inmediatamente en el circuito.
-          </div>
-        </div>
-      </div>
-
-      {/* Estadísticas del Circuito */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Estadísticas del Circuito
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="text-center p-2 bg-blue-50 rounded">
-            <div className="text-lg font-bold text-blue-600">
-              {circuitStats.gateCount}
-            </div>
-            <div className="text-blue-800">Compuertas</div>
-          </div>
-          
-          <div className="text-center p-2 bg-green-50 rounded">
-            <div className="text-lg font-bold text-green-600">
-              {circuitStats.connectionCount}
-            </div>
-            <div className="text-green-800">Conexiones</div>
-          </div>
-          
-          <div className="text-center p-2 bg-purple-50 rounded">
-            <div className="text-lg font-bold text-purple-600">
-              {circuitStats.inputCount}
-            </div>
-            <div className="text-purple-800">Entradas</div>
-          </div>
-          
-          <div className="text-center p-2 bg-orange-50 rounded">
-            <div className="text-lg font-bold text-orange-600">
-              {circuitStats.outputCount}
-            </div>
-            <div className="text-orange-800">Salidas</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Controles del Circuito */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Controles del Circuito
-        </h3>
-        
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={onClearCircuit}
-              className="px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
-            >
-              🗑️ Limpiar
-            </button>
-            
-            <button
-              onClick={() => setShowSaveDialog(true)}
-              className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-            >
-              💾 Guardar
-            </button>
-          </div>
-          
+    <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Panel de Control
+      </h3>
+      
+      {/* Agregar nueva entrada */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Agregar Entrada
+        </label>
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            value={newInputName}
+            onChange={(e) => setNewInputName(e.target.value)}
+            placeholder="Ej: C, D, E..."
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onKeyPress={(e) => e.key === 'Enter' && handleAddInput()}
+          />
           <button
-            onClick={onLoadCircuit}
-            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+            onClick={handleAddInput}
+            className="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
           >
-            📁 Cargar Circuito
+            +
           </button>
         </div>
       </div>
 
-      {/* Modal de Guardar */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Guardar Circuito
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre del circuito:
-                </label>
-                <input
-                  type="text"
-                  value={circuitName}
-                  onChange={(e) => setCircuitName(e.target.value)}
-                  placeholder="Mi circuito lógico"
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  autoFocus
-                />
-              </div>
-              
-              <div className="flex space-x-3">
+      {/* Controles de entrada */}
+      <div className="mb-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">
+          Valores de Entrada
+        </h4>
+        <div className="space-y-2">
+          {Object.entries(inputs).map(([name, value]) => (
+            <div key={name} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+              <span className="text-sm font-medium text-gray-700">{name}:</span>
+              <div className="flex items-center space-x-2">
                 <button
-                  onClick={handleSaveCircuit}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  onClick={() => onInputChange(name, 0)}
+                  className={`w-8 h-8 rounded-full border-2 font-bold text-sm transition-all duration-200 ${
+                    value === 0 
+                      ? 'bg-red-500 border-red-600 text-white shadow-md' 
+                      : 'bg-gray-200 border-gray-400 text-gray-600 hover:bg-red-100'
+                  }`}
                 >
-                  Guardar
+                  0
                 </button>
                 <button
-                  onClick={() => {
-                    setShowSaveDialog(false)
-                    setCircuitName('')
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  onClick={() => onInputChange(name, 1)}
+                  className={`w-8 h-8 rounded-full border-2 font-bold text-sm transition-all duration-200 ${
+                    value === 1 
+                      ? 'bg-green-500 border-green-600 text-white shadow-md' 
+                      : 'bg-gray-200 border-gray-400 text-gray-600 hover:bg-green-100'
+                  }`}
                 >
-                  Cancelar
+                  1
+                </button>
+                <button
+                  onClick={() => onRemoveInput(name)}
+                  className="w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors"
+                  title="Eliminar entrada"
+                >
+                  ×
                 </button>
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
+
+      {/* Instrucciones */}
+      <div className="mb-4 text-xs text-gray-500 bg-blue-50 p-2 rounded">
+        💡 <strong>Instrucciones:</strong> Haz clic en los botones 0/1 para cambiar los valores de entrada. 
+        Los cambios se reflejan inmediatamente en el circuito.
+      </div>
+
+      {/* Botones de acción */}
+      <div className="space-y-2">
+        <button
+          onClick={handleSave}
+          className="w-full px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+        >
+          💾 Guardar Circuito
+        </button>
+        <button
+          onClick={onClearCircuit}
+          className="w-full px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+        >
+          🗑️ Limpiar Circuito
+        </button>
+      </div>
+
+      {/* Botón de actualizar */}
+      <div className="mt-4">
+        <button
+          onClick={() => window.location.reload()}
+          className="w-full px-4 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700 transition-colors"
+        >
+          🔄 Actualizar Simulación
+        </button>
+      </div>
     </div>
   )
 }
