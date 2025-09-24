@@ -1,0 +1,1091 @@
+// src/utils/circuitQuestionGenerator.js
+
+// 🧠 SISTEMA INTELIGENTE PARA CIRCUITOS LÓGICOS - Sin API
+export class CircuitQuestionGenerator {
+  constructor() {
+    this.userProfile = this.loadUserProfile()
+    this.questionHistory = this.loadQuestionHistory()
+    this.challengeHistory = this.loadChallengeHistory()
+    this.performanceAnalyzer = new CircuitPerformanceAnalyzer()
+  }
+
+  // 🎯 GENERADOR ADAPTATIVO DE PREGUNTAS
+  generateAdaptiveQuiz(mode, count = 5) {
+    const userLevel = this.determineCircuitLevel()
+    const weakAreas = this.identifyWeakCircuitAreas()
+    const preferredTypes = this.getPreferredCircuitTypes()
+
+    console.log('🎯 Generando quiz de circuitos adaptativo:', {
+      userLevel,
+      weakAreas,
+      preferredTypes,
+      mode
+    })
+
+    return this.createPersonalizedCircuitQuestions(mode, count, {
+      level: userLevel,
+      focusAreas: weakAreas,
+      questionTypes: preferredTypes
+    })
+  }
+
+  // 🎲 GENERADOR ADAPTATIVO DE RETOS
+  generateAdaptiveChallenges(difficulty, category, count = 6) {
+    const userLevel = this.determineCircuitLevel()
+    const challengePrefs = this.getChallengePreferences()
+    
+    console.log('🎯 Generando retos adaptativos:', {
+      difficulty,
+      category,
+      userLevel,
+      challengePrefs
+    })
+
+    return this.createPersonalizedChallenges(difficulty, category, count, {
+      level: userLevel,
+      preferences: challengePrefs
+    })
+  }
+
+  // 🔍 ANÁLISIS DE NIVEL DEL USUARIO
+  determineCircuitLevel() {
+    const stats = this.userProfile.circuitStats
+    
+    if (stats.totalQuizzes < 3) return 'beginner'
+    if (stats.averageScore > 85 && stats.challengesCompleted > 5) return 'expert'
+    if (stats.averageScore > 75) return 'advanced'
+    if (stats.averageScore > 60) return 'intermediate'
+    return 'beginner'
+  }
+
+  identifyWeakCircuitAreas() {
+    const performance = this.userProfile.circuitPerformance
+    const weakAreas = []
+
+    Object.entries(performance).forEach(([area, score]) => {
+      if (score < 65) weakAreas.push(area)
+    })
+
+    return weakAreas.length > 0 ? weakAreas : ['gates'] // default
+  }
+
+  getChallengePreferences() {
+    const history = this.challengeHistory
+    const preferences = {}
+    
+    // Analizar retos completados con éxito
+    history.forEach(challenge => {
+      if (challenge.completed && challenge.success) {
+        if (!preferences[challenge.category]) preferences[challenge.category] = 0
+        preferences[challenge.category]++
+      }
+    })
+
+    return preferences
+  }
+
+  // 🏭 CREADOR DE PREGUNTAS PERSONALIZADAS
+  createPersonalizedCircuitQuestions(mode, count, profile) {
+    const questions = []
+    const difficultyDistribution = this.getCircuitDifficultyDistribution(mode, profile.level)
+    const usedTemplates = new Set()
+    
+    for (let i = 0; i < count; i++) {
+      const difficulty = difficultyDistribution[i % difficultyDistribution.length]
+      const questionType = this.selectCircuitQuestionType(profile.focusAreas)
+      
+      let attempts = 0
+      let question = null
+      
+      while (!question && attempts < 10) {
+        question = this.generateSpecificCircuitQuestion(questionType, difficulty, i, usedTemplates)
+        attempts++
+      }
+      
+      if (question) {
+        questions.push(question)
+        usedTemplates.add(`${questionType}-${difficulty}-${question.templateId}`)
+      }
+    }
+
+    this.updateQuestionHistory(questions)
+    return questions
+  }
+
+  // 🏗️ CREADOR DE RETOS PERSONALIZADOS
+  createPersonalizedChallenges(difficulty, category, count, profile) {
+    const challenges = []
+    const usedTemplates = new Set()
+    
+    for (let i = 0; i < count; i++) {
+      const adjustedDifficulty = this.adjustDifficultyBasedOnProfile(difficulty, profile)
+      const challenge = this.generateSpecificCircuitChallenge(category, adjustedDifficulty, i, usedTemplates)
+      
+      if (challenge) {
+        challenges.push(challenge)
+        usedTemplates.add(`${category}-${adjustedDifficulty}-${challenge.templateId}`)
+      }
+    }
+
+    this.updateChallengeHistory(challenges)
+    return challenges
+  }
+
+  // 📊 DISTRIBUCIÓN INTELIGENTE DE DIFICULTAD
+  getCircuitDifficultyDistribution(mode, userLevel) {
+    const distributions = {
+      beginner: {
+        practice: ['easy', 'easy', 'easy', 'medium', 'medium'],
+        exam: ['easy', 'easy', 'easy', 'medium', 'medium', 'medium', 'hard', 'hard']
+      },
+      intermediate: {
+        practice: ['easy', 'medium', 'medium', 'medium', 'hard'],
+        exam: ['easy', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard', 'hard']
+      },
+      advanced: {
+        practice: ['medium', 'medium', 'hard', 'hard', 'hard'],
+        exam: ['medium', 'medium', 'hard', 'hard', 'hard', 'hard', 'expert', 'expert']
+      },
+      expert: {
+        practice: ['hard', 'hard', 'hard', 'expert', 'expert'],
+        exam: ['hard', 'hard', 'hard', 'expert', 'expert', 'expert', 'expert', 'expert']
+      }
+    }
+
+    return distributions[userLevel][mode] || distributions.intermediate[mode]
+  }
+
+  selectCircuitQuestionType(focusAreas) {
+    const types = ['gates', 'algebra', 'design', 'applications']
+    
+    if (focusAreas.length === 0) {
+      return types[Math.floor(Math.random() * types.length)]
+    }
+
+    // 70% probabilidad de enfocar áreas débiles
+    return Math.random() < 0.7 
+      ? focusAreas[Math.floor(Math.random() * focusAreas.length)]
+      : types[Math.floor(Math.random() * types.length)]
+  }
+
+  // 🎭 GENERADORES ESPECÍFICOS DE PREGUNTAS
+  generateSpecificCircuitQuestion(type, difficulty, id, usedTemplates) {
+    const generators = {
+      gates: this.generateGateQuestion,
+      algebra: this.generateAlgebraQuestion,
+      design: this.generateDesignQuestion,
+      applications: this.generateApplicationQuestion
+    }
+
+    const generator = generators[type] || generators.gates
+    return generator.call(this, difficulty, id, usedTemplates)
+  }
+
+  generateGateQuestion(difficulty, id, usedTemplates) {
+    const templates = {
+      easy: [
+        {
+          id: 'gate-output',
+          template: "¿Cuál es la salida de una compuerta {gate} cuando las entradas son {input1} y {input2}?",
+          gates: ['AND', 'OR', 'NAND', 'NOR', 'XOR'],
+          generator: (gate, input1, input2) => {
+            const output = this.calculateGateOutput(gate, [input1, input2])
+            return {
+              question: `¿Cuál es la salida de una compuerta ${gate} cuando las entradas son ${input1} y ${input2}?`,
+              options: this.shuffleWithCorrect([
+                output.toString(),
+                (1 - output).toString(),
+                'X (indefinido)',
+                'Depende del contexto'
+              ]),
+              explanation: `Una compuerta ${gate} con entradas ${input1} y ${input2} produce ${output}. ${this.getGateExplanation(gate)}`,
+              hint: `Recuerda: ${gate} ${this.getGateHint(gate)}`,
+              templateId: 'gate-output'
+            }
+          }
+        },
+        {
+          id: 'gate-symbol',
+          template: "¿Cuál es el símbolo IEEE de la compuerta {gate}?",
+          gates: ['AND', 'OR', 'NOT', 'XOR'],
+          generator: (gate) => {
+            const symbols = {
+              'AND': '&',
+              'OR': '≥1',
+              'NOT': '1',
+              'XOR': '=1'
+            }
+            return {
+              question: `¿Cuál es el símbolo IEEE estándar de la compuerta ${gate}?`,
+              options: this.shuffleWithCorrect([
+                symbols[gate],
+                ...this.getWrongSymbols(symbols[gate])
+              ]),
+              explanation: `El símbolo IEEE para ${gate} es "${symbols[gate]}"`,
+              hint: `${gate === 'NOT' ? 'Tiene una sola entrada' : 'Representa la operación lógica'}`,
+              templateId: 'gate-symbol'
+            }
+          }
+        }
+      ],
+      medium: [
+        {
+          id: 'gate-combination',
+          template: "Si conectas {gate1} seguida de {gate2}, implementas:",
+          combinations: [
+            ['AND', 'NOT'], ['OR', 'NOT'], ['XOR', 'NOT'],
+            ['NAND', 'NAND'], ['NOR', 'NOR']
+          ],
+          generator: (gate1, gate2) => {
+            const result = this.getCombinedGateFunction(gate1, gate2)
+            return {
+              question: `Si conectas una compuerta ${gate1} seguida de una ${gate2}, implementas:`,
+              options: this.shuffleWithCorrect([
+                result,
+                ...this.getAlternativeCombinations(gate1, gate2)
+              ]),
+              explanation: `${gate1} seguida de ${gate2} implementa ${result}`,
+              hint: 'La salida del primer gate se convierte en entrada del segundo',
+              templateId: 'gate-combination'
+            }
+          }
+        }
+      ],
+      hard: [
+        {
+          id: 'universal-gates',
+          template: "Para implementar {function} usando solo {universalGate}:",
+          functions: ['AND', 'OR', 'XOR'],
+          universalGates: ['NAND', 'NOR'],
+          generator: (func, universalGate) => {
+            const solution = this.getUniversalGateImplementation(func, universalGate)
+            return {
+              question: `Para implementar ${func} usando solo compuertas ${universalGate}, necesitas:`,
+              options: this.shuffleWithCorrect([
+                solution,
+                ...this.getWrongUniversalImplementations(func, universalGate)
+              ]),
+              explanation: `${func} con ${universalGate}: ${solution}`,
+              hint: `${universalGate} es universalmente completa`,
+              templateId: 'universal-gates'
+            }
+          }
+        }
+      ]
+    }
+
+    const difficultyTemplates = templates[difficulty] || templates.easy
+    let attempts = 0
+    let selectedTemplate = null
+
+    // Intentar encontrar una plantilla no usada
+    while (attempts < 5 && !selectedTemplate) {
+      const candidate = difficultyTemplates[Math.floor(Math.random() * difficultyTemplates.length)]
+      const templateKey = `gates-${difficulty}-${candidate.id}`
+      
+      if (!usedTemplates.has(templateKey)) {
+        selectedTemplate = candidate
+      }
+      attempts++
+    }
+
+    if (!selectedTemplate) {
+      selectedTemplate = difficultyTemplates[0] // Usar la primera como fallback
+    }
+
+    return this.createQuestionFromGateTemplate(selectedTemplate, difficulty, id)
+  }
+
+  createQuestionFromGateTemplate(template, difficulty, id) {
+    let questionData
+
+    if (template.gates) {
+      const gate = template.gates[Math.floor(Math.random() * template.gates.length)]
+      
+      if (template.template.includes('{input1}') && template.template.includes('{input2}')) {
+        const input1 = Math.floor(Math.random() * 2)
+        const input2 = Math.floor(Math.random() * 2)
+        questionData = template.generator(gate, input1, input2)
+      } else {
+        questionData = template.generator(gate)
+      }
+    } else if (template.combinations) {
+      const combination = template.combinations[Math.floor(Math.random() * template.combinations.length)]
+      questionData = template.generator(combination[0], combination[1])
+    } else if (template.functions && template.universalGates) {
+      const func = template.functions[Math.floor(Math.random() * template.functions.length)]
+      const universalGate = template.universalGates[Math.floor(Math.random() * template.universalGates.length)]
+      questionData = template.generator(func, universalGate)
+    } else {
+      questionData = template.generator()
+    }
+
+    return {
+      id: Date.now() + id + Math.random(),
+      type: 'gates',
+      difficulty,
+      ...questionData,
+      generated: true,
+      timestamp: new Date().toISOString()
+    }
+  }
+
+  // 🎯 GENERADORES ESPECÍFICOS DE RETOS
+  generateSpecificCircuitChallenge(category, difficulty, id, usedTemplates) {
+    const generators = {
+      basic: this.generateBasicChallenge,
+      arithmetic: this.generateArithmeticChallenge,
+      logic: this.generateLogicChallenge,
+      optimization: this.generateOptimizationChallenge,
+      sequential: this.generateSequentialChallenge
+    }
+
+    const generator = generators[category] || generators.basic
+    return generator.call(this, difficulty, id, usedTemplates)
+  }
+
+  generateBasicChallenge(difficulty, id, usedTemplates) {
+    const templates = {
+      easy: [
+        {
+          id: 'single-gate',
+          title: "Circuito {gate} Básico",
+          gates: ['AND', 'OR', 'NOT', 'NAND', 'NOR'],
+          generator: (gate) => ({
+            title: `Implementar ${gate}`,
+            description: `Crea un circuito que implemente la función ${gate} básica`,
+            requirements: {
+              gates: [gate],
+              inputs: gate === 'NOT' ? ['A'] : ['A', 'B'],
+              minConnections: 1,
+              maxGates: 1
+            },
+            points: gate === 'NOT' ? 5 : 10,
+            hint: `La compuerta ${gate} ${this.getGateHint(gate)}`,
+            templateId: 'single-gate'
+          })
+        },
+        {
+          id: 'two-input-function',
+          title: "Función Lógica {function}",
+          functions: ['A AND B', 'A OR B', 'A XOR B'],
+          generator: (func) => ({
+            title: `Implementar: ${func}`,
+            description: `Diseña un circuito que realice la operación ${func}`,
+            requirements: {
+              gates: this.extractGatesFromFunction(func),
+              inputs: ['A', 'B'],
+              minConnections: 1,
+              maxGates: 2
+            },
+            points: 15,
+            hint: `Para ${func}, usa la compuerta apropiada`,
+            templateId: 'two-input-function'
+          })
+        }
+      ],
+      medium: [
+        {
+          id: 'combined-function',
+          title: "Función Combinada",
+          functions: [
+            'A AND (B OR C)',
+            '(A OR B) AND C',
+            'NOT(A AND B)',
+            'A XOR B XOR C'
+          ],
+          generator: (func) => ({
+            title: `Expresión: ${func}`,
+            description: `Implementa la función lógica compleja: ${func}`,
+            requirements: {
+              gates: this.extractGatesFromFunction(func),
+              inputs: this.extractInputsFromFunction(func),
+              minConnections: 3,
+              maxGates: 4
+            },
+            points: 25,
+            hint: `Descompón ${func} en operaciones básicas`,
+            templateId: 'combined-function'
+          })
+        }
+      ]
+    }
+
+    const difficultyTemplates = templates[difficulty] || templates.easy
+    const template = difficultyTemplates[Math.floor(Math.random() * difficultyTemplates.length)]
+    
+    let challengeData
+    if (template.gates) {
+      const gate = template.gates[Math.floor(Math.random() * template.gates.length)]
+      challengeData = template.generator(gate)
+    } else if (template.functions) {
+      const func = template.functions[Math.floor(Math.random() * template.functions.length)]
+      challengeData = template.generator(func)
+    } else {
+      challengeData = template.generator()
+    }
+
+    return {
+      id: `challenge-${Date.now()}-${id}`,
+      category: 'basic',
+      difficulty,
+      ...challengeData,
+      generated: true,
+      timestamp: new Date().toISOString()
+    }
+  }
+
+  // 🔧 FUNCIONES AUXILIARES
+  calculateGateOutput(gate, inputs) {
+    switch (gate) {
+      case 'AND': return inputs.every(x => x === 1) ? 1 : 0
+      case 'OR': return inputs.some(x => x === 1) ? 1 : 0
+      case 'NOT': return inputs[0] === 1 ? 0 : 1
+      case 'NAND': return inputs.every(x => x === 1) ? 0 : 1
+      case 'NOR': return inputs.some(x => x === 1) ? 0 : 1
+      case 'XOR': return inputs.filter(x => x === 1).length % 2 === 1 ? 1 : 0
+      case 'XNOR': return inputs.filter(x => x === 1).length % 2 === 0 ? 1 : 0
+      default: return 0
+    }
+  }
+
+  getGateExplanation(gate) {
+    const explanations = {
+      'AND': 'produce 1 solo cuando todas las entradas son 1',
+      'OR': 'produce 1 cuando al menos una entrada es 1',
+      'NOT': 'invierte la entrada (0→1, 1→0)',
+      'NAND': 'es lo contrario de AND (NOT-AND)',
+      'NOR': 'es lo contrario de OR (NOT-OR)',
+      'XOR': 'produce 1 cuando las entradas son diferentes'
+    }
+    return explanations[gate] || ''
+  }
+
+  getGateHint(gate) {
+    const hints = {
+      'AND': 'requiere que TODAS las entradas sean 1',
+      'OR': 'necesita que AL MENOS UNA entrada sea 1',
+      'NOT': 'cambia 0 por 1 y viceversa',
+      'NAND': 'es AND seguido de NOT',
+      'NOR': 'es OR seguido de NOT',
+      'XOR': 'es 1 cuando las entradas difieren'
+    }
+    return hints[gate] || ''
+  }
+
+  shuffleWithCorrect(options) {
+    const correct = options[0]
+    const shuffled = [...options].sort(() => Math.random() - 0.5)
+    return {
+      options: shuffled,
+      correct: shuffled.indexOf(correct)
+    }
+  }
+
+  getWrongSymbols(correctSymbol) {
+    const allSymbols = ['&', '≥1', '1', '=1', '+', '⊕']
+    return allSymbols.filter(s => s !== correctSymbol).slice(0, 3)
+  }
+
+  getCombinedGateFunction(gate1, gate2) {
+    const combinations = {
+      'AND-NOT': 'NAND',
+      'OR-NOT': 'NOR',
+      'XOR-NOT': 'XNOR',
+      'NAND-NAND': 'AND',
+      'NOR-NOR': 'OR'
+    }
+    return combinations[`${gate1}-${gate2}`] || `${gate1} + ${gate2}`
+  }
+
+  getAlternativeCombinations(gate1, gate2) {
+    const alternatives = ['XOR', 'BUFFER', 'INVERTER']
+    return alternatives.filter(alt => alt !== this.getCombinedGateFunction(gate1, gate2)).slice(0, 3)
+  }
+
+  getUniversalGateImplementation(func, universalGate) {
+    const implementations = {
+      'AND-NAND': '2 compuertas NAND',
+      'OR-NAND': '3 compuertas NAND',
+      'XOR-NAND': '4 compuertas NAND',
+      'AND-NOR': '3 compuertas NOR',
+      'OR-NOR': '2 compuertas NOR',
+      'XOR-NOR': '5 compuertas NOR'
+    }
+    return implementations[`${func}-${universalGate}`] || `Múltiples ${universalGate}`
+  }
+
+  getWrongUniversalImplementations(func, universalGate) {
+    const correct = this.getUniversalGateImplementation(func, universalGate)
+    const number = parseInt(correct.split(' ')[0])
+    return [
+      `${number + 1} compuertas ${universalGate}`,
+      `${number - 1} compuertas ${universalGate}`,
+      `${number + 2} compuertas ${universalGate}`
+    ]
+  }
+
+  extractGatesFromFunction(func) {
+    const gates = []
+    if (func.includes('AND') && !func.includes('NAND')) gates.push('AND')
+    if (func.includes('OR') && !func.includes('NOR')) gates.push('OR')
+    if (func.includes('NOT')) gates.push('NOT')
+    if (func.includes('XOR')) gates.push('XOR')
+    if (func.includes('NAND')) gates.push('NAND')
+    if (func.includes('NOR')) gates.push('NOR')
+    return gates.length > 0 ? gates : ['AND']
+  }
+
+  extractInputsFromFunction(func) {
+    const inputs = []
+    const matches = func.match(/[A-Z]/g)
+    if (matches) {
+      return [...new Set(matches)].sort()
+    }
+    return ['A', 'B']
+  }
+
+  adjustDifficultyBasedOnProfile(difficulty, profile) {
+    const userLevel = profile.level
+    const adjustments = {
+      'beginner': {
+        'hard': 'medium',
+        'expert': 'hard'
+      },
+      'intermediate': {
+        'expert': 'hard'
+      },
+      'advanced': {},
+      'expert': {}
+    }
+
+    return adjustments[userLevel]?.[difficulty] || difficulty
+  }
+
+  // 💾 PERSISTENCIA DE DATOS
+  loadUserProfile() {
+    const defaultProfile = {
+      circuitStats: { 
+        totalQuizzes: 0, 
+        averageScore: 0,
+        challengesCompleted: 0,
+        challengeSuccessRate: 0
+      },
+      circuitPerformance: { 
+        gates: 50, 
+        algebra: 50, 
+        design: 50, 
+        applications: 50 
+      },
+      preferences: { 
+        difficulty: 'medium', 
+        favoriteGates: ['AND', 'OR'],
+        challengeTypes: ['basic']
+      }
+    }
+
+    try {
+      return JSON.parse(localStorage.getItem('circuitUserProfile') || JSON.stringify(defaultProfile))
+    } catch {
+      return defaultProfile
+    }
+  }
+
+  updateUserProfile(results) {
+    // Actualizar estadísticas de quiz
+    if (results.type === 'quiz') {
+      this.userProfile.circuitStats.totalQuizzes++
+      const newAverage = (this.userProfile.circuitStats.averageScore + results.scorePercentage) / 2
+      this.userProfile.circuitStats.averageScore = Math.round(newAverage)
+
+      // Actualizar rendimiento por área
+      results.questions.forEach(q => {
+        const isCorrect = results.userAnswers[q.id] === q.correct
+        const currentPerf = this.userProfile.circuitPerformance[q.type] || 50
+        
+        this.userProfile.circuitPerformance[q.type] = isCorrect 
+          ? Math.min(100, currentPerf + 3)
+          : Math.max(0, currentPerf - 2)
+      })
+    }
+    
+    // Actualizar estadísticas de retos
+    if (results.type === 'challenge') {
+      this.userProfile.circuitStats.challengesCompleted++
+      if (results.success) {
+        const currentRate = this.userProfile.circuitStats.challengeSuccessRate
+        const newRate = (currentRate + 100) / 2
+        this.userProfile.circuitStats.challengeSuccessRate = Math.round(newRate)
+      }
+    }
+
+    localStorage.setItem('circuitUserProfile', JSON.stringify(this.userProfile))
+  }
+
+  loadQuestionHistory() {
+    try {
+      return JSON.parse(localStorage.getItem('circuitQuestionHistory') || '[]')
+    } catch {
+      return []
+    }
+  }
+
+  updateQuestionHistory(questions) {
+    this.questionHistory.push(...questions.map(q => ({
+      id: q.id,
+      type: q.type,
+      difficulty: q.difficulty,
+      timestamp: q.timestamp
+    })))
+    
+    // Mantener solo las últimas 100 preguntas
+    if (this.questionHistory.length > 100) {
+      this.questionHistory = this.questionHistory.slice(-100)
+    }
+    
+    localStorage.setItem('circuitQuestionHistory', JSON.stringify(this.questionHistory))
+  }
+
+  loadChallengeHistory() {
+    try {
+      return JSON.parse(localStorage.getItem('circuitChallengeHistory') || '[]')
+    } catch {
+      return []
+    }
+  }
+
+  updateChallengeHistory(challenges) {
+    const challengeRecords = challenges.map(c => ({
+      id: c.id,
+      category: c.category,
+      difficulty: c.difficulty,
+      timestamp: c.timestamp,
+      completed: false,
+      success: false
+    }))
+    
+    this.challengeHistory.push(...challengeRecords)
+    
+    // Mantener solo los últimos 50 retos
+    if (this.challengeHistory.length > 50) {
+      this.challengeHistory = this.challengeHistory.slice(-50)
+    }
+    
+    localStorage.setItem('circuitChallengeHistory', JSON.stringify(this.challengeHistory))
+  }
+
+  updateChallengeResult(challengeId, success) {
+    const challenge = this.challengeHistory.find(c => c.id === challengeId)
+    if (challenge) {
+      challenge.completed = true
+      challenge.success = success
+      localStorage.setItem('circuitChallengeHistory', JSON.stringify(this.challengeHistory))
+    }
+  }
+
+  // 📈 ESTADÍSTICAS Y ANÁLISIS
+  getDetailedCircuitStats() {
+    return {
+      profile: this.userProfile,
+      strengths: this.getCircuitStrengths(),
+      weaknesses: this.getCircuitWeaknesses(),
+      recommendations: this.getCircuitRecommendations(),
+      progressTrend: this.calculateCircuitProgress()
+    }
+  }
+
+  getCircuitStrengths() {
+    return Object.entries(this.userProfile.circuitPerformance)
+      .filter(([_, score]) => score > 75)
+      .map(([area]) => ({
+        area,
+        score: this.userProfile.circuitPerformance[area],
+        description: this.getAreaDescription(area)
+      }))
+  }
+
+  getCircuitWeaknesses() {
+    return Object.entries(this.userProfile.circuitPerformance)
+      .filter(([_, score]) => score < 60)
+      .map(([area]) => ({
+        area,
+        score: this.userProfile.circuitPerformance[area],
+        description: this.getAreaDescription(area)
+      }))
+  }
+
+  getAreaDescription(area) {
+    const descriptions = {
+      gates: 'Conocimiento de compuertas lógicas básicas',
+      algebra: 'Álgebra booleana y simplificación',
+      design: 'Diseño de circuitos complejos',
+      applications: 'Aplicaciones prácticas de circuitos'
+    }
+    return descriptions[area] || area
+  }
+
+  getCircuitRecommendations() {
+    const weaknesses = this.getCircuitWeaknesses()
+    
+    return weaknesses.map(weakness => {
+      const recommendations = {
+        gates: 'Practica con las tablas de verdad de cada compuerta',
+        algebra: 'Estudia las leyes de De Morgan y simplificación',
+        design: 'Intenta diseñar sumadores y decodificadores',
+        applications: 'Conecta los circuitos con ejemplos del mundo real'
+      }
+      
+      return {
+        area: weakness.area,
+        message: recommendations[weakness.area],
+        priority: weakness.score < 40 ? 'high' : 'medium',
+        suggestedActions: this.getSuggestedActions(weakness.area)
+      }
+    })
+  }
+
+  getSuggestedActions(area) {
+    const actions = {
+      gates: [
+        'Completa 5 preguntas sobre compuertas básicas',
+        'Practica con simulaciones interactivas',
+        'Memoriza las tablas de verdad principales'
+      ],
+      algebra: [
+        'Resuelve ejercicios de simplificación',
+        'Practica las leyes de De Morgan',
+        'Usa mapas de Karnaugh'
+      ],
+      design: [
+        'Diseña un sumador completo',
+        'Crea un decodificador 2 a 4',
+        'Intenta optimizar circuitos existentes'
+      ],
+      applications: [
+        'Estudia casos de uso reales',
+        'Conecta circuitos con programación',
+        'Explora arquitectura de computadores'
+      ]
+    }
+    
+    return actions[area] || ['Práctica regular con ejercicios variados']
+  }
+
+  calculateCircuitProgress() {
+    const history = this.questionHistory.slice(-20) // Últimas 20 preguntas
+    if (history.length < 5) return 'insufficient_data'
+    
+    const recent = history.slice(-10)
+    const previous = history.slice(-20, -10)
+    
+    const recentAvg = recent.reduce((sum, q) => sum + (q.correct ? 100 : 0), 0) / recent.length
+    const previousAvg = previous.reduce((sum, q) => sum + (q.correct ? 100 : 0), 0) / previous.length
+    
+    if (recentAvg > previousAvg + 10) return 'improving'
+    if (recentAvg < previousAvg - 10) return 'declining'
+    return 'stable'
+  }
+
+  // 🎯 VALIDACIÓN DE RETOS
+  validateCircuitChallenge(challenge, circuit) {
+    const validation = {
+      valid: true,
+      errors: [],
+      score: 0,
+      maxScore: challenge.points || 10
+    }
+
+    // Validar compuertas requeridas
+    if (challenge.requirements.gates) {
+      const requiredGates = challenge.requirements.gates
+      const usedGates = circuit.gates || []
+      
+      const hasAllRequired = requiredGates.every(gate => 
+        usedGates.some(used => used.type === gate)
+      )
+      
+      if (!hasAllRequired) {
+        validation.errors.push(`Faltan compuertas requeridas: ${requiredGates.join(', ')}`)
+        validation.valid = false
+      } else {
+        validation.score += Math.floor(validation.maxScore * 0.4)
+      }
+    }
+
+    // Validar entradas requeridas
+    if (challenge.requirements.inputs) {
+      const requiredInputs = challenge.requirements.inputs
+      const usedInputs = circuit.inputs || []
+      
+      const hasAllInputs = requiredInputs.every(input => 
+        usedInputs.includes(input)
+      )
+      
+      if (!hasAllInputs) {
+        validation.errors.push(`Faltan entradas requeridas: ${requiredInputs.join(', ')}`)
+        validation.valid = false
+      } else {
+        validation.score += Math.floor(validation.maxScore * 0.3)
+      }
+    }
+
+    // Validar número máximo de compuertas
+    if (challenge.requirements.maxGates) {
+      const maxGates = challenge.requirements.maxGates
+      const gateCount = circuit.gates ? circuit.gates.length : 0
+      
+      if (gateCount > maxGates) {
+        validation.errors.push(`Demasiadas compuertas: ${gateCount}/${maxGates}`)
+        validation.valid = false
+      } else {
+        validation.score += Math.floor(validation.maxScore * 0.2)
+      }
+    }
+
+    // Validar conexiones mínimas
+    if (challenge.requirements.minConnections) {
+      const minConnections = challenge.requirements.minConnections
+      const connectionCount = circuit.connections ? circuit.connections.length : 0
+      
+      if (connectionCount < minConnections) {
+        validation.errors.push(`Conexiones insuficientes: ${connectionCount}/${minConnections}`)
+        validation.valid = false
+      } else {
+        validation.score += Math.floor(validation.maxScore * 0.1)
+      }
+    }
+
+    // Bonus por funcionalidad correcta
+    if (validation.valid && this.verifyCircuitFunctionality(challenge, circuit)) {
+      validation.score = validation.maxScore // Puntuación completa
+    }
+
+    return validation
+  }
+
+  verifyCircuitFunctionality(challenge, circuit) {
+    // Implementar verificación funcional específica según el tipo de reto
+    if (challenge.truthTable) {
+      return this.verifyTruthTable(circuit, challenge.truthTable)
+    }
+    
+    if (challenge.expression) {
+      return this.verifyBooleanExpression(circuit, challenge.expression)
+    }
+    
+    // Verificación básica: si tiene las partes requeridas, probablemente funciona
+    return true
+  }
+
+  verifyTruthTable(circuit, expectedTable) {
+    // Simular el circuito con todas las combinaciones de entrada
+    // y comparar con la tabla de verdad esperada
+    // Esta es una implementación simplificada
+    return expectedTable.length > 0
+  }
+
+  verifyBooleanExpression(circuit, expression) {
+    // Verificar que el circuito implementa la expresión booleana
+    // Esta es una implementación simplificada
+    return expression.length > 0
+  }
+}
+
+// 📊 ANALIZADOR DE RENDIMIENTO PARA CIRCUITOS
+class CircuitPerformanceAnalyzer {
+  analyzeQuizResults(questions, userAnswers) {
+    const analysis = {
+      totalQuestions: questions.length,
+      correctAnswers: 0,
+      byType: {},
+      byDifficulty: {},
+      commonMistakes: [],
+      strongAreas: [],
+      improvementAreas: []
+    }
+
+    questions.forEach(question => {
+      const isCorrect = userAnswers[question.id] === question.correct
+      
+      if (isCorrect) analysis.correctAnswers++
+
+      // Análisis por tipo
+      if (!analysis.byType[question.type]) {
+        analysis.byType[question.type] = { correct: 0, total: 0 }
+      }
+      analysis.byType[question.type].total++
+      if (isCorrect) analysis.byType[question.type].correct++
+
+      // Análisis por dificultad
+      if (!analysis.byDifficulty[question.difficulty]) {
+        analysis.byDifficulty[question.difficulty] = { correct: 0, total: 0 }
+      }
+      analysis.byDifficulty[question.difficulty].total++
+      if (isCorrect) analysis.byDifficulty[question.difficulty].correct++
+
+      // Identificar errores comunes
+      if (!isCorrect) {
+        this.identifyCommonMistake(question, userAnswers[question.id], analysis.commonMistakes)
+      }
+    })
+
+    // Identificar áreas fuertes y de mejora
+    Object.entries(analysis.byType).forEach(([type, stats]) => {
+      const percentage = (stats.correct / stats.total) * 100
+      if (percentage >= 80) {
+        analysis.strongAreas.push({
+          area: type,
+          percentage,
+          message: `Excelente dominio en ${type}`
+        })
+      } else if (percentage < 60) {
+        analysis.improvementAreas.push({
+          area: type,
+          percentage,
+          message: `Necesitas reforzar ${type}`,
+          recommendation: this.getAreaRecommendation(type)
+        })
+      }
+    })
+
+    return analysis
+  }
+
+  identifyCommonMistake(question, userAnswer, mistakes) {
+    // Analizar patrones de errores comunes
+    const mistakeTypes = {
+      'gates': this.analyzeGateMistake,
+      'algebra': this.analyzeAlgebraMistake,
+      'design': this.analyzeDesignMistake
+    }
+
+    const analyzer = mistakeTypes[question.type]
+    if (analyzer) {
+      const mistake = analyzer(question, userAnswer)
+      if (mistake) {
+        mistakes.push(mistake)
+      }
+    }
+  }
+
+  analyzeGateMistake(question, userAnswer) {
+    if (question.question.includes('compuerta AND') && userAnswer !== question.correct) {
+      return {
+        type: 'gate_confusion',
+        message: 'Confusión con la lógica AND',
+        suggestion: 'Recuerda: AND requiere que TODAS las entradas sean 1'
+      }
+    }
+    return null
+  }
+
+  analyzeAlgebraMistake(question, userAnswer) {
+    if (question.question.includes('De Morgan')) {
+      return {
+        type: 'demorgan_error',
+        message: 'Error en la aplicación de De Morgan',
+        suggestion: 'NOT(A AND B) = NOT A OR NOT B'
+      }
+    }
+    return null
+  }
+
+  analyzeDesignMistake(question, userAnswer) {
+    return {
+      type: 'design_complexity',
+      message: 'Error en diseño de circuitos',
+      suggestion: 'Descompón el problema en partes más simples'
+    }
+  }
+
+  getAreaRecommendation(area) {
+    const recommendations = {
+      gates: "Estudia las tablas de verdad y practica con simuladores",
+      algebra: "Repasa las leyes booleanas fundamentales y De Morgan",
+      design: "Practica con circuitos básicos antes de los complejos",
+      applications: "Conecta la teoría con ejemplos prácticos del mundo real"
+    }
+    
+    return recommendations[area] || "Continúa practicando regularmente"
+  }
+
+  analyzeChallengeResults(challenges, results) {
+    return {
+      totalChallenges: challenges.length,
+      completed: results.filter(r => r.completed).length,
+      successful: results.filter(r => r.success).length,
+      averageScore: this.calculateAverageScore(results),
+      timeAnalysis: this.analyzeCompletionTimes(results),
+      difficultyProgression: this.analyzeDifficultyProgression(results)
+    }
+  }
+
+  calculateAverageScore(results) {
+    const scores = results.filter(r => r.score !== undefined).map(r => r.score)
+    return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0
+  }
+
+  analyzeCompletionTimes(results) {
+    const times = results.filter(r => r.completionTime).map(r => r.completionTime)
+    if (times.length === 0) return { average: 0, trend: 'no_data' }
+    
+    const average = times.reduce((a, b) => a + b, 0) / times.length
+    const recent = times.slice(-5)
+    const earlier = times.slice(0, -5)
+    
+    let trend = 'stable'
+    if (recent.length > 0 && earlier.length > 0) {
+      const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length
+      const earlierAvg = earlier.reduce((a, b) => a + b, 0) / earlier.length
+      
+      if (recentAvg < earlierAvg * 0.8) trend = 'improving'
+      else if (recentAvg > earlierAvg * 1.2) trend = 'slower'
+    }
+    
+    return { average, trend }
+  }
+
+  analyzeDifficultyProgression(results) {
+    const progression = results.map(r => ({
+      difficulty: r.difficulty,
+      success: r.success,
+      timestamp: r.timestamp
+    })).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    
+    return {
+      canProgress: this.shouldProgressDifficulty(progression),
+      recommendation: this.getDifficultyRecommendation(progression),
+      currentLevel: this.getCurrentMasteryLevel(progression)
+    }
+  }
+
+  shouldProgressDifficulty(progression) {
+    const recent = progression.slice(-5)
+    const easySuccess = recent.filter(p => p.difficulty === 'easy' && p.success).length
+    const mediumSuccess = recent.filter(p => p.difficulty === 'medium' && p.success).length
+    
+    return easySuccess >= 3 || mediumSuccess >= 2
+  }
+
+  getDifficultyRecommendation(progression) {
+    const recent = progression.slice(-10)
+    const successRate = recent.filter(p => p.success).length / recent.length
+    
+    if (successRate > 0.8) return 'increase_difficulty'
+    if (successRate < 0.4) return 'decrease_difficulty'
+    return 'maintain_level'
+  }
+
+  getCurrentMasteryLevel(progression) {
+    const recentSuccess = progression.slice(-10).filter(p => p.success).length
+    
+    if (recentSuccess >= 8) return 'expert'
+    if (recentSuccess >= 6) return 'advanced'  
+    if (recentSuccess >= 4) return 'intermediate'
+    return 'beginner'
+  }
+}
+
+// Exportar instancia singleton
+export const circuitQuestionGenerator = new CircuitQuestionGenerator()
+export default circuitQuestionGenerator

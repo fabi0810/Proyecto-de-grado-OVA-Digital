@@ -1,6 +1,5 @@
 // src/utils/advancedQuestionGenerator.js
 
-// 🧠 SISTEMA INTELIGENTE SIN API - Completamente gratuito
 export class AdvancedQuestionGenerator {
     constructor() {
       this.userProfile = this.loadUserProfile()
@@ -8,7 +7,6 @@ export class AdvancedQuestionGenerator {
       this.performanceAnalyzer = new PerformanceAnalyzer()
     }
   
-    // 🎯 GENERADOR CON INTELIGENCIA ADAPTATIVA
     generateAdaptiveQuiz(mode, count = 5) {
       const userLevel = this.determineUserLevel()
       const weakAreas = this.identifyWeakAreas()
@@ -64,7 +62,6 @@ export class AdvancedQuestionGenerator {
         }
       }
   
-      // Guardar en historial para futura adaptación
       this.updateQuestionHistory(questions)
       return questions
     }

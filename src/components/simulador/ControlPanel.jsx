@@ -21,7 +21,7 @@ const ControlPanel = ({
     if (circuitName && circuitName.trim()) {
       onSaveCircuit(circuitName.trim())
     }
-  }
+  } 
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -52,7 +52,7 @@ const ControlPanel = ({
         </div>
       </div>
 
-      {/* Controles de entrada */}
+      
       <div className="mb-4">
         <h4 className="text-sm font-semibold text-gray-700 mb-3">
           Valores de Entrada
@@ -66,8 +66,8 @@ const ControlPanel = ({
                   onClick={() => onInputChange(name, 0)}
                   className={`w-8 h-8 rounded-full border-2 font-bold text-sm transition-all duration-200 ${
                     value === 0 
-                      ? 'bg-red-500 border-red-600 text-white shadow-md' 
-                      : 'bg-gray-200 border-gray-400 text-gray-600 hover:bg-red-100'
+                      ? 'bg-red-500 border-yellow-600 text-white shadow-md' 
+                      : 'bg-gray-200 border-gray-400 text-blue-600 hover:bg-yellow-100'
                   }`}
                 >
                   0

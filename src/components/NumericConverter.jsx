@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import StepByStepConverter from './convertidor/StepByStepConverter'
 import TheoryExplainer from './convertidor/TheoryExplainer'
 import InteractiveLab from './convertidor/InteractiveLab'
-import QuizSystem from './convertidor/QuizSystem'
 
 function NumericConverter() {
   const [activeTab, setActiveTab] = useState('converter')

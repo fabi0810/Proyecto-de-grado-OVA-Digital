@@ -518,9 +518,9 @@ const QuizSystem = () => {
             <span className="text-2xl">🧠</span>
           </div>
         </div>
-        <h3 className="text-lg font-semibold text-gray-700 mt-4 mb-2">Generando Quiz Personalizado</h3>
+        <h3 className="text-lg font-semibold text-gray-700 mt-4 mb-2">Generando Quiz </h3>
         <p className="text-sm text-gray-500 text-center max-w-md">
-          Creando preguntas únicas adaptadas a tu nivel...
+          Creando preguntas ...
         </p>
         <div className="mt-4 flex space-x-1">
           {[0,1,2,3].map(i => (
@@ -540,10 +540,10 @@ const QuizSystem = () => {
       <div className="space-y-6">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            🎯 Sistema de Evaluación Inteligente
+            🎯 Sistema de Quiz
           </h2>
           <p className="text-gray-600">
-            Quiz dinámico con preguntas generadas algorítmicamente - ¡Siempre diferente!
+            Quiz para practicar y evaluar tus conocimientos.
           </p>
         </div>
 
@@ -552,31 +552,30 @@ const QuizSystem = () => {
             <div className="text-4xl mb-4">📚</div>
             <h3 className="text-xl font-semibold mb-3">Modo Práctica</h3>
             <p className="text-gray-600 mb-4">
-              5 preguntas generadas dinámicamente con números y opciones únicas cada vez.
+             Pon en practica tus conocimientos.
             </p>
             <div className="text-sm text-gray-500 mb-4">
               ✓ Sin tiempo límite<br/>
-              ✓ Feedback inmediato<br/>
+              ✓ Preguntas sobre el tema<br/>
               ✓ Preguntas adaptativas
             </div>
             <button
               onClick={() => startQuiz('practice')}
               className="btn-primary w-full"
             >
-              🚀 Comenzar Práctica
+            🚀 Comenzar Práctica
             </button>
-          </div>
-
+          </div>    
           <div className="card text-center border-2 border-red-200 hover:border-red-400 transition-colors">
             <div className="text-4xl mb-4">🎯</div>
             <h3 className="text-xl font-semibold mb-3">Modo Examen</h3>
             <p className="text-gray-600 mb-4">
-              8 preguntas con dificultad progresiva. Tiempo límite de 10 minutos.
+              8 preguntas con dificultad progresiva.Tiempo límite de 10 minutos.
             </p>
             <div className="text-sm text-gray-500 mb-4">
               ✓ Tiempo límite: 10 min<br/>
               ✓ Dificultad progresiva<br/>
-              ✓ Evaluación completa
+              ✓ Evaluación completa<br/>
             </div>
             <button
               onClick={() => startQuiz('exam')}
@@ -589,13 +588,13 @@ const QuizSystem = () => {
 
         <div className="card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
           <h3 className="font-semibold text-blue-900 mb-3 text-center">
-            🧬 Tecnología de Generación Inteligente
+            🧬 Quiz con preguntas dinamicas y adaptadas a tu nivel.
           </h3>
           <div className="grid md:grid-cols-3 gap-4 text-sm">
             <div className="bg-white p-3 rounded border text-center">
               <div className="text-2xl mb-2">🎲</div>
-              <div className="font-semibold text-blue-800">Algoritmos Dinámicos</div>
-              <div className="text-blue-600">Preguntas generadas con números aleatorios</div>
+              <div className="font-semibold text-blue-800">Preguntas dinamicas</div>
+              <div className="text-blue-600">Preguntas aleatorias</div>
             </div>
             <div className="bg-white p-3 rounded border text-center">
               <div className="text-2xl mb-2">🎯</div>
@@ -604,7 +603,7 @@ const QuizSystem = () => {
             </div>
             <div className="bg-white p-3 rounded border text-center">
               <div className="text-2xl mb-2">♾️</div>
-              <div className="font-semibold text-green-800">Infinitas Variaciones</div>
+              <div className="font-semibold text-green-800">Modo Examen para practicar para el parcial</div>
               <div className="text-green-600">Miles de combinaciones posibles</div>
             </div>
           </div>
