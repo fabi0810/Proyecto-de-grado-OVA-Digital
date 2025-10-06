@@ -570,7 +570,7 @@ const QuizSystem = () => {
             <div className="text-4xl mb-4">🎯</div>
             <h3 className="text-xl font-semibold mb-3">Modo Examen</h3>
             <p className="text-gray-600 mb-4">
-              8 preguntas con dificultad progresiva.Tiempo límite de 10 minutos.
+              8 preguntas con dificultad progresiva.
             </p>
             <div className="text-sm text-gray-500 mb-4">
               ✓ Tiempo límite: 10 min<br/>

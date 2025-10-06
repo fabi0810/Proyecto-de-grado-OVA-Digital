@@ -22,7 +22,7 @@ import ChallengeSystem from './simulador/ChallengeSystem'
 import CircuitAnalyzer from './simulador/CircuitAnalyzer'
 import ResultsDisplay from './simulador/ResultsDisplay'
 import TheoryModule from './simulador/TheoryModule'
-import AdvancedQuestionGenerator from './simulador/AdvancedQuestionGenerator'
+import AdvancedQuestionGenerator from './simulador/EvaluacionModulo'
 
 // ============= COMPONENTE PRINCIPAL =============
 function CircuitSimulator() {

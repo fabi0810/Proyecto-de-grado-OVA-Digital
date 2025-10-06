@@ -16,10 +16,8 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
     const newSteps = []
     
     try {
-      // Validar entrada
       if (!value.trim()) return []
       
-      // Convertir a decimal primero
       const decimalValue = parseInt(value, fromBase)
       if (isNaN(decimalValue)) {
         newSteps.push({
@@ -31,7 +29,6 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
         return newSteps
       }
 
-      // Paso 1: Explicar el valor de entrada
       newSteps.push({
         type: 'input',
         title: 'Valor de Entrada',
@@ -40,7 +37,6 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
         decimalValue: decimalValue
       })
 
-      // Paso 2: Conversión a decimal (si no es decimal)
       if (fromBase !== 10) {
         newSteps.push({
           type: 'toDecimal',
@@ -52,7 +48,6 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
         })
       }
 
-      // Paso 3: Conversiones a otras bases
       const targetBases = [2, 8, 10, 16].filter(base => base !== fromBase)
       
       targetBases.forEach(targetBase => {
@@ -68,7 +63,6 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
         })
       })
 
-      // Paso 4: Resumen final
       newSteps.push({
         type: 'summary',
         title: 'Resumen de Conversiones',
@@ -301,4 +295,3 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
 }
 
 export default StepByStepConverter
-

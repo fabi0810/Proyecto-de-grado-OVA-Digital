@@ -1,309 +1,263 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { booleanParser } from '../utils/BooleanExpressionParser'
+import { booleanSimplifier } from '../utils/BooleanSimplifier'
+import { karnaughMapper } from '../utils/KarnaughMapper'
+import BooleanExpressionEditor from './algebra/BooleanExpressionEditor'
+import TruthTableGenerator from './algebra/TruthTableGenerator'
+import SimplificationWizard from './algebra/SimplificationWizard'
+import KarnaughMapper from './algebra/KarnaughMapper'
+import ExerciseEngine from './algebra/ExerciseEngine'
+import ProgressTracker from './algebra/ProgressTracker'
 
 function BooleanAlgebra() {
+  const [activeTab, setActiveTab] = useState('editor')
   const [expression, setExpression] = useState('')
-  const [variables, setVariables] = useState([])
+  const [parsedExpression, setParsedExpression] = useState(null)
   const [truthTable, setTruthTable] = useState([])
-  const [simplifiedExpression, setSimplifiedExpression] = useState('')
+  const [simplificationResult, setSimplificationResult] = useState(null)
+  const [karnaughMap, setKarnaughMap] = useState(null)
+  const [userProgress, setUserProgress] = useState({})
 
-  const operators = ['AND', 'OR', 'NOT', '(', ')']
-  const commonExpressions = [
-    'A AND B',
-    'A OR B',
-    'NOT A',
-    '(A AND B) OR (NOT A AND C)',
-    'A AND (B OR C)',
-    '(A OR B) AND (NOT A OR C)'
+  // Cargar progreso del usuario
+  useEffect(() => {
+    const savedProgress = localStorage.getItem('booleanAlgebraProgress')
+    if (savedProgress) {
+      setUserProgress(JSON.parse(savedProgress))
+    }
+  }, [])
+
+  // Guardar progreso del usuario
+  const updateProgress = (newProgress) => {
+    const updatedProgress = { ...userProgress, ...newProgress }
+    setUserProgress(updatedProgress)
+    localStorage.setItem('booleanAlgebraProgress', JSON.stringify(updatedProgress))
+  }
+
+  // Manejar cambio de expresión
+  const handleExpressionChange = (newExpression) => {
+    setExpression(newExpression)
+    
+    if (newExpression.trim()) {
+      const parseResult = booleanParser.parse(newExpression)
+      setParsedExpression(parseResult)
+      
+      if (parseResult.success) {
+        // Generar tabla de verdad
+        const table = booleanParser.generateTruthTable(parseResult.ast, parseResult.variables)
+        setTruthTable(table)
+        
+        // Generar mapa de Karnaugh
+        try {
+          const map = karnaughMapper.generateMap(newExpression, parseResult.variables)
+          setKarnaughMap(map)
+        } catch (error) {
+          console.error('Error generando mapa de Karnaugh:', error)
+          setKarnaughMap(null)
+        }
+        
+        // Actualizar progreso
+        updateProgress({
+          expressionsTried: (userProgress.expressionsTried || 0) + 1,
+          lastExpression: newExpression
+        })
+      }
+    } else {
+      setParsedExpression(null)
+      setTruthTable([])
+      setKarnaughMap(null)
+    }
+  }
+
+  // Manejar simplificación
+  const handleSimplification = (options = {}) => {
+    if (!parsedExpression || !parsedExpression.success) {
+      return
+    }
+
+    const result = booleanSimplifier.simplify(expression, options)
+    setSimplificationResult(result)
+    
+    if (result.success) {
+      updateProgress({
+        simplificationsAttempted: (userProgress.simplificationsAttempted || 0) + 1,
+        lastSimplification: result.simplifiedExpression
+      })
+    }
+  }
+
+  // Manejar ejercicios
+  const handleExerciseComplete = (exerciseResult) => {
+    updateProgress({
+      exercisesCompleted: (userProgress.exercisesCompleted || 0) + 1,
+      totalScore: (userProgress.totalScore || 0) + exerciseResult.score,
+      lastExercise: exerciseResult
+    })
+  }
+
+  const tabs = [
+    { id: 'editor', label: 'Editor de Expresiones', icon: '✏️' },
+    { id: 'truth-table', label: 'Tabla de Verdad', icon: '📊' },
+    { id: 'simplification', label: 'Simplificación', icon: '🧮' },
+    { id: 'karnaugh', label: 'Mapa de Karnaugh', icon: '🗺️' },
+    { id: 'exercises', label: 'Ejercicios', icon: '🎯' },
+    { id: 'progress', label: 'Progreso', icon: '📈' }
   ]
 
-  const extractVariables = (expr) => {
-    const vars = new Set()
-    const regex = /[A-Z]/g
-    let match
-    while ((match = regex.exec(expr)) !== null) {
-      vars.add(match[0])
-    }
-    return Array.from(vars).sort()
-  }
-
-  const evaluateExpression = (expr, values) => {
-    // Reemplazar variables con valores
-    let evalExpr = expr
-    Object.entries(values).forEach(([varName, value]) => {
-      const regex = new RegExp(`\\b${varName}\\b`, 'g')
-      evalExpr = evalExpr.replace(regex, value ? 'true' : 'false')
-    })
-
-    // Reemplazar operadores con operadores de JavaScript
-    evalExpr = evalExpr
-      .replace(/\bAND\b/g, '&&')
-      .replace(/\bOR\b/g, '||')
-      .replace(/\bNOT\b/g, '!')
-
-    try {
-      return eval(evalExpr)
-    } catch (error) {
-      return false
-    }
-  }
-
-  const generateTruthTable = () => {
-    if (!expression.trim()) return
-
-    const vars = extractVariables(expression)
-    setVariables(vars)
-
-    if (vars.length === 0) return
-
-    const rows = Math.pow(2, vars.length)
-    const table = []
-
-    for (let i = 0; i < rows; i++) {
-      const row = {}
-      vars.forEach((varName, index) => {
-        row[varName] = (i & (1 << (vars.length - 1 - index))) !== 0
-      })
-      row.result = evaluateExpression(expression, row)
-      table.push(row)
-    }
-
-    setTruthTable(table)
-  }
-
-  const simplifyExpression = () => {
-    if (!expression.trim()) return
-
-    // Simplificaciones básicas
-    let simplified = expression
-      .replace(/\bA AND A\b/g, 'A')
-      .replace(/\bA OR A\b/g, 'A')
-      .replace(/\bA AND 1\b/g, 'A')
-      .replace(/\bA OR 0\b/g, 'A')
-      .replace(/\bA AND 0\b/g, '0')
-      .replace(/\bA OR 1\b/g, '1')
-      .replace(/\bNOT NOT A\b/g, 'A')
-
-    setSimplifiedExpression(simplified)
-  }
-
-  const loadExample = (example) => {
-    setExpression(example)
-    setTruthTable([])
-    setSimplifiedExpression('')
-  }
-
-  const clearAll = () => {
-    setExpression('')
-    setVariables([])
-    setTruthTable([])
-    setSimplifiedExpression('')
-  }
-
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Laboratorio de Álgebra de Boole
-        </h1>
-        <p className="text-gray-600">
-          Practica y resuelve expresiones booleanas con tablas de verdad y simplificación.
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+      {/* Header */}
+      <div className="bg-white shadow-lg border-b border-green-200">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gradient-uts mb-2">
+                Módulo 3: Álgebra Booleana
+              </h1>
+              <p className="text-gray-600">
+                Tablas de Verdad, Simplificación y Mapas de Karnaugh
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-gray-500 mb-1">Progreso General</div>
+              <div className="w-32 bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${Math.min(100, ((userProgress.expressionsTried || 0) + (userProgress.exercisesCompleted || 0)) * 5)}%` 
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Panel de Entrada */}
-        <div className="space-y-6">
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Expresión Booleana
-            </h3>
-            <textarea
-              value={expression}
-              onChange={(e) => setExpression(e.target.value)}
-              placeholder="Ingresa una expresión booleana (ej: A AND B OR NOT C)"
-              className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="container mx-auto px-4">
+          <nav className="flex space-x-1 overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? 'border-green-500 text-green-700 bg-green-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-lg">{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        {/* Editor de Expresiones */}
+        {activeTab === 'editor' && (
+          <div className="space-y-6">
+            <BooleanExpressionEditor
+              expression={expression}
+              onExpressionChange={handleExpressionChange}
+              parsedExpression={parsedExpression}
             />
-            
-            <div className="mt-4 space-y-2">
-              <button
-                onClick={generateTruthTable}
-                className="btn-primary w-full"
-              >
-                Generar Tabla de Verdad
-              </button>
-              
-              <button
-                onClick={simplifyExpression}
-                className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200"
-              >
-                Simplificar Expresión
-              </button>
-              
-              <button
-                onClick={clearAll}
-                className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200"
-              >
-                Limpiar Todo
-              </button>
-            </div>
           </div>
+        )}
 
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Operadores Disponibles
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {operators.map(op => (
-                <div key={op} className="px-3 py-2 bg-gray-100 rounded text-center font-mono text-sm">
-                  {op}
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-gray-600 mt-2">
-              Usa AND, OR, NOT para operadores lógicos
-            </p>
+        {/* Tabla de Verdad */}
+        {activeTab === 'truth-table' && (
+          <div className="space-y-6">
+            <TruthTableGenerator
+              expression={expression}
+              parsedExpression={parsedExpression}
+              truthTable={truthTable}
+              onExpressionChange={handleExpressionChange}
+            />
           </div>
+        )}
 
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Ejemplos Predefinidos
-            </h3>
-            <div className="space-y-2">
-              {commonExpressions.map((example, index) => (
-                <button
-                  key={index}
-                  onClick={() => loadExample(example)}
-                  className="w-full text-left px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 rounded border border-blue-200 transition-colors duration-200"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
+        {/* Simplificación */}
+        {activeTab === 'simplification' && (
+          <div className="space-y-6">
+            <SimplificationWizard
+              expression={expression}
+              parsedExpression={parsedExpression}
+              simplificationResult={simplificationResult}
+              onSimplification={handleSimplification}
+              onExpressionChange={handleExpressionChange}
+            />
           </div>
-        </div>
+        )}
 
-        {/* Resultados */}
-        <div className="space-y-6">
-          {simplifiedExpression && (
-            <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Expresión Simplificada
-              </h3>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="font-mono text-green-800 text-lg">
-                  {simplifiedExpression}
-                </p>
-              </div>
-            </div>
-          )}
+        {/* Mapa de Karnaugh */}
+        {activeTab === 'karnaugh' && (
+          <div className="space-y-6">
+            <KarnaughMapper
+              expression={expression}
+              parsedExpression={parsedExpression}
+              karnaughMap={karnaughMap}
+              onExpressionChange={handleExpressionChange}
+            />
+          </div>
+        )}
 
-          {truthTable.length > 0 && (
-            <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Tabla de Verdad
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      {variables.map(varName => (
-                        <th key={varName} className="border border-gray-300 px-3 py-2 text-center font-medium">
-                          {varName}
-                        </th>
-                      ))}
-                      <th className="border border-gray-300 px-3 py-2 text-center font-medium bg-blue-100">
-                        Resultado
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {truthTable.map((row, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        {variables.map(varName => (
-                          <td key={varName} className="border border-gray-300 px-3 py-2 text-center">
-                            <span className={`inline-block w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center ${
-                              row[varName]
-                                ? 'bg-green-500 text-white'
-                                : 'bg-red-500 text-white'
-                            }`}>
-                              {row[varName] ? '1' : '0'}
-                            </span>
-                          </td>
-                        ))}
-                        <td className="border border-gray-300 px-3 py-2 text-center">
-                          <span className={`inline-block w-6 h-6 rounded-full text-sm font-bold flex items-center justify-center ${
-                            row.result
-                              ? 'bg-green-500 text-white'
-                              : 'bg-red-500 text-white'
-                          }`}>
-                            {row.result ? '1' : '0'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Ejercicios */}
+        {activeTab === 'exercises' && (
+          <div className="space-y-6">
+            <ExerciseEngine
+              onExerciseComplete={handleExerciseComplete}
+              userProgress={userProgress}
+            />
+          </div>
+        )}
+
+        {/* Progreso */}
+        {activeTab === 'progress' && (
+          <div className="space-y-6">
+            <ProgressTracker
+              userProgress={userProgress}
+              expressionsTried={userProgress.expressionsTried || 0}
+              exercisesCompleted={userProgress.exercisesCompleted || 0}
+              simplificationsAttempted={userProgress.simplificationsAttempted || 0}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Información Educativa */}
-      <div className="mt-12">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
-          Leyes del Álgebra de Boole
-        </h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-2">Leyes de Identidad</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>A AND 1 = A</li>
-              <li>A OR 0 = A</li>
-              <li>A AND 0 = 0</li>
-              <li>A OR 1 = 1</li>
-            </ul>
-          </div>
-          
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-2">Leyes de Idempotencia</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>A AND A = A</li>
-              <li>A OR A = A</li>
-            </ul>
-          </div>
-          
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-2">Leyes de Complemento</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>A AND NOT A = 0</li>
-              <li>A OR NOT A = 1</li>
-              <li>NOT NOT A = A</li>
-            </ul>
-          </div>
-          
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-2">Leyes Distributivas</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>A AND (B OR C) = (A AND B) OR (A AND C)</li>
-              <li>A OR (B AND C) = (A OR B) AND (A OR C)</li>
-            </ul>
-          </div>
-          
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-2">Leyes de De Morgan</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>NOT (A AND B) = NOT A OR NOT B</li>
-              <li>NOT (A OR B) = NOT A AND NOT B</li>
-            </ul>
-          </div>
-          
-          <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-2">Leyes Conmutativas</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>A AND B = B AND A</li>
-              <li>A OR B = B OR A</li>
-            </ul>
+      {/* Footer con información del módulo */}
+      <div className="bg-gray-800 text-white py-8 mt-12">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Objetivos del Módulo</h3>
+              <ul className="space-y-2 text-sm">
+                <li>• Dominar el álgebra de Boole</li>
+                <li>• Generar tablas de verdad automáticamente</li>
+                <li>• Simplificar expresiones con teoremas</li>
+                <li>• Usar mapas de Karnaugh</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Teoremas Implementados</h3>
+              <ul className="space-y-2 text-sm">
+                <li>• Leyes de Identidad y Nulo</li>
+                <li>• Teoremas de DeMorgan</li>
+                <li>• Leyes de Absorción</li>
+                <li>• Teorema de Consenso</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Herramientas Disponibles</h3>
+              <ul className="space-y-2 text-sm">
+                <li>• Editor con validación en tiempo real</li>
+                <li>• Generador automático de tablas</li>
+                <li>• Simplificador paso a paso</li>
+                <li>• Mapas K interactivos</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

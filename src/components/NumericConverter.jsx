@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import StepByStepConverter from './convertidor/StepByStepConverter'
 import TheoryExplainer from './convertidor/TheoryExplainer'
 import InteractiveLab from './convertidor/InteractiveLab'
+import QuizSystem from './convertidor/QuizSystem'
 
 function NumericConverter() {
   const [activeTab, setActiveTab] = useState('converter')
@@ -12,17 +13,17 @@ function NumericConverter() {
   const [recommendations, setRecommendations] = useState([])
 
   const bases = [
-    { value: 2, label: 'Binario', prefix: '0b', color: 'bg-blue-100 text-blue-800' },
-    { value: 8, label: 'Octal', prefix: '0o', color: 'bg-green-100 text-green-800' },
-    { value: 10, label: 'Decimal', prefix: '', color: 'bg-purple-100 text-purple-800' },
-    { value: 16, label: 'Hexadecimal', prefix: '0x', color: 'bg-orange-100 text-orange-800' }
+    { value: 2, label: 'Binario',  color: 'bg-blue-100 text-blue-800' },
+    { value: 8, label: 'Octal',  color: 'bg-green-100 text-green-800' },
+    { value: 10, label: 'Decimal', color: 'bg-purple-100 text-purple-800' },
+    { value: 16, label: 'Hexadecimal', color: 'bg-orange-100 text-orange-800' }
   ]
 
   const tabs = [
     { id: 'theory', name: 'Teoría', icon: '📚', description: 'Conceptos y fundamentos' },
     { id: 'converter', name: 'Convertidor', icon: '🔄', description: 'Conversión rápida entre sistemas' },
     { id: 'stepbystep', name: 'Paso a Paso', icon: '📝', description: 'Aprende el proceso detallado' },
-    { id: 'lab', name: 'Laboratorio', icon: '🧪', description: 'Experimenta libremente' },
+    { id: 'lab', name: 'Desafío', icon: '🧪', description: 'Desafios sobre conversiones' },
     { id: 'quiz', name: 'Evaluación', icon: '🎯', description: 'Pon a prueba tus conocimientos' }
   ]
 
@@ -52,11 +53,10 @@ function NumericConverter() {
 
       setResults(newResults)
       
-      // Registrar actividad para el progreso
       setUserActivity({
         type: 'conversion',
         fromBase: fromBase,
-        toBase: 10, // Siempre convertimos a decimal primero
+        toBase: 10, 
         timestamp: new Date(),
         success: true
       })
@@ -264,7 +264,7 @@ function NumericConverter() {
             <div className="text-center">
               <div className="text-2xl mb-2">⚡</div>
               <div className="font-semibold">Velocidad</div>
-              <div className="text-gray-600">Respuesta &lt; 1 segundo</div>
+              <div className="text-gray-600">Rapida respuesta</div>
             </div>
             <div className="text-center">
               <div className="text-2xl mb-2">🧠</div>
