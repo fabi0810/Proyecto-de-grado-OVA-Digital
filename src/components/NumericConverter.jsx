@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import StepByStepConverter from './convertidor/StepByStepConverter'
-import TheoryExplainer from './convertidor/TheoryExplainer'
-import InteractiveLab from './convertidor/InteractiveLab'
-import QuizSystem from './convertidor/QuizSystem'
+import StepByStepConverter from './convertidor/ConvertidorPasoapaso'
+import TheoryExplainer from './convertidor/Teoria'
+import InteractiveLab from './convertidor/Laboratorio'
+import QuizSystem from './convertidor/Examen'
 
 function NumericConverter() {
   const [activeTab, setActiveTab] = useState('converter')
@@ -73,16 +73,9 @@ function NumericConverter() {
   }
 
   const handleInputChange = (e) => {
-    const value = e.target.value
-    setInputValue(value)
-    
-    // Auto-convertir si hay un valor
-    if (value.trim()) {
-      setTimeout(convertNumber, 300)
-    } else {
-      setResults({})
+    setInputValue(e.target.value)
     }
-  }
+  
 
   const handleStepComplete = (steps) => {
     // Registrar actividad cuando se completa una conversión paso a paso

@@ -13,19 +13,20 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 
 // Importar componentes separados
-import LogicGateNode from './simulador/LogicGateNode'
-import InputNode from './simulador/InputNode'
-import GatePalette from './simulador/GatePalette'
+import LogicGateNode from './simulador/LogicaNodos'
+import InputNode from './simulador/EntradaNodo'
+import GatePalette from './simulador/Paletasimulador'
 import ControlPanel from './simulador/ControlPanel'
-import TruthTableGenerator from './simulador/TruthTableGenerator'
-import ChallengeSystem from './simulador/ChallengeSystem'
-import CircuitAnalyzer from './simulador/CircuitAnalyzer'
-import ResultsDisplay from './simulador/ResultsDisplay'
-import TheoryModule from './simulador/TheoryModule'
+import TruthTableGenerator from './simulador/tabladeverdad'
+import ChallengeSystem from './simulador/DesafiosSimulador'
+import CircuitAnalyzer from './simulador/Circuitoanalizado'
+import ResultsDisplay from './simulador/ResultadoCircuito'
+import TheoryModule from './simulador/ModuloTeoria'
 import AdvancedQuestionGenerator from './simulador/EvaluacionModulo'
 
 // ============= COMPONENTE PRINCIPAL =============
 function CircuitSimulator() {
+  
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [reactFlowInstance, setReactFlowInstance] = useState(null)
