@@ -6,20 +6,30 @@ function KarnaughMapper({ expression, parsedExpression, karnaughMap, onExpressio
   const [selectedGroups, setSelectedGroups] = useState([])
   const [showGrouping, setShowGrouping] = useState(true)
   const [highlightedCell, setHighlightedCell] = useState(null)
+  const [dontCares, setDontCares] = useState('')
+  const [showSteps, setShowSteps] = useState(false)
 
   useEffect(() => {
     if (parsedExpression && parsedExpression.success) {
       try {
+        const dc = dontCares
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s !== '')
+          .map(n => parseInt(n))
+          .filter(n => !Number.isNaN(n))
         const map = karnaughMapper.generateMap(expression, parsedExpression.variables, {
           mode: mapMode,
-          showGroups: showGrouping
+          showGroups: showGrouping,
+          dontCares: dc,
+          enableSteps: showSteps
         })
         // El mapa se pasa como prop desde el componente padre
       } catch (error) {
         console.error('Error generando mapa de Karnaugh:', error)
       }
     }
-  }, [expression, parsedExpression, mapMode, showGrouping])
+  }, [expression, parsedExpression, mapMode, showGrouping, dontCares, showSteps])
 
   const handleCellClick = (row, col, cell) => {
     setHighlightedCell({ row, col, cell })
@@ -238,6 +248,27 @@ function KarnaughMapper({ expression, parsedExpression, karnaughMap, onExpressio
             />
             <span className="text-sm text-gray-700">Mostrar agrupaciones</span>
           </label>
+
+        <label className="flex items-center">
+          <span className="mr-2 text-sm text-gray-700">Don't-care (índices, coma):</span>
+          <input
+            type="text"
+            value={dontCares}
+            onChange={(e) => setDontCares(e.target.value)}
+            placeholder="p.ej. 3,5,7"
+            className="px-2 py-1 border border-gray-300 rounded text-sm w-40 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          />
+        </label>
+
+        <label className="flex items-center">
+          <input
+            type="checkbox"
+            checked={showSteps}
+            onChange={(e) => setShowSteps(e.target.checked)}
+            className="mr-2"
+          />
+          <span className="text-sm text-gray-700">Modo Paso a Paso</span>
+        </label>
         </div>
       </div>
 
@@ -298,11 +329,38 @@ function KarnaughMapper({ expression, parsedExpression, karnaughMap, onExpressio
                     <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
                       {group.size} celdas
                     </span>
+                    {group.essential && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">Esencial</span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-500">
                     {group.expression}
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pasos de agrupamiento */}
+      {showSteps && karnaughMap && karnaughMap.steps && karnaughMap.steps.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Proceso de Agrupamiento</h3>
+          <div className="space-y-2 text-sm">
+            {karnaughMap.steps.map((s, i) => (
+              <div key={i} className="p-3 bg-gray-50 border border-gray-200 rounded">
+                {s.action === 'candidate' && (
+                  <div>
+                    Candidato: rect({s.rect.h}x{s.rect.w}) en ({s.rect.r+1},{s.rect.c+1}) → {s.expression}
+                  </div>
+                )}
+                {s.action === 'select_essential' && (
+                  <div className="text-purple-700">Seleccionado esencial: grupo #{s.group+1}</div>
+                )}
+                {s.action === 'select_group' && (
+                  <div className="text-blue-700">Seleccionado: grupo #{s.group+1}</div>
+                )}
               </div>
             ))}
           </div>

@@ -5,6 +5,22 @@ function BooleanExpressionEditor({ expression, onExpressionChange, parsedExpress
   const [inputValue, setInputValue] = useState(expression)
   const [showHelp, setShowHelp] = useState(false)
   const [suggestions, setSuggestions] = useState([])
+  const [targetForm, setTargetForm] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('simplificationOptionsDefaults') || '{}')
+      return saved.targetForm || 'SOP'
+    } catch (_) {
+      return 'SOP'
+    }
+  })
+  const [useKarnaugh, setUseKarnaugh] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('simplificationOptionsDefaults') || '{}')
+      return saved.useKarnaugh !== undefined ? saved.useKarnaugh : true
+    } catch (_) {
+      return true
+    }
+  })
 
   useEffect(() => {
     setInputValue(expression)
@@ -49,6 +65,31 @@ function BooleanExpressionEditor({ expression, onExpressionChange, parsedExpress
     }, 0)
   }
 
+  const handleBackspace = () => {
+    const textarea = document.getElementById('expression-input')
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    if (start === 0 && end === 0) return
+    const deleteStart = start === end ? start - 1 : start
+    const newValue = inputValue.substring(0, Math.max(0, deleteStart)) + inputValue.substring(end)
+    setInputValue(newValue)
+    onExpressionChange(newValue)
+    setTimeout(() => {
+      const pos = Math.max(0, deleteStart)
+      textarea.focus()
+      textarea.setSelectionRange(pos, pos)
+    }, 0)
+  }
+
+  const handleEvaluate = () => {
+    if (parsedExpression && parsedExpression.success) {
+      console.log('Evaluación correcta')
+    } else {
+      const suggestions = booleanParser.getSuggestions(inputValue)
+      setSuggestions(suggestions)
+    }
+  }
+
   const clearExpression = () => {
     setInputValue('')
     onExpressionChange('')
@@ -77,6 +118,18 @@ function BooleanExpressionEditor({ expression, onExpressionChange, parsedExpress
     { symbol: ')', name: 'Cerrar', description: 'Paréntesis' }
   ]
 
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+  const operatorKeys = [
+    { label: 'x', value: 'x' },
+    { label: '*', value: '*' },
+    { label: '+', value: '+' },
+    { label: '¬', value: '¬' },
+    { label: "(", value: '(' },
+    { label: ")", value: ')' },
+    { label: '0', value: '0' },
+    { label: '1', value: '1' }
+  ]
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
@@ -92,6 +145,40 @@ function BooleanExpressionEditor({ expression, onExpressionChange, parsedExpress
 
       {/* Input Principal */}
       <div className="space-y-4">
+        {/* Preferencias rápidas SOP/POS y Karnaugh */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-700">Forma:</label>
+            <select
+              value={targetForm}
+              onChange={(e) => {
+                const v = e.target.value
+                setTargetForm(v)
+                const saved = JSON.parse(localStorage.getItem('simplificationOptionsDefaults') || '{}')
+                localStorage.setItem('simplificationOptionsDefaults', JSON.stringify({ ...saved, targetForm: v }))
+              }}
+              className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            >
+              <option value="SOP">SOP</option>
+              <option value="POS">POS</option>
+            </select>
+          </div>
+          <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useKarnaugh}
+              onChange={(e) => {
+                const v = e.target.checked
+                setUseKarnaugh(v)
+                const saved = JSON.parse(localStorage.getItem('simplificationOptionsDefaults') || '{}')
+                localStorage.setItem('simplificationOptionsDefaults', JSON.stringify({ ...saved, useKarnaugh: v }))
+              }}
+              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+            />
+            Usar Karnaugh
+          </label>
+        </div>
+
         <div className="relative">
           <label htmlFor="expression-input" className="block text-sm font-medium text-gray-700 mb-2">
             Expresión Booleana
@@ -127,6 +214,55 @@ function BooleanExpressionEditor({ expression, onExpressionChange, parsedExpress
             </button>
           ))}
         </div>
+
+      {/* Teclado Virtual */}
+      <div className="mt-2 space-y-2" aria-label="Teclado virtual">
+        <div className="grid grid-cols-8 sm:grid-cols-12 gap-2">
+          {letters.map((ch) => (
+            <button
+              key={ch}
+              onClick={() => insertSymbol(ch)}
+              className="py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-md text-sm font-medium"
+              aria-label={`Insertar ${ch}`}
+            >
+              {ch}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-8 sm:grid-cols-12 gap-2">
+          {operatorKeys.map((k) => (
+            <button
+              key={k.label}
+              onClick={() => insertSymbol(k.value)}
+              className="py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-md text-sm font-medium"
+              aria-label={`Insertar ${k.label}`}
+            >
+              {k.label}
+            </button>
+          ))}
+          <button
+            onClick={handleBackspace}
+            className="py-2 bg-yellow-50 border border-yellow-300 hover:bg-yellow-100 rounded-md text-sm font-semibold col-span-2"
+            aria-label="Retroceso"
+          >
+            RETROCESO
+          </button>
+          <button
+            onClick={clearExpression}
+            className="py-2 bg-red-50 border border-red-300 hover:bg-red-100 rounded-md text-sm font-semibold col-span-2"
+            aria-label="Borrar todo"
+          >
+            BORRAR
+          </button>
+          <button
+            onClick={handleEvaluate}
+            className="py-2 bg-green-50 border border-green-300 hover:bg-green-100 rounded-md text-sm font-semibold col-span-2"
+            aria-label="Evaluar"
+          >
+            EVALUAR
+          </button>
+        </div>
+      </div>
 
         {/* Estado de Validación */}
         {inputValue.trim() && (

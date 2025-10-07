@@ -4,6 +4,8 @@
  * Con agrupación automática y manual
  */
 
+import { booleanParser } from './BooleanExpressionParser'
+
 export class KarnaughMapper {
   constructor() {
     this.maxVariables = 6
@@ -26,7 +28,9 @@ export class KarnaughMapper {
     const {
       mode = 'minTerms', // minTerms o maxTerms
       showGroups = true,
-      showExpression = true
+      showExpression = true,
+      dontCares = [],
+      enableSteps = false
     } = options
 
     if (variables.length < 2 || variables.length > this.maxVariables) {
@@ -34,7 +38,7 @@ export class KarnaughMapper {
     }
 
     // Generar tabla de verdad
-    const truthTable = this.generateTruthTable(expression, variables)
+    const truthTable = this.generateTruthTable(expression, variables, dontCares)
     
     // Crear estructura del mapa
     const map = this.createMapStructure(variables)
@@ -43,7 +47,8 @@ export class KarnaughMapper {
     this.fillMap(map, truthTable, variables)
     
     // Encontrar grupos óptimos
-    const groups = this.findOptimalGroups(map, variables, mode)
+    const steps = enableSteps ? [] : null
+    const groups = this.findOptimalGroups(map, variables, mode, steps)
     
     // Generar expresión simplificada
     const simplifiedExpression = this.generateSimplifiedExpression(groups, variables, mode)
@@ -55,22 +60,34 @@ export class KarnaughMapper {
       variables: variables,
       mode: mode,
       truthTable: truthTable,
-      complexity: this.calculateMapComplexity(map, groups)
+      complexity: this.calculateMapComplexity(map, groups),
+      steps: steps || []
     }
   }
 
   /**
    * Genera tabla de verdad para la expresión
    */
-  generateTruthTable(expression, variables) {
+  generateTruthTable(expression, variables, dontCares = []) {
+    const parse = booleanParser.parse(expression)
     const combinations = this.generateAllCombinations(variables)
     const truthTable = []
     
-    for (const combination of combinations) {
-      const result = this.evaluateExpression(expression, combination)
+    for (let idx = 0; idx < combinations.length; idx++) {
+      const combination = combinations[idx]
+      let result = false
+      try {
+        if (!parse.success) throw new Error('Expresión inválida')
+        result = booleanParser.evaluateAST(parse.ast, combination)
+      } catch (e) {
+        result = false
+      }
+      const isDC = Array.isArray(dontCares) && dontCares.includes(idx)
       truthTable.push({
         ...combination,
+        index: idx,
         result: result,
+        dontCare: isDC,
         minTerm: this.getMinTerm(combination, variables),
         maxTerm: this.getMaxTerm(combination, variables)
       })
@@ -250,7 +267,8 @@ export class KarnaughMapper {
         const truthRow = truthTable[cellIndex]
         map.cells[row][col] = {
           index: cellIndex,
-          value: truthRow ? truthRow.result : 0,
+          value: truthRow ? (truthRow.result ? 1 : 0) : 0,
+          dontCare: truthRow ? Boolean(truthRow.dontCare) : false,
           minTerm: truthRow ? truthRow.minTerm : null,
           maxTerm: truthRow ? truthRow.maxTerm : null
         }
@@ -295,11 +313,11 @@ export class KarnaughMapper {
   /**
    * Encuentra grupos óptimos en el mapa
    */
-  findOptimalGroups(map, variables, mode) {
+  findOptimalGroups(map, variables, mode, steps = null) {
     const numVars = variables.length
     
     if (numVars <= 4) {
-      return this.findGroupsInSingleMap(map, variables, mode)
+      return this.findGroupsInSingleMap(map, variables, mode, steps)
     } else if (numVars === 5) {
       return this.findGroupsIn5VarMap(map, variables, mode)
     } else if (numVars === 6) {
@@ -312,64 +330,178 @@ export class KarnaughMapper {
   /**
    * Encuentra grupos en mapa simple
    */
-  findGroupsInSingleMap(map, variables, mode) {
+  findGroupsInSingleMap(map, variables, mode, steps = null) {
     const groups = []
     const targetValue = mode === 'minTerms' ? 1 : 0
-    const visited = new Set()
-    
-    // Buscar grupos de diferentes tamaños (8, 4, 2, 1)
-    const groupSizes = [8, 4, 2, 1]
-    
-    for (const size of groupSizes) {
-      for (let row = 0; row < map.cells.length; row++) {
-        for (let col = 0; col < map.cells[row].length; col++) {
-          if (map.cells[row][col].value === targetValue && 
-              !this.isCellVisited(visited, row, col)) {
-            
-            const group = this.findGroupAt(map, row, col, size, targetValue, variables)
-            if (group && group.cells.length > 0) {
-              groups.push(group)
-              this.markCellsAsVisited(visited, group.cells)
-            }
+    const rows = map.cells.length
+    const cols = map.cells[0].length
+
+    // Posibles tamaños de rectángulos (alto, ancho) como potencias de 2 y envolviendo
+    const rects = []
+    const possibleHeights = rows === 1 ? [1] : rows === 2 ? [2,1] : [4,2,1]
+    const possibleWidths = cols === 1 ? [1] : cols === 2 ? [2,1] : [4,2,1]
+    for (const h of possibleHeights) {
+      for (const w of possibleWidths) {
+        rects.push([h,w])
+      }
+    }
+    // Ordenar por área descendente (grandes primero)
+    rects.sort((a,b) => (b[0]*b[1]) - (a[0]*a[1]))
+
+    const covered = Array.from({ length: rows }, () => Array(cols).fill(false))
+    const allGroups = []
+
+    for (const [h, w] of rects) {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const rectCells = this.collectRect(map, r, c, h, w)
+          if (rectCells.length !== h*w) continue
+          const allTarget = rectCells.every(({ cell }) => (cell.value === targetValue) || cell.dontCare)
+          if (!allTarget) continue
+          // Evitar duplicados: normalizar firma por índices
+          const signature = rectCells
+            .map(({ cell }) => cell.index)
+            .sort((a,b) => a-b)
+            .join(',')
+          if (allGroups.some(g => g.signature === signature)) continue
+          const expr = this.generateGroupExpression(rectCells, variables, mode)
+          const candidate = {
+            cells: rectCells,
+            expression: expr,
+            size: rectCells.length,
+            type: rectCells.length === 1 ? 'single' : 'group',
+            signature
+          }
+          allGroups.push(candidate)
+          if (steps) {
+            steps.push({ action: 'candidate', rect: { r, c, h, w }, expression: expr, cells: rectCells.map(({row,col})=>({row,col})) })
           }
         }
       }
     }
-    
-    return groups
+
+    // Selección greedy: cubrir todas las celdas objetivo con el menor número de grupos
+    const targetPositions = []
+    for (let r=0;r<rows;r++) {
+      for (let c=0;c<cols;c++) {
+        if (map.cells[r][c].value === targetValue) targetPositions.push(`${r},${c}`)
+      }
+    }
+
+    const coveredSet = new Set()
+    // Marcar esenciales: celdas cubiertas por un único grupo
+    const coverage = new Map() // key: pos -> groups indices
+    allGroups.forEach((g, gi) => {
+      g.cells.forEach(({row,col}) => {
+        const key = `${row},${col}`
+        if (!coverage.has(key)) coverage.set(key, [])
+        coverage.get(key).push(gi)
+      })
+    })
+
+    const selected = []
+    // Seleccionar esenciales primero
+    for (const [pos, list] of coverage.entries()) {
+      if (targetPositions.includes(pos) && list.length === 1) {
+        const gi = list[0]
+        if (!selected.includes(gi)) selected.push(gi)
+        coveredSet.add(pos)
+        if (steps) steps.push({ action: 'select_essential', group: gi })
+      }
+    }
+    // Completar cobertura con grupos más grandes restantes
+    const remaining = allGroups
+      .map((g,gi)=>({g,gi}))
+      .sort((a,b)=> b.g.size - a.g.size)
+    for (const {g,gi} of remaining) {
+      // si ya seleccionado, omitir
+      if (selected.includes(gi)) continue
+      const addsCoverage = g.cells.some(({row,col}) => !coveredSet.has(`${row},${col}`) && map.cells[row][col].value === targetValue)
+      if (addsCoverage) {
+        selected.push(gi)
+        g.cells.forEach(({row,col}) => coveredSet.add(`${row},${col}`))
+        if (steps) steps.push({ action: 'select_group', group: gi })
+      }
+    }
+
+    // Construir resultado y marcar esenciales
+    const resultGroups = selected.map(gi => allGroups[gi])
+    const cellToCount = new Map()
+    resultGroups.forEach(gr => {
+      gr.cells.forEach(({row,col}) => {
+        const key = `${row},${col}`
+        cellToCount.set(key, (cellToCount.get(key)||0)+1)
+      })
+    })
+    resultGroups.forEach(gr => {
+      const essential = gr.cells.some(({row,col}) => (cellToCount.get(`${row},${col}`)||0) === 1)
+      gr.essential = essential
+    })
+
+    return resultGroups
   }
 
   /**
    * Encuentra un grupo de tamaño específico en una posición
    */
   findGroupAt(map, startRow, startCol, size, targetValue, variables) {
-    const group = {
-      cells: [],
-      expression: '',
-      size: size,
-      type: size === 1 ? 'single' : 'group'
+    // Deprecated by collectRect-based approach, keep for API compatibility
+    const group = { cells: [], expression: '', size, type: size===1?'single':'group' }
+    return null
+  }
+
+  collectRect(map, startRow, startCol, height, width) {
+    const rows = map.cells.length
+    const cols = map.cells[0].length
+    const cells = []
+    for (let dr = 0; dr < height; dr++) {
+      for (let dc = 0; dc < width; dc++) {
+        const r = (startRow + dr) % rows
+        const c = (startCol + dc) % cols
+        const cell = map.cells[r][c]
+        if (!cell) return []
+        cells.push({ row: r, col: c, cell })
+      }
     }
-    
-    // Implementar lógica de búsqueda de grupos
-    // Esto es una implementación simplificada
-    const cell = map.cells[startRow][startCol]
-    if (cell.value === targetValue) {
-      group.cells.push({ row: startRow, col: startCol, cell: cell })
-      group.expression = this.generateGroupExpression(group.cells, variables)
-    }
-    
-    return group.cells.length > 0 ? group : null
+    return cells
   }
 
   /**
    * Genera expresión para un grupo
    */
-  generateGroupExpression(cells, variables) {
-    if (cells.length === 0) return ''
-    
-    // Implementar generación de expresión para el grupo
-    // Esto es una implementación simplificada
-    return 'Término del grupo'
+  generateGroupExpression(cells, variables, mode = 'minTerms') {
+    if (!cells || cells.length === 0) return ''
+    const indices = cells.map(({ cell }) => cell.index)
+    // Obtener asignaciones por índice
+    const assignments = indices.map(idx => this.assignmentFromIndex(idx, variables.length))
+    // Determinar variables constantes a lo largo del grupo
+    const literals = []
+    for (let vi = 0; vi < variables.length; vi++) {
+      const allTrue = assignments.every(a => a[vi] === 1)
+      const allFalse = assignments.every(a => a[vi] === 0)
+      if (allTrue || allFalse) {
+        if (mode === 'minTerms') {
+          literals.push(allTrue ? variables[vi] : variables[vi] + "'")
+        } else {
+          // POS: literal en suma, var false -> (var), var true -> (var')
+          literals.push(allFalse ? variables[vi] : variables[vi] + "'")
+        }
+      }
+    }
+    if (literals.length === 0) return mode === 'minTerms' ? '1' : '0'
+    if (mode === 'minTerms') {
+      return literals.join('·')
+    }
+    // POS: devolver suma
+    return literals.join('+')
+  }
+
+  assignmentFromIndex(index, numVars) {
+    const bits = []
+    for (let i = numVars - 1; i >= 0; i--) {
+      bits.push((index >> i) & 1)
+    }
+    return bits
   }
 
   /**
@@ -470,30 +602,13 @@ export class KarnaughMapper {
    * Evalúa una expresión con valores de variables
    */
   evaluateExpression(expression, variableValues) {
-    // Implementar evaluación de expresión
-    // Esta es una implementación simplificada
-    let result = expression
-    
-    for (const [variable, value] of Object.entries(variableValues)) {
-      const regex = new RegExp(`\\b${variable}\\b`, 'g')
-      result = result.replace(regex, value ? '1' : '0')
+    const parse = booleanParser.parse(expression)
+    if (!parse.success) return false
+    try {
+      return booleanParser.evaluateAST(parse.ast, variableValues)
+    } catch (e) {
+      return false
     }
-    
-    // Evaluar operaciones básicas
-    result = result.replace(/1·1/g, '1')
-    result = result.replace(/0·0/g, '0')
-    result = result.replace(/1·0/g, '0')
-    result = result.replace(/0·1/g, '0')
-    
-    result = result.replace(/1\+1/g, '1')
-    result = result.replace(/0\+0/g, '0')
-    result = result.replace(/1\+0/g, '1')
-    result = result.replace(/0\+1/g, '1')
-    
-    result = result.replace(/1'/g, '0')
-    result = result.replace(/0'/g, '1')
-    
-    return result === '1'
   }
 
   /**

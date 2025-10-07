@@ -1,22 +1,66 @@
+// src/components/algebra/SimplificationWizard.jsx
 import { useState, useEffect } from 'react'
 import { booleanSimplifier } from '../../utils/BooleanSimplifier'
 
 function SimplificationWizard({ expression, parsedExpression, simplificationResult, onSimplification, onExpressionChange }) {
-  const [simplificationOptions, setSimplificationOptions] = useState({
-    maxSteps: 50,
-    showAllSteps: true,
-    targetForm: 'SOP',
-    useKarnaugh: false
+  const [simplificationOptions, setSimplificationOptions] = useState(() => {
+    const saved = localStorage.getItem('simplificationOptionsDefaults')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        return {
+          maxSteps: 50,
+          showAllSteps: true,
+          targetForm: parsed.targetForm || 'SOP',
+          useKarnaugh: parsed.useKarnaugh !== undefined ? parsed.useKarnaugh : true
+        }
+      } catch (_) {}
+    }
+    return {
+      maxSteps: 50,
+      showAllSteps: true,
+      targetForm: 'SOP',
+      useKarnaugh: true
+    }
   })
   const [currentStep, setCurrentStep] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
-  const [manualStep, setManualStep] = useState(false)
+  const [showStepByStep, setShowStepByStep] = useState(false)
+  const [autoPlay, setAutoPlay] = useState(false)
 
   useEffect(() => {
     if (simplificationResult && simplificationResult.success) {
       setCurrentStep(0)
+      setShowStepByStep(false)
+      setAutoPlay(false)
     }
   }, [simplificationResult])
+
+  // Persistir preferencias por defecto
+  useEffect(() => {
+    const defaults = {
+      targetForm: simplificationOptions.targetForm,
+      useKarnaugh: simplificationOptions.useKarnaugh
+    }
+    localStorage.setItem('simplificationOptionsDefaults', JSON.stringify(defaults))
+  }, [simplificationOptions.targetForm, simplificationOptions.useKarnaugh])
+
+  // Auto-reproducción de pasos
+  useEffect(() => {
+    if (!autoPlay || !simplificationResult || !simplificationResult.success) return
+
+    const timer = setInterval(() => {
+      setCurrentStep(prev => {
+        if (prev >= simplificationResult.steps.length - 1) {
+          setAutoPlay(false)
+          return prev
+        }
+        return prev + 1
+      })
+    }, 1500)
+
+    return () => clearInterval(timer)
+  }, [autoPlay, simplificationResult])
 
   const handleSimplification = () => {
     if (!parsedExpression || !parsedExpression.success) return
@@ -26,44 +70,60 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
     setTimeout(() => setIsRunning(false), 1000)
   }
 
-  const handleManualStep = () => {
+  const handleStepNavigation = (direction) => {
     if (!simplificationResult || !simplificationResult.success) return
     
-    setManualStep(true)
-    // Implementar lógica para paso manual
-  }
-
-  const getStepExplanation = (step) => {
-    if (!step) return ''
-    
-    const explanations = {
-      'normalization': 'La expresión se normaliza para facilitar el procesamiento',
-      'identity': 'Se aplica la ley de identidad para simplificar términos',
-      'null': 'Se eliminan términos nulos que no afectan el resultado',
-      'idempotence': 'Se eliminan términos duplicados usando idempotencia',
-      'absorption': 'Se absorben términos redundantes',
-      'demorgan': 'Se aplica el teorema de DeMorgan',
-      'distributive': 'Se distribuyen términos para simplificar',
-      'consensus': 'Se aplica el teorema de consenso',
-      'optimization': 'Se realizan optimizaciones finales'
+    if (direction === 'next') {
+      setCurrentStep(Math.min(simplificationResult.steps.length - 1, currentStep + 1))
+    } else if (direction === 'prev') {
+      setCurrentStep(Math.max(0, currentStep - 1))
+    } else if (direction === 'first') {
+      setCurrentStep(0)
+    } else if (direction === 'last') {
+      setCurrentStep(simplificationResult.steps.length - 1)
     }
-    
-    return explanations[step.type] || 'Se aplica un teorema de simplificación'
   }
 
   const getTheoremColor = (theorem) => {
     const colors = {
-      'identity': 'bg-blue-100 text-blue-800',
-      'null': 'bg-red-100 text-red-800',
-      'idempotence': 'bg-yellow-100 text-yellow-800',
-      'absorption': 'bg-green-100 text-green-800',
-      'demorgan': 'bg-purple-100 text-purple-800',
-      'distributive': 'bg-indigo-100 text-indigo-800',
-      'consensus': 'bg-pink-100 text-pink-800',
-      'optimization': 'bg-gray-100 text-gray-800'
+      'normalization': 'bg-gray-100 text-gray-800 border-gray-300',
+      'identity_and': 'bg-blue-100 text-blue-800 border-blue-300',
+      'identity_or': 'bg-blue-100 text-blue-800 border-blue-300',
+      'null_and': 'bg-red-100 text-red-800 border-red-300',
+      'null_or': 'bg-red-100 text-red-800 border-red-300',
+      'idempotent_and': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'idempotent_or': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'complement_and': 'bg-orange-100 text-orange-800 border-orange-300',
+      'complement_or': 'bg-orange-100 text-orange-800 border-orange-300',
+      'absorption': 'bg-green-100 text-green-800 border-green-300',
+      'demorgan': 'bg-purple-100 text-purple-800 border-purple-300',
+      'distributive': 'bg-indigo-100 text-indigo-800 border-indigo-300',
+      'consensus': 'bg-pink-100 text-pink-800 border-pink-300',
+      'double_negation': 'bg-teal-100 text-teal-800 border-teal-300'
     }
     
-    return colors[theorem] || 'bg-gray-100 text-gray-800'
+    return colors[theorem] || 'bg-gray-100 text-gray-800 border-gray-300'
+  }
+
+  const getTheoremIcon = (theorem) => {
+    const icons = {
+      'normalization': '📝',
+      'identity_and': '🔷',
+      'identity_or': '🔶',
+      'null_and': '⛔',
+      'null_or': '⛔',
+      'idempotent_and': '♻️',
+      'idempotent_or': '♻️',
+      'complement_and': '🔀',
+      'complement_or': '🔀',
+      'absorption': '🧲',
+      'demorgan': '🔄',
+      'distributive': '📊',
+      'consensus': '🤝',
+      'double_negation': '↩️'
+    }
+    
+    return icons[theorem] || '📐'
   }
 
   if (!parsedExpression || !parsedExpression.success) {
@@ -72,7 +132,8 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Asistente de Simplificación</h2>
         <div className="text-center py-12 text-gray-500">
           <div className="text-6xl mb-4">🧮</div>
-          <p className="text-lg">Ingresa una expresión booleana válida para comenzar la simplificación</p>
+          <p className="text-lg mb-2">Ingresa una expresión booleana válida para comenzar la simplificación</p>
+          <p className="text-sm">Usa operadores: · (AND), + (OR), ' (NOT)</p>
         </div>
       </div>
     )
@@ -84,13 +145,13 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Asistente de Simplificación</h2>
         
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
           {/* Expresión Original */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Expresión Original
             </label>
-            <div className="p-4 bg-gray-50 rounded-lg font-mono text-lg">
+            <div className="p-4 bg-gray-50 rounded-lg font-mono text-lg border-2 border-gray-300">
               {expression}
             </div>
           </div>
@@ -101,7 +162,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Expresión Simplificada
               </label>
-              <div className="p-4 bg-green-50 rounded-lg font-mono text-lg text-green-800">
+              <div className="p-4 bg-green-50 rounded-lg font-mono text-lg text-green-800 border-2 border-green-300">
                 {simplificationResult.simplifiedExpression}
               </div>
             </div>
@@ -109,7 +170,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
         </div>
 
         {/* Opciones de Simplificación */}
-        <div className="mt-6 grid md:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-4 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Máximo de Pasos
@@ -144,8 +205,8 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
             </select>
           </div>
 
-          <div className="flex items-center">
-            <label className="flex items-center">
+          <div className="flex items-end">
+            <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 checked={simplificationOptions.showAllSteps}
@@ -153,14 +214,14 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
                   ...simplificationOptions,
                   showAllSteps: e.target.checked
                 })}
-                className="mr-2"
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
               />
-              <span className="text-sm text-gray-700">Mostrar todos los pasos</span>
+              <span className="ml-2 text-sm text-gray-700">Mostrar todos los pasos</span>
             </label>
           </div>
 
-          <div className="flex items-center">
-            <label className="flex items-center">
+          <div className="flex items-end">
+            <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 checked={simplificationOptions.useKarnaugh}
@@ -168,166 +229,286 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
                   ...simplificationOptions,
                   useKarnaugh: e.target.checked
                 })}
-                className="mr-2"
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
               />
-              <span className="text-sm text-gray-700">Usar Karnaugh</span>
+              <span className="ml-2 text-sm text-gray-700">Usar Karnaugh</span>
             </label>
           </div>
         </div>
 
         {/* Botones de Acción */}
-        <div className="mt-6 flex space-x-4">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={handleSimplification}
             disabled={isRunning}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
           >
-            {isRunning ? 'Simplificando...' : 'Simplificar Automáticamente'}
+            <span>🧮</span>
+            <span>{isRunning ? 'Simplificando...' : 'Simplificar Automáticamente'}</span>
           </button>
 
           {simplificationResult && simplificationResult.success && (
             <button
-              onClick={handleManualStep}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              onClick={() => setShowStepByStep(!showStepByStep)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center space-x-2"
             >
-              Paso Manual
+              <span>👁️</span>
+              <span>{showStepByStep ? 'Ocultar' : 'Ver'} Paso a Paso</span>
             </button>
           )}
 
           <button
-            onClick={() => onExpressionChange('')}
-            className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+            onClick={() => {
+              onExpressionChange('')
+              setShowStepByStep(false)
+              setCurrentStep(0)
+            }}
+            className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors flex items-center space-x-2"
           >
-            Limpiar
+            <span>🗑️</span>
+            <span>Limpiar</span>
           </button>
         </div>
+
+        {/* Estadísticas de Simplificación */}
+        {simplificationResult && simplificationResult.success && (
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="text-2xl font-bold text-blue-600">
+                {simplificationResult.totalSteps}
+              </div>
+              <div className="text-sm text-blue-700">Pasos Realizados</div>
+            </div>
+            
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <div className="text-2xl font-bold text-purple-600">
+                {simplificationResult.complexity?.original || 0}
+              </div>
+              <div className="text-sm text-purple-700">Complejidad Original</div>
+            </div>
+            
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="text-2xl font-bold text-green-600">
+                {simplificationResult.complexity?.simplified || 0}
+              </div>
+              <div className="text-sm text-green-700">Complejidad Final</div>
+            </div>
+            
+            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <div className="text-2xl font-bold text-orange-600">
+                {simplificationResult.complexity?.reduction >= 0 ? '-' : '+'}{Math.abs(simplificationResult.complexity?.reduction || 0)}
+              </div>
+              <div className="text-sm text-orange-700">Reducción</div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Proceso de Simplificación */}
-      {simplificationResult && simplificationResult.success && (
+      {/* Proceso de Simplificación Paso a Paso */}
+      {showStepByStep && simplificationResult && simplificationResult.success && (
         <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Proceso de Simplificación</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">Proceso de Simplificación Paso a Paso</h3>
+            
+            <button
+              onClick={() => setAutoPlay(!autoPlay)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                autoPlay 
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+              }`}
+            >
+              <span>{autoPlay ? '⏸️' : '▶️'}</span>
+              <span>{autoPlay ? 'Pausar' : 'Auto-reproducir'}</span>
+            </button>
+          </div>
           
-          {/* Navegación de Pasos */}
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          {/* Controles de Navegación */}
+          <div className="mb-6 flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center space-x-2">
               <button
-                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                onClick={() => handleStepNavigation('first')}
                 disabled={currentStep === 0}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Primer paso"
+              >
+                ⏮️
+              </button>
+              
+              <button
+                onClick={() => handleStepNavigation('prev')}
+                disabled={currentStep === 0}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 ← Anterior
               </button>
               
-              <span className="text-sm text-gray-600">
+              <span className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium">
                 Paso {currentStep + 1} de {simplificationResult.steps.length}
               </span>
               
               <button
-                onClick={() => setCurrentStep(Math.min(simplificationResult.steps.length - 1, currentStep + 1))}
+                onClick={() => handleStepNavigation('next')}
                 disabled={currentStep === simplificationResult.steps.length - 1}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Siguiente →
               </button>
+              
+              <button
+                onClick={() => handleStepNavigation('last')}
+                disabled={currentStep === simplificationResult.steps.length - 1}
+                className="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Último paso"
+              >
+                ⏭️
+              </button>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="range"
-                min="0"
-                max={simplificationResult.steps.length - 1}
-                value={currentStep}
-                onChange={(e) => setCurrentStep(parseInt(e.target.value))}
-                className="w-32"
-              />
-              <span className="text-sm text-gray-600">Ir a paso</span>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-gray-600">Progreso:</span>
+              <div className="w-48 bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${((currentStep + 1) / simplificationResult.steps.length) * 100}%` }}
+                ></div>
+              </div>
+              <span className="text-sm font-medium text-gray-700">
+                {Math.round(((currentStep + 1) / simplificationResult.steps.length) * 100)}%
+              </span>
             </div>
           </div>
 
-          {/* Paso Actual */}
+          {/* Paso Actual - Tarjeta Principal */}
           {simplificationResult.steps[currentStep] && (
-            <div className="mb-6 p-6 bg-blue-50 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-blue-800">
-                  Paso {currentStep + 1}: {simplificationResult.steps[currentStep].explanation}
-                </h4>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTheoremColor(simplificationResult.steps[currentStep].theorem)}`}>
-                  {simplificationResult.steps[currentStep].theorem || 'Normalización'}
-                </span>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-blue-700 mb-2">Antes:</label>
-                  <div className="p-3 bg-white rounded border font-mono text-lg">
-                    {simplificationResult.steps[currentStep].from}
+            <div className="mb-6">
+              <div className={`p-6 rounded-lg border-2 ${
+                currentStep === 0 
+                  ? 'bg-gray-50 border-gray-300' 
+                  : currentStep === simplificationResult.steps.length - 1
+                  ? 'bg-green-50 border-green-300'
+                  : 'bg-blue-50 border-blue-300'
+              }`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-3xl">
+                      {getTheoremIcon(simplificationResult.steps[currentStep].theorem)}
+                    </span>
+                    <div>
+                      <h4 className="text-lg font-bold text-gray-900">
+                        {simplificationResult.steps[currentStep].law || simplificationResult.steps[currentStep].theorem || 'Paso de Simplificación'}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {simplificationResult.steps[currentStep].explanation}
+                      </p>
+                    </div>
                   </div>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getTheoremColor(simplificationResult.steps[currentStep].theorem)}`}>
+                    {simplificationResult.steps[currentStep].theorem || 'normalización'}
+                  </span>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-blue-700 mb-2">Después:</label>
-                  <div className="p-3 bg-white rounded border font-mono text-lg text-green-800">
-                    {simplificationResult.steps[currentStep].to}
+                {/* Transformación Visual */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      🔹 Antes:
+                    </label>
+                    <div className="p-4 bg-white rounded-lg border-2 border-gray-300 font-mono text-lg">
+                      {simplificationResult.steps[currentStep].from}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ✅ Después:
+                    </label>
+                    <div className="p-4 bg-white rounded-lg border-2 border-green-400 font-mono text-lg text-green-800 font-bold">
+                      {simplificationResult.steps[currentStep].to}
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="mt-4 text-sm text-blue-600">
-                {getStepExplanation(simplificationResult.steps[currentStep])}
+                {/* Equivalencia */}
+                {simplificationResult.steps[currentStep].equivalence && (
+                  <div className="mt-4 p-4 rounded-lg border bg-white">
+                    {simplificationResult.steps[currentStep].equivalence.equivalent ? (
+                      <div className="text-green-700 text-sm">Equivalente ✔️</div>
+                    ) : (
+                      <div className="text-red-700 text-sm">
+                        No equivalente ✖️{simplificationResult.steps[currentStep].equivalence.counterExample && (
+                          <div className="mt-2 text-xs text-red-600">
+                            Contraejemplo: {Object.entries(simplificationResult.steps[currentStep].equivalence.counterExample).map(([k,v])=>`${k}=${v?1:0}`).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Lista de Todos los Pasos */}
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-gray-800 mb-3">Todos los Pasos</h4>
-            {simplificationResult.steps.map((step, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                  index === currentStep
-                    ? 'bg-blue-100 border-blue-300'
-                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                }`}
-                onClick={() => setCurrentStep(index)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm font-medium text-gray-600">Paso {index + 1}</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getTheoremColor(step.theorem)}`}>
-                      {step.theorem || 'Normalización'}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {step.from} → {step.to}
+          {/* Timeline de Todos los Pasos */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center space-x-2">
+              <span>📋</span>
+              <span>Historial de Pasos</span>
+            </h4>
+            
+            <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+              {simplificationResult.steps.map((step, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    index === currentStep
+                      ? 'bg-blue-100 border-blue-400 shadow-md scale-105'
+                      : index < currentStep
+                      ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                  }`}
+                  onClick={() => setCurrentStep(index)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        index === currentStep
+                          ? 'bg-blue-600 text-white'
+                          : index < currentStep
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-300 text-gray-600'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-sm font-medium text-gray-700">
+                            {step.law || step.theorem || 'Normalización'}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getTheoremColor(step.theorem)}`}>
+                            {step.theorem}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 font-mono">
+                          {step.from} → {step.to}
+                        </div>
+                        {step.equivalence && (
+                          <div className={`mt-1 text-xs ${step.equivalence.equivalent ? 'text-green-700' : 'text-red-700'}`}>
+                            {step.equivalence.equivalent ? 'Equivalente' : 'No equivalente'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {index === currentStep && (
+                      <span className="text-blue-600 font-bold ml-2">👁️</span>
+                    )}
+                    {index < currentStep && (
+                      <span className="text-green-600 ml-2">✓</span>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Estadísticas de Simplificación */}
-          <div className="mt-6 grid md:grid-cols-3 gap-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-gray-800">
-                {simplificationResult.steps.length}
-              </div>
-              <div className="text-sm text-gray-600">Pasos Realizados</div>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-gray-800">
-                {simplificationResult.complexity?.totalComplexity || 0}
-              </div>
-              <div className="text-sm text-gray-600">Complejidad Final</div>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-gray-800">
-                {simplificationResult.isSimplified ? 'Sí' : 'No'}
-              </div>
-              <div className="text-sm text-gray-600">Completamente Simplificado</div>
+              ))}
             </div>
           </div>
         </div>
@@ -335,9 +516,21 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
 
       {/* Error en Simplificación */}
       {simplificationResult && !simplificationResult.success && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h4 className="font-medium text-red-800 mb-2">Error en la Simplificación</h4>
-          <p className="text-red-700">{simplificationResult.error}</p>
+        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
+          <div className="flex items-start space-x-3">
+            <span className="text-3xl">❌</span>
+            <div>
+              <h4 className="font-bold text-red-800 mb-2">Error en la Simplificación</h4>
+              <p className="text-red-700">{simplificationResult.error}</p>
+              {simplificationResult.errors && (
+                <ul className="mt-2 space-y-1 text-sm text-red-600">
+                  {simplificationResult.errors.map((err, idx) => (
+                    <li key={idx}>• {err}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

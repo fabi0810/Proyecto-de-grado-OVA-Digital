@@ -6,8 +6,10 @@ import BooleanExpressionEditor from './algebra/BooleanExpressionEditor'
 import TruthTableGenerator from './algebra/TruthTableGenerator'
 import SimplificationWizard from './algebra/SimplificationWizard'
 import KarnaughMapper from './algebra/KarnaughMapper'
-import ExerciseEngine from './algebra/ExerciseEngine'
-import ProgressTracker from './algebra/ProgressTracker'
+import BooleanTheoryExplainer from './algebra/BooleanTheoryExplainer'
+import BooleanChallengeModule from './algebra/BooleanChallengeModule'
+import BooleanExamModule from './algebra/BooleanExamModule'
+
 
 function BooleanAlgebra() {
   const [activeTab, setActiveTab] = useState('editor')
@@ -95,12 +97,13 @@ function BooleanAlgebra() {
   }
 
   const tabs = [
+    { id: 'teoria', label: 'Teoria', icon: '🗺️' },
     { id: 'editor', label: 'Editor de Expresiones', icon: '✏️' },
     { id: 'truth-table', label: 'Tabla de Verdad', icon: '📊' },
     { id: 'simplification', label: 'Simplificación', icon: '🧮' },
     { id: 'karnaugh', label: 'Mapa de Karnaugh', icon: '🗺️' },
-    { id: 'exercises', label: 'Ejercicios', icon: '🎯' },
-    { id: 'progress', label: 'Progreso', icon: '📈' }
+    { id: 'challenge', label: 'Desafío', icon: '🎯' },
+    { id: 'exercises', label: 'Examen', icon: '🎯' }
   ]
 
   return (
@@ -153,6 +156,15 @@ function BooleanAlgebra() {
           </nav>
         </div>
       </div>
+      
+        {activeTab === 'teoria' && (
+          <div className="space-y-6">
+            <BooleanTheoryExplainer
+             
+            />
+          </div>
+        )}
+
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
@@ -203,13 +215,18 @@ function BooleanAlgebra() {
             />
           </div>
         )}
+        {activeTab === 'challenge' && (
+          <div className="space-y-6">
+            <BooleanChallengeModule 
+ 
+            />
+          </div>
+        )}
 
         {/* Ejercicios */}
         {activeTab === 'exercises' && (
           <div className="space-y-6">
-            <ExerciseEngine
-              onExerciseComplete={handleExerciseComplete}
-              userProgress={userProgress}
+            <BooleanExamModule
             />
           </div>
         )}

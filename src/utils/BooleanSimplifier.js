@@ -4,6 +4,9 @@
  * con explicaciones paso a paso y justificaciones matemáticas
  */
 
+import { booleanParser } from './BooleanExpressionParser'
+import { karnaughMapper } from './KarnaughMapper'
+
 export class BooleanSimplifier {
   constructor() {
     this.theorems = {
@@ -125,11 +128,16 @@ export class BooleanSimplifier {
     try {
       let currentExpression = expression
       let step = 0
+      const baseParse = booleanParser.parse(expression)
+      const variables = baseParse.success
+        ? baseParse.variables
+        : Array.from(new Set((expression.match(/[A-Z]/g) || []))).sort()
       
       // Paso 1: Normalizar la expresión
       const normalized = this.normalizeExpression(currentExpression)
       if (normalized !== currentExpression) {
-        this.addStep('normalization', currentExpression, normalized, 'Normalización de la expresión')
+        const eq = this.verifyEquivalence(currentExpression, normalized, variables)
+        this.addStep('normalization', currentExpression, normalized, 'Normalización de la expresión', null, { law: 'Normalización', equivalence: eq })
         currentExpression = normalized
       }
       
@@ -144,14 +152,17 @@ export class BooleanSimplifier {
         
         // Aplicar el primer teorema encontrado
         const theorem = appliedTheorems[0]
-        currentExpression = theorem.result
+        const nextExpression = theorem.result
+        const eq = this.verifyEquivalence(previousExpression, nextExpression, variables)
+        currentExpression = nextExpression
         
         this.addStep(
           theorem.name,
           previousExpression,
           currentExpression,
           theorem.explanation,
-          theorem.theorem
+          theorem.theorem,
+          { law: this.theorems[theorem.theorem]?.name || 'Teorema', equivalence: eq }
         )
         
         step++
@@ -160,17 +171,31 @@ export class BooleanSimplifier {
       // Paso 3: Verificar si se puede simplificar más
       const finalSimplified = this.finalOptimization(currentExpression)
       if (finalSimplified !== currentExpression) {
-        this.addStep('optimization', currentExpression, finalSimplified, 'Optimización final')
+        const eq = this.verifyEquivalence(currentExpression, finalSimplified, variables)
+        this.addStep('optimization', currentExpression, finalSimplified, 'Optimización final', null, { law: 'Optimización', equivalence: eq })
         currentExpression = finalSimplified
       }
+
+      // Paso 4: Canonización opcional con K-map según targetForm/useKarnaugh
+      const canonical = this.finalizeWithTargetForm(currentExpression, variables, targetForm, useKarnaugh)
+      if (canonical.expression !== currentExpression) {
+        currentExpression = canonical.expression
+      }
       
+      const originalParse = booleanParser.parse(expression)
+      const originalComplexity = originalParse.success ? this.calculateComplexity(originalParse.normalizedExpression) : null
       return {
         success: true,
         originalExpression: expression,
         simplifiedExpression: currentExpression,
         steps: this.simplificationHistory,
         isSimplified: this.isFullySimplified(currentExpression),
-        complexity: this.calculateComplexity(currentExpression)
+        complexity: {
+          original: originalComplexity ? originalComplexity.totalComplexity : null,
+          simplified: this.calculateComplexity(currentExpression).totalComplexity,
+          reduction: originalComplexity ? (this.calculateComplexity(currentExpression).totalComplexity - originalComplexity.totalComplexity) : null
+        },
+        method: useKarnaugh ? 'karnaugh' : 'algebraic'
       }
       
     } catch (error) {
@@ -179,6 +204,27 @@ export class BooleanSimplifier {
         error: error.message,
         steps: this.simplificationHistory
       }
+    }
+  }
+
+  /**
+   * Sincroniza con forma canónica mediante Karnaugh si se solicita
+   */
+  finalizeWithTargetForm(currentExpression, variables, targetForm, useKarnaugh) {
+    if (!useKarnaugh && (!targetForm || (targetForm !== 'SOP' && targetForm !== 'POS'))) {
+      return { expression: currentExpression, method: 'algebraic' }
+    }
+
+    try {
+      const mode = targetForm === 'POS' ? 'maxTerms' : 'minTerms'
+      const map = karnaughMapper.generateMap(currentExpression, variables, { mode })
+      const kExpr = map.simplifiedExpression || currentExpression
+      const eq = this.verifyEquivalence(currentExpression, kExpr, variables)
+      this.addStep('kmap_canonicalization', currentExpression, kExpr, `Canonización ${targetForm || 'SOP'} con Karnaugh`, 'karnaugh', { law: 'Karnaugh', equivalence: eq })
+      return { expression: kExpr, method: 'karnaugh' }
+    } catch (e) {
+      // Si falla, retornar la expresión actual
+      return { expression: currentExpression, method: 'algebraic' }
     }
   }
 
@@ -281,7 +327,7 @@ export class BooleanSimplifier {
   /**
    * Agrega un paso a la historia de simplificación
    */
-  addStep(stepType, from, to, explanation, theorem = null) {
+  addStep(stepType, from, to, explanation, theorem = null, options = {}) {
     this.simplificationHistory.push({
       step: this.simplificationHistory.length + 1,
       type: stepType,
@@ -289,6 +335,8 @@ export class BooleanSimplifier {
       to: to,
       explanation: explanation,
       theorem: theorem,
+      law: options.law,
+      equivalence: options.equivalence,
       timestamp: new Date().toISOString()
     })
   }
@@ -422,31 +470,13 @@ export class BooleanSimplifier {
    * Evalúa una expresión con valores específicos de variables
    */
   evaluateExpression(expression, variableValues) {
-    // Implementar evaluación de expresión
-    // Esta es una implementación simplificada
-    let result = expression
-    
-    // Reemplazar variables con valores
-    for (const [variable, value] of Object.entries(variableValues)) {
-      const regex = new RegExp(`\\b${variable}\\b`, 'g')
-      result = result.replace(regex, value ? '1' : '0')
+    const parse = booleanParser.parse(expression)
+    if (!parse.success) return false
+    try {
+      return booleanParser.evaluateAST(parse.ast, variableValues)
+    } catch (e) {
+      return false
     }
-    
-    // Evaluar operaciones
-    result = result.replace(/1·1/g, '1')
-    result = result.replace(/0·0/g, '0')
-    result = result.replace(/1·0/g, '0')
-    result = result.replace(/0·1/g, '0')
-    
-    result = result.replace(/1\+1/g, '1')
-    result = result.replace(/0\+0/g, '0')
-    result = result.replace(/1\+0/g, '1')
-    result = result.replace(/0\+1/g, '1')
-    
-    result = result.replace(/1'/g, '0')
-    result = result.replace(/0'/g, '1')
-    
-    return result === '1'
   }
 
   /**

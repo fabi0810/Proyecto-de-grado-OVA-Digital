@@ -1,468 +1,435 @@
-/**
- * Parser de Expresiones Booleanas Avanzado
- * Soporta múltiples notaciones y genera tablas de verdad automáticamente
- * 
- * Notaciones soportadas:
- * - Matemática: A·B + C', A + B·C
- * - Programación: A && B || !C, A || B && C
- * - Lógica formal: A ∧ B ∨ ¬C, A ∨ B ∧ C
- * - ASCII: A AND B OR NOT C, A OR B AND C
- */
+// src/utils/BooleanExpressionParser.js
 
-export class BooleanExpressionParser {
+class BooleanExpressionParser {
   constructor() {
-    this.operators = {
-      // Operadores matemáticos
-      '·': { precedence: 3, associativity: 'left', type: 'AND' },
-      '+': { precedence: 2, associativity: 'left', type: 'OR' },
-      "'": { precedence: 4, associativity: 'right', type: 'NOT' },
+    // Mapeo de símbolos de múltiples notaciones a un formato estándar
+    this.operatorMappings = {
+      // AND operators
+      '·': 'AND',
+      '*': 'AND',
+      'x': 'AND',
+      '∧': 'AND',
+      '&&': 'AND',
+      'AND': 'AND',
+      'and': 'AND',
       
-      // Operadores de programación
-      '&&': { precedence: 3, associativity: 'left', type: 'AND' },
-      '||': { precedence: 2, associativity: 'left', type: 'OR' },
-      '!': { precedence: 4, associativity: 'right', type: 'NOT' },
+      // OR operators
+      '+': 'OR',
+      '∨': 'OR',
+      '||': 'OR',
+      'OR': 'OR',
+      'or': 'OR',
       
-      // Operadores lógicos formales
-      '∧': { precedence: 3, associativity: 'left', type: 'AND' },
-      '∨': { precedence: 2, associativity: 'left', type: 'OR' },
-      '¬': { precedence: 4, associativity: 'right', type: 'NOT' },
+      // NOT operators
+      "'": 'NOT',
+      '!': 'NOT',
+      '¬': 'NOT',
+      '~': 'NOT',
+      'NOT': 'NOT',
+      'not': 'NOT',
       
-      // Operadores ASCII
-      'AND': { precedence: 3, associativity: 'left', type: 'AND' },
-      'OR': { precedence: 2, associativity: 'left', type: 'OR' },
-      'NOT': { precedence: 4, associativity: 'right', type: 'NOT' }
+      // XOR operators
+      '⊕': 'XOR',
+      '^': 'XOR',
+      'XOR': 'XOR',
+      'xor': 'XOR'
     }
     
-    this.variables = new Set()
-    this.errors = []
-  }
-
-  /**
-   * Parsea una expresión booleana y la convierte a notación canónica
-   */
-  parse(expression) {
-    this.errors = []
-    this.variables.clear()
-    
-    try {
-      // Normalizar la expresión
-      const normalized = this.normalizeExpression(expression)
-      
-      // Convertir a tokens
-      const tokens = this.tokenize(normalized)
-      
-      // Validar sintaxis
-      this.validateSyntax(tokens)
-      
-      if (this.errors.length > 0) {
-        return { success: false, errors: this.errors }
-      }
-      
-      // Convertir a notación postfija (RPN)
-      const postfix = this.infixToPostfix(tokens)
-      
-      // Generar árbol de sintaxis
-      const ast = this.buildAST(postfix)
-      
-      return {
-        success: true,
-        ast,
-        variables: Array.from(this.variables).sort(),
-        originalExpression: expression,
-        normalizedExpression: normalized,
-        postfixNotation: postfix.map(t => t.value).join(' ')
-      }
-      
-    } catch (error) {
-      this.errors.push(`Error de parsing: ${error.message}`)
-      return { success: false, errors: this.errors }
+    this.precedence = {
+      'NOT': 3,
+      'AND': 2,
+      'OR': 1,
+      'XOR': 1
     }
   }
 
-  /**
-   * Normaliza la expresión para procesamiento uniforme
-   */
+  // Normalizar expresión para facilitar el parsing
   normalizeExpression(expression) {
-    return expression
-      .replace(/\s+/g, ' ') // Normalizar espacios
-      .replace(/AND/gi, 'AND') // Normalizar AND
-      .replace(/OR/gi, 'OR') // Normalizar OR
-      .replace(/NOT/gi, 'NOT') // Normalizar NOT
-      .trim()
+    let normalized = expression.trim()
+    
+    // Reemplazar múltiples espacios por uno solo
+    normalized = normalized.replace(/\s+/g, ' ')
+    
+    // Convertir operadores de texto a sus equivalentes
+    const textOperators = [
+      { pattern: /\bAND\b/gi, replacement: '·' },
+      { pattern: /\bOR\b/gi, replacement: '+' },
+      { pattern: /\bNOT\b/gi, replacement: "'" },
+      { pattern: /\bXOR\b/gi, replacement: '⊕' },
+      { pattern: /&&/g, replacement: '·' },
+      { pattern: /&/g, replacement: '·' },
+      { pattern: /\|\|/g, replacement: '+' },
+      { pattern: /\|/g, replacement: '+' },
+      { pattern: /[*x]/g, replacement: '·' },
+      { pattern: /[!¬~]/g, replacement: "'" }
+    ]
+    
+    textOperators.forEach(({ pattern, replacement }) => {
+      normalized = normalized.replace(pattern, replacement)
+    })
+    
+    // Agregar multiplicación implícita: AB -> A·B
+    normalized = normalized.replace(/([A-Z])(\s*)([A-Z])/g, '$1·$3')
+    normalized = normalized.replace(/([A-Z])(\s*)(\()/g, '$1·$3')
+    normalized = normalized.replace(/(\))(\s*)([A-Z])/g, '$1·$3')
+    normalized = normalized.replace(/(\))(\s*)(\()/g, '$1·$3')
+    
+    // Normalizar NOT pegado a variable y paréntesis: A ' -> A' y ' (A) -> (A)'
+    normalized = normalized.replace(/([A-Z])\s*'/g, "$1'")
+    // Prefijo NOT antes de paréntesis: '(A+B) o ! (A+B) -> (A+B)'
+    normalized = normalized.replace(/'\s*\(/g, "'(")
+    
+    return normalized
   }
 
-  /**
-   * Tokeniza la expresión en componentes
-   */
+  // Tokenizar la expresión
   tokenize(expression) {
+    const normalized = this.normalizeExpression(expression)
     const tokens = []
     let i = 0
     
-    while (i < expression.length) {
-      const char = expression[i]
+    while (i < normalized.length) {
+      const char = normalized[i]
       
-      // Saltar espacios
-      if (char === ' ') {
+      // Espacios en blanco
+      if (/\s/.test(char)) {
+        i++
+        continue
+      }
+      
+      // Variables (A-Z)
+      if (/[A-Z]/i.test(char)) {
+        let variable = char
+        i++
+        
+        // Verificar si tiene complemento
+        while (i < normalized.length && normalized[i] === "'") {
+          variable += "'"
+          i++
+        }
+        
+        tokens.push({ type: 'VARIABLE', value: variable })
+        continue
+      }
+      
+      // Números (para constantes 0 y 1)
+      if (/[01]/.test(char)) {
+        tokens.push({ type: 'CONSTANT', value: parseInt(char) })
+        i++
+        continue
+      }
+      
+      // Operadores
+      if (char === '·' || char === '*' || char === 'x' || char === '&') {
+        tokens.push({ type: 'OPERATOR', value: 'AND' })
+        i++
+        continue
+      }
+      
+      if (char === '+' || char === '|') {
+        tokens.push({ type: 'OPERATOR', value: 'OR' })
+        i++
+        continue
+      }
+      
+      if (char === '⊕' || char === '^') {
+        tokens.push({ type: 'OPERATOR', value: 'XOR' })
         i++
         continue
       }
       
       // Paréntesis
-      if (char === '(' || char === ')') {
-        tokens.push({ type: 'parenthesis', value: char })
+      if (char === '(') {
+        tokens.push({ type: 'LPAREN', value: '(' })
         i++
         continue
       }
       
-      // Variables (letras mayúsculas/minúsculas)
-      if (/[a-zA-Z]/.test(char)) {
-        let variable = char
-        i++
-        
-        // Capturar variables multi-carácter (como AND, OR, NOT)
-        while (i < expression.length && /[a-zA-Z]/.test(expression[i])) {
-          variable += expression[i]
-          i++
-        }
-        
-        // Verificar si es un operador de palabra
-        if (['AND', 'OR', 'NOT'].includes(variable.toUpperCase())) {
-          tokens.push({ type: 'operator', value: variable.toUpperCase() })
-        } else {
-          tokens.push({ type: 'variable', value: variable.toUpperCase() })
-          this.variables.add(variable.toUpperCase())
-        }
-        continue
-      }
-      
-      // Operadores de símbolo
-      if (this.operators[char]) {
-        tokens.push({ type: 'operator', value: char })
+      if (char === ')') {
+        tokens.push({ type: 'RPAREN', value: ')' })
         i++
         continue
       }
       
-      // Operadores de dos caracteres
-      if (i + 1 < expression.length) {
-        const twoChar = expression.substring(i, i + 2)
-        if (this.operators[twoChar]) {
-          tokens.push({ type: 'operator', value: twoChar })
-          i += 2
-          continue
-        }
+      // NOT (como prefijo)
+      if (char === "'" || char === '!' || char === '¬' || char === '~') {
+        tokens.push({ type: 'OPERATOR', value: 'NOT' })
+        i++
+        continue
       }
       
       // Carácter no reconocido
-      this.errors.push(`Carácter no reconocido: '${char}' en posición ${i}`)
-      i++
+      throw new Error(`Carácter no reconocido: '${char}' en posición ${i}`)
     }
     
     return tokens
   }
 
-  /**
-   * Valida la sintaxis de los tokens
-   */
-  validateSyntax(tokens) {
-    let parenCount = 0
-    let expectingOperand = true
+  // Extraer variables únicas de la expresión
+  extractVariables(tokens) {
+    const variables = new Set()
     
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i]
-      const prevToken = i > 0 ? tokens[i - 1] : null
-      
-      if (token.type === 'parenthesis') {
-        if (token.value === '(') {
-          parenCount++
-          if (!expectingOperand) {
-            this.errors.push(`Operador esperado antes de '(' en posición ${i}`)
-          }
-        } else {
-          parenCount--
-          if (parenCount < 0) {
-            this.errors.push(`Paréntesis de cierre sin apertura en posición ${i}`)
-          }
-          expectingOperand = false
-        }
-      } else if (token.type === 'variable') {
-        if (!expectingOperand) {
-          this.errors.push(`Operador esperado antes de variable '${token.value}' en posición ${i}`)
-        }
-        expectingOperand = false
-      } else if (token.type === 'operator') {
-        const op = this.operators[token.value]
-        
-        if (op.type === 'NOT') {
-          if (!expectingOperand) {
-            this.errors.push(`Operador NOT debe preceder a un operando en posición ${i}`)
-          }
-          // NOT no cambia el estado de expectingOperand
-        } else {
-          if (expectingOperand) {
-            this.errors.push(`Operando esperado antes de operador '${token.value}' en posición ${i}`)
-          }
-          expectingOperand = true
-        }
+    tokens.forEach(token => {
+      if (token.type === 'VARIABLE') {
+        // Remover complementos para obtener la variable base
+        const baseVariable = token.value.replace(/'/g, '')
+        variables.add(baseVariable)
       }
-    }
+    })
     
-    if (parenCount !== 0) {
-      this.errors.push('Paréntesis no balanceados')
-    }
-    
-    if (expectingOperand) {
-      this.errors.push('Expresión incompleta: operando esperado al final')
-    }
+    return Array.from(variables).sort()
   }
 
-  /**
-   * Convierte notación infija a postfija (RPN)
-   */
+  // Convertir de infijo a postfijo (Shunting Yard Algorithm)
   infixToPostfix(tokens) {
     const output = []
-    const stack = []
+    const operatorStack = []
     
-    for (const token of tokens) {
-      if (token.type === 'variable') {
+    tokens.forEach((token, index) => {
+      if (token.type === 'VARIABLE' || token.type === 'CONSTANT') {
         output.push(token)
-      } else if (token.type === 'operator') {
-        const op = this.operators[token.value]
+      } else if (token.type === 'OPERATOR') {
+        while (
+          operatorStack.length > 0 &&
+          operatorStack[operatorStack.length - 1].type === 'OPERATOR' &&
+          this.precedence[operatorStack[operatorStack.length - 1].value] >= this.precedence[token.value]
+        ) {
+          output.push(operatorStack.pop())
+        }
+        operatorStack.push(token)
+      } else if (token.type === 'LPAREN') {
+        operatorStack.push(token)
+      } else if (token.type === 'RPAREN') {
+        while (
+          operatorStack.length > 0 &&
+          operatorStack[operatorStack.length - 1].type !== 'LPAREN'
+        ) {
+          output.push(operatorStack.pop())
+        }
         
-        if (op.type === 'NOT') {
-          stack.push(token)
-        } else {
-          while (stack.length > 0 && 
-                 stack[stack.length - 1].type === 'operator' &&
-                 this.operators[stack[stack.length - 1].value].precedence >= op.precedence) {
-            output.push(stack.pop())
-          }
-          stack.push(token)
+        if (operatorStack.length === 0) {
+          throw new Error('Paréntesis no balanceados')
         }
-      } else if (token.value === '(') {
-        stack.push(token)
-      } else if (token.value === ')') {
-        while (stack.length > 0 && stack[stack.length - 1].value !== '(') {
-          output.push(stack.pop())
-        }
-        if (stack.length > 0) {
-          stack.pop() // Remover '('
-        }
+        
+        operatorStack.pop() // Remover '('
       }
-    }
+    })
     
-    while (stack.length > 0) {
-      output.push(stack.pop())
+    while (operatorStack.length > 0) {
+      const token = operatorStack.pop()
+      if (token.type === 'LPAREN' || token.type === 'RPAREN') {
+        throw new Error('Paréntesis no balanceados')
+      }
+      output.push(token)
     }
     
     return output
   }
 
-  /**
-   * Construye el Árbol de Sintaxis Abstracta (AST)
-   */
+  // Construir AST desde postfijo
   buildAST(postfixTokens) {
     const stack = []
     
-    for (const token of postfixTokens) {
-      if (token.type === 'variable') {
+    postfixTokens.forEach(token => {
+      if (token.type === 'VARIABLE' || token.type === 'CONSTANT') {
         stack.push({
-          type: 'variable',
-          value: token.value,
-          children: []
+          type: token.type,
+          value: token.value
         })
-      } else if (token.type === 'operator') {
-        const op = this.operators[token.value]
-        
-        if (op.type === 'NOT') {
-          if (stack.length === 0) {
-            throw new Error('Operador NOT sin operando')
+      } else if (token.type === 'OPERATOR') {
+        if (token.value === 'NOT') {
+          if (stack.length < 1) {
+            throw new Error('Expresión inválida: operador NOT sin operando')
           }
           const operand = stack.pop()
           stack.push({
-            type: 'operation',
-            operator: token.value,
-            operationType: op.type,
-            children: [operand]
+            type: 'UNARY_OP',
+            operator: 'NOT',
+            operand: operand
           })
         } else {
           if (stack.length < 2) {
-            throw new Error(`Operador ${token.value} necesita dos operandos`)
+            throw new Error(`Expresión inválida: operador ${token.value} necesita dos operandos`)
           }
           const right = stack.pop()
           const left = stack.pop()
           stack.push({
-            type: 'operation',
+            type: 'BINARY_OP',
             operator: token.value,
-            operationType: op.type,
-            children: [left, right]
+            left: left,
+            right: right
           })
         }
       }
-    }
+    })
     
     if (stack.length !== 1) {
-      throw new Error('Expresión mal formada')
+      throw new Error('Expresión inválida: múltiples árboles de expresión')
     }
     
     return stack[0]
   }
 
-  /**
-   * Evalúa el AST con valores específicos de variables
-   */
-  evaluateAST(ast, variableValues) {
-    if (ast.type === 'variable') {
-      const value = variableValues[ast.value]
-      if (value === undefined) {
-        throw new Error(`Variable '${ast.value}' no tiene valor asignado`)
-      }
-      return Boolean(value)
+  // Evaluar AST con valores de variables
+  evaluateAST(ast, values) {
+    if (ast.type === 'CONSTANT') {
+      return ast.value === 1
     }
     
-    if (ast.type === 'operation') {
-      const op = ast.operationType
+    if (ast.type === 'VARIABLE') {
+      const baseVariable = ast.value.replace(/'/g, '')
+      const isComplemented = ast.value.includes("'")
+      const value = values[baseVariable]
       
-      if (op === 'NOT') {
-        return !this.evaluateAST(ast.children[0], variableValues)
-      } else if (op === 'AND') {
-        return this.evaluateAST(ast.children[0], variableValues) && 
-               this.evaluateAST(ast.children[1], variableValues)
-      } else if (op === 'OR') {
-        return this.evaluateAST(ast.children[0], variableValues) || 
-               this.evaluateAST(ast.children[1], variableValues)
+      if (value === undefined) {
+        throw new Error(`Variable '${baseVariable}' no tiene valor asignado`)
+      }
+      
+      return isComplemented ? !value : value
+    }
+    
+    if (ast.type === 'UNARY_OP') {
+      const operandValue = this.evaluateAST(ast.operand, values)
+      
+      if (ast.operator === 'NOT') {
+        return !operandValue
       }
     }
     
-    throw new Error('Tipo de nodo AST no reconocido')
-  }
-
-  /**
-   * Genera todas las combinaciones de valores para las variables
-   */
-  generateVariableCombinations(variables) {
-    const combinations = []
-    const numVars = variables.length
-    const totalCombinations = Math.pow(2, numVars)
-    
-    for (let i = 0; i < totalCombinations; i++) {
-      const combination = {}
-      for (let j = 0; j < numVars; j++) {
-        const bit = (i >> (numVars - 1 - j)) & 1
-        combination[variables[j]] = Boolean(bit)
+    if (ast.type === 'BINARY_OP') {
+      const leftValue = this.evaluateAST(ast.left, values)
+      const rightValue = this.evaluateAST(ast.right, values)
+      
+      switch (ast.operator) {
+        case 'AND':
+          return leftValue && rightValue
+        case 'OR':
+          return leftValue || rightValue
+        case 'XOR':
+          return leftValue !== rightValue
+        default:
+          throw new Error(`Operador desconocido: ${ast.operator}`)
       }
-      combinations.push(combination)
     }
     
-    return combinations
+    throw new Error('Nodo AST inválido')
   }
 
-  /**
-   * Genera la tabla de verdad completa
-   */
+  // Generar tabla de verdad
   generateTruthTable(ast, variables) {
-    const combinations = this.generateVariableCombinations(variables)
+    const numRows = Math.pow(2, variables.length)
     const table = []
     
-    for (const combination of combinations) {
+    for (let i = 0; i < numRows; i++) {
+      const values = {}
+      const row = {}
+      
+      // Generar combinación de valores
+      variables.forEach((variable, index) => {
+        const bitPosition = variables.length - 1 - index
+        const value = (i & (1 << bitPosition)) !== 0
+        values[variable] = value
+        row[variable] = value
+      })
+      
+      // Evaluar resultado
       try {
-        const result = this.evaluateAST(ast, combination)
-        table.push({
-          ...combination,
-          result: result
-        })
+        row.result = this.evaluateAST(ast, values)
+        
+        // Generar mintérmino y maxtérmino
+        if (row.result) {
+          const minTerms = variables.map((v, idx) => 
+            row[v] ? v : `${v}'`
+          )
+          row.minTerm = minTerms.join('·')
+        } else {
+          const maxTerms = variables.map((v, idx) => 
+            row[v] ? `${v}'` : v
+          )
+          row.maxTerm = `(${maxTerms.join('+')})`
+        }
+        
+        table.push(row)
       } catch (error) {
-        console.error('Error evaluando combinación:', combination, error)
-        table.push({
-          ...combination,
-          result: false,
-          error: error.message
-        })
+        console.error('Error evaluando fila:', error)
+        row.result = false
+        row.error = error.message
+        table.push(row)
       }
     }
     
     return table
   }
 
-  /**
-   * Convierte expresión a diferentes notaciones
-   */
-  convertToNotation(ast, targetNotation) {
-    const notationMap = {
-      'mathematical': { AND: '·', OR: '+', NOT: "'" },
-      'programming': { AND: '&&', OR: '||', NOT: '!' },
-      'formal': { AND: '∧', OR: '∨', NOT: '¬' },
-      'ascii': { AND: 'AND', OR: 'OR', NOT: 'NOT' }
-    }
-    
-    const operators = notationMap[targetNotation] || notationMap['mathematical']
-    
-    return this.astToString(ast, operators)
-  }
-
-  /**
-   * Convierte AST a string con notación específica
-   */
-  astToString(ast, operators) {
-    if (ast.type === 'variable') {
-      return ast.value
-    }
-    
-    if (ast.type === 'operation') {
-      const op = operators[ast.operationType] || ast.operator
-      
-      if (ast.operationType === 'NOT') {
-        return `${op}${this.astToString(ast.children[0], operators)}`
-      } else {
-        const left = this.astToString(ast.children[0], operators)
-        const right = this.astToString(ast.children[1], operators)
-        
-        // Agregar paréntesis si es necesario
-        const needsParens = ast.children[0].type === 'operation' && 
-                          ast.children[0].operationType !== ast.operationType
-        
-        const leftStr = needsParens ? `(${left})` : left
-        return `${leftStr} ${op} ${right}`
+  // Función principal de parsing
+  parse(expression) {
+    if (!expression || expression.trim() === '') {
+      return {
+        success: false,
+        errors: ['La expresión está vacía']
       }
     }
     
-    return ''
+    try {
+      const tokens = this.tokenize(expression)
+      const variables = this.extractVariables(tokens)
+      const postfix = this.infixToPostfix(tokens)
+      const ast = this.buildAST(postfix)
+      const normalized = this.normalizeExpression(expression)
+      
+      // Convertir postfix a string
+      const postfixNotation = postfix.map(t => 
+        t.type === 'OPERATOR' ? t.value : t.value
+      ).join(' ')
+      
+      return {
+        success: true,
+        tokens: tokens,
+        variables: variables,
+        postfix: postfix,
+        postfixNotation: postfixNotation,
+        ast: ast,
+        normalizedExpression: normalized,
+        originalExpression: expression
+      }
+    } catch (error) {
+      return {
+        success: false,
+        errors: [error.message],
+        originalExpression: expression
+      }
+    }
   }
 
-  /**
-   * Valida si una expresión es sintácticamente correcta
-   */
-  isValidExpression(expression) {
-    const result = this.parse(expression)
-    return result.success
-  }
-
-  /**
-   * Obtiene sugerencias para expresiones mal formadas
-   */
+  // Obtener sugerencias de corrección
   getSuggestions(expression) {
     const suggestions = []
     
-    // Detectar errores comunes
-    if (expression.includes('  ')) {
-      suggestions.push('Elimina espacios dobles')
+    // Verificar paréntesis balanceados
+    const openCount = (expression.match(/\(/g) || []).length
+    const closeCount = (expression.match(/\)/g) || []).length
+    
+    if (openCount !== closeCount) {
+      suggestions.push(`Verifica los paréntesis: ${openCount} abiertos, ${closeCount} cerrados`)
     }
     
-    if (expression.includes('AND AND') || expression.includes('OR OR')) {
-      suggestions.push('Elimina operadores duplicados')
+    // Verificar operadores consecutivos
+    if (/[+·*][+·*]/.test(expression)) {
+      suggestions.push('Evita operadores consecutivos (ej: ++, ··)')
     }
     
-    if (expression.includes('()')) {
-      suggestions.push('Elimina paréntesis vacíos')
+    // Verificar variables seguidas de operadores
+    if (/[A-Z]\s*[+·*]\s*[+·*]/.test(expression)) {
+      suggestions.push('Verifica la sintaxis de los operadores')
     }
     
-    if (!/[a-zA-Z]/.test(expression)) {
-      suggestions.push('Agrega al menos una variable')
+    // Sugerir multiplicación implícita
+    if (/[A-Z]\s+[A-Z]/.test(expression)) {
+      suggestions.push('¿Querías multiplicar? Usa el operador · o * entre variables')
     }
     
     return suggestions
   }
 }
 
-// Exportar instancia singleton
 export const booleanParser = new BooleanExpressionParser()
-export default booleanParser
