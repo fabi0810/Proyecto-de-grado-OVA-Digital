@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { booleanParser } from '../utils/BooleanExpressionParser'
 import { booleanSimplifier } from '../utils/BooleanSimplifier'
 import { karnaughMapper } from '../utils/KarnaughMapper'
-import BooleanExpressionEditor from './algebra/BooleanExpressionEditor'
-import TruthTableGenerator from './algebra/TruthTableGenerator'
-import SimplificationWizard from './algebra/SimplificationWizard'
-import KarnaughMapper from './algebra/KarnaughMapper'
-import BooleanTheoryExplainer from './algebra/BooleanTheoryExplainer'
-import BooleanChallengeModule from './algebra/BooleanChallengeModule'
-import BooleanExamModule from './algebra/BooleanExamModule'
+import BooleanExpressionEditor from './algebra/Editorexpresiones'
+import TruthTableGenerator from './algebra/GeneradorTablaverdad'
+import SimplificationWizard from './algebra/Asistentesimplificacion'
+import KarnaughMapper from './algebra/MapaKarnaugh'
+import BooleanTheoryExplainer from './algebra/Teoriaalebraboolean'
+import BooleanChallengeModule from './algebra/Desafioalgebrabooleana'
+import BooleanExamModule from './algebra/Examenalgebrabooleana'
 
 
 function BooleanAlgebra() {
@@ -107,67 +107,62 @@ function BooleanAlgebra() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+    <div className="max-w-7xl mx-auto p-4">
       {/* Header */}
-      <div className="bg-white shadow-lg border-b border-green-200">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gradient-uts mb-2">
-                Módulo 3: Álgebra Booleana
-              </h1>
-              <p className="text-gray-600">
-                Tablas de Verdad, Simplificación y Mapas de Karnaugh
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500 mb-1">Progreso General</div>
-              <div className="w-32 bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                  style={{ 
-                    width: `${Math.min(100, ((userProgress.expressionsTried || 0) + (userProgress.exercisesCompleted || 0)) * 5)}%` 
-                  }}
-                ></div>
-              </div>
-            </div>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          Módulo 3: Álgebra Booleana
+        </h1>
+        <p className="text-gray-600">
+          Tablas de Verdad, Simplificación y Mapas de Karnaugh
+        </p>
+        
+        {/* Barra de progreso debajo del header */}
+        <div className="mt-4 max-w-md mx-auto">
+          <div className="text-sm text-gray-500 mb-2">Progreso General</div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${Math.min(100, ((userProgress.expressionsTried || 0) + (userProgress.exercisesCompleted || 0)) * 5)}%` 
+              }}
+            ></div>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {Math.min(100, ((userProgress.expressionsTried || 0) + (userProgress.exercisesCompleted || 0)) * 5)}% completado
           </div>
         </div>
       </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="container mx-auto px-4">
-          <nav className="flex space-x-1 overflow-x-auto">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? 'border-green-500 text-green-700 bg-green-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </nav>
+  
+      {/* Tabs */}
+      <div className="mb-8">
+        <div className="flex flex-wrap justify-center gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-blue-50 border border-gray-200'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
-      
+  
+      {/* Main Content */}
+      <div className="min-h-96">
+        {/* Teoría */}
         {activeTab === 'teoria' && (
           <div className="space-y-6">
-            <BooleanTheoryExplainer
-             
-            />
+            <BooleanTheoryExplainer />
           </div>
         )}
-
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+  
         {/* Editor de Expresiones */}
         {activeTab === 'editor' && (
           <div className="space-y-6">
@@ -178,7 +173,7 @@ function BooleanAlgebra() {
             />
           </div>
         )}
-
+  
         {/* Tabla de Verdad */}
         {activeTab === 'truth-table' && (
           <div className="space-y-6">
@@ -190,7 +185,7 @@ function BooleanAlgebra() {
             />
           </div>
         )}
-
+  
         {/* Simplificación */}
         {activeTab === 'simplification' && (
           <div className="space-y-6">
@@ -203,7 +198,7 @@ function BooleanAlgebra() {
             />
           </div>
         )}
-
+  
         {/* Mapa de Karnaugh */}
         {activeTab === 'karnaugh' && (
           <div className="space-y-6">
@@ -215,22 +210,21 @@ function BooleanAlgebra() {
             />
           </div>
         )}
+  
+        {/* Desafío */}
         {activeTab === 'challenge' && (
           <div className="space-y-6">
-            <BooleanChallengeModule 
- 
-            />
+            <BooleanChallengeModule />
           </div>
         )}
-
-        {/* Ejercicios */}
+  
+        {/* Examen */}
         {activeTab === 'exercises' && (
           <div className="space-y-6">
-            <BooleanExamModule
-            />
+            <BooleanExamModule />
           </div>
         )}
-
+  
         {/* Progreso */}
         {activeTab === 'progress' && (
           <div className="space-y-6">
@@ -243,38 +237,36 @@ function BooleanAlgebra() {
           </div>
         )}
       </div>
-
-      {/* Footer con información del módulo */}
-      <div className="bg-gray-800 text-white py-8 mt-12">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Objetivos del Módulo</h3>
-              <ul className="space-y-2 text-sm">
-                <li>• Dominar el álgebra de Boole</li>
-                <li>• Generar tablas de verdad automáticamente</li>
-                <li>• Simplificar expresiones con teoremas</li>
-                <li>• Usar mapas de Karnaugh</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Teoremas Implementados</h3>
-              <ul className="space-y-2 text-sm">
-                <li>• Leyes de Identidad y Nulo</li>
-                <li>• Teoremas de DeMorgan</li>
-                <li>• Leyes de Absorción</li>
-                <li>• Teorema de Consenso</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Herramientas Disponibles</h3>
-              <ul className="space-y-2 text-sm">
-                <li>• Editor con validación en tiempo real</li>
-                <li>• Generador automático de tablas</li>
-                <li>• Simplificador paso a paso</li>
-                <li>• Mapas K interactivos</li>
-              </ul>
-            </div>
+  
+      {/* Footer */}
+      <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div>
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">Objetivos del Módulo</h3>
+            <ul className="text-blue-800 space-y-2 text-sm">
+              <li>• Dominar el álgebra de Boole</li>
+              <li>• Generar tablas de verdad automáticamente</li>
+              <li>• Simplificar expresiones con teoremas</li>
+              <li>• Usar mapas de Karnaugh</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">Teoremas Implementados</h3>
+            <ul className="text-blue-800 space-y-2 text-sm">
+              <li>• Leyes de Identidad y Nulo</li>
+              <li>• Teoremas de DeMorgan</li>
+              <li>• Leyes de Absorción</li>
+              <li>• Teorema de Consenso</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">Herramientas Disponibles</h3>
+            <ul className="text-blue-800 space-y-2 text-sm">
+              <li>• Editor con validación en tiempo real</li>
+              <li>• Generador automático de tablas</li>
+              <li>• Simplificador paso a paso</li>
+              <li>• Mapas K interactivos</li>
+            </ul>
           </div>
         </div>
       </div>

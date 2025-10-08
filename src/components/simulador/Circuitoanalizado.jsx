@@ -92,41 +92,7 @@ const CircuitAnalyzer = ({ circuitStats, nodes, edges }) => {
         </div>
       )}
 
-      {/* Entradas y salidas */}
-      <div className="space-y-4">
-        <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Entradas del Circuito</h4>
-          <div className="space-y-1">
-            {inputNodes.map(node => (
-              <div key={node.id} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">{node.data.label}:</span>
-                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                  node.data.value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {node.data.value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Salidas del Circuito</h4>
-          <div className="space-y-1">
-            {outputNodes.map(node => (
-              <div key={node.id} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">{node.data.label || node.data.gateType}:</span>
-                <span className={`px-2 py-1 rounded text-xs font-bold ${
-                  node.data.output === 1 ? 'bg-green-100 text-green-800' : 
-                  node.data.output === 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {node.data.output !== undefined ? node.data.output : '-'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      
 
       {/* Recomendaciones */}
       <div className="mt-6 p-3 bg-yellow-50 rounded-lg">

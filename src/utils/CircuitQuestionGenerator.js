@@ -1,5 +1,4 @@
-// src/utils/circuitQuestionGenerator.js
-// 🧠 SISTEMA INTELIGENTE MEJORADO PARA CIRCUITOS LÓGICOS
+//  SISTEMA INTELIGENTE GENERADR  PARA CIRCUITOS LÓGICOS
 
 export class CircuitQuestionGenerator {
   constructor() {
@@ -9,7 +8,7 @@ export class CircuitQuestionGenerator {
     this.performanceAnalyzer = new CircuitPerformanceAnalyzer()
   }
 
-  // 🎯 GENERADOR ADAPTATIVO DE PREGUNTAS
+  //  GENERADOR ADAPTATIVO DE PREGUNTAS
   generateAdaptiveQuiz(mode, count = 5) {
     const userLevel = this.determineCircuitLevel()
     const weakAreas = this.identifyWeakCircuitAreas()
@@ -29,7 +28,7 @@ export class CircuitQuestionGenerator {
     })
   }
 
-  // 🔍 ANÁLISIS DE NIVEL DEL USUARIO
+  //  ANÁLISIS DE NIVEL DEL USUARIO
   determineCircuitLevel() {
     const stats = this.userProfile.circuitStats
     
@@ -55,7 +54,7 @@ export class CircuitQuestionGenerator {
     return ['gates', 'algebra', 'design', 'applications']
   }
 
-  // 🏭 CREADOR DE PREGUNTAS PERSONALIZADAS
+  //  CREADOR DE PREGUNTAS PERSONALIZADAS
   createPersonalizedCircuitQuestions(mode, count, profile) {
     const questions = []
     const difficultyDistribution = this.getCircuitDifficultyDistribution(mode, profile.level)
@@ -83,7 +82,7 @@ export class CircuitQuestionGenerator {
     return questions
   }
 
-  // 📊 DISTRIBUCIÓN INTELIGENTE DE DIFICULTAD
+  //  DISTRIBUCIÓN INTELIGENTE DE DIFICULTAD
   getCircuitDifficultyDistribution(mode, userLevel) {
     const distributions = {
       beginner: {
@@ -119,7 +118,7 @@ export class CircuitQuestionGenerator {
       : types[Math.floor(Math.random() * types.length)]
   }
 
-  // 🎭 GENERADORES ESPECÍFICOS DE PREGUNTAS
+  //  GENERADORES ESPECÍFICOS DE PREGUNTAS
   generateSpecificCircuitQuestion(type, difficulty, id, usedTemplates) {
     const generators = {
       gates: this.generateGateQuestion.bind(this),
@@ -132,7 +131,7 @@ export class CircuitQuestionGenerator {
     return generator(difficulty, id, usedTemplates)
   }
 
-  // ⚡ GENERADOR DE PREGUNTAS SOBRE COMPUERTAS
+  //  GENERADOR DE PREGUNTAS SOBRE COMPUERTAS
   generateGateQuestion(difficulty, id, usedTemplates) {
     const templates = {
       easy: [
@@ -302,7 +301,7 @@ export class CircuitQuestionGenerator {
     }
   }
 
-  // 🧮 GENERADOR DE PREGUNTAS DE ÁLGEBRA BOOLEANA
+  //  GENERADOR DE PREGUNTAS DE ÁLGEBRA BOOLEANA
   generateAlgebraQuestion(difficulty, id, usedTemplates) {
     const templates = {
       easy: [
@@ -423,7 +422,7 @@ export class CircuitQuestionGenerator {
     }
   }
 
-  // 🔧 GENERADOR DE PREGUNTAS DE DISEÑO
+  //  GENERADOR DE PREGUNTAS DE DISEÑO
   generateDesignQuestion(difficulty, id, usedTemplates) {
     const templates = {
       easy: [
@@ -527,7 +526,7 @@ export class CircuitQuestionGenerator {
     }
   }
 
-  // 💡 GENERADOR DE PREGUNTAS DE APLICACIONES
+  //  GENERADOR DE PREGUNTAS DE APLICACIONES
   generateApplicationQuestion(difficulty, id, usedTemplates) {
     const templates = {
       easy: [
@@ -622,7 +621,7 @@ export class CircuitQuestionGenerator {
     }
   }
 
-  // 🔧 FUNCIONES AUXILIARES
+  //  FUNCIONES AUXILIARES
   calculateGateOutput(gate, inputs) {
     switch (gate) {
       case 'AND': return inputs.every(x => x === 1) ? 1 : 0
@@ -751,7 +750,7 @@ export class CircuitQuestionGenerator {
     }
   }
 
-  // 📈 ESTADÍSTICAS Y ANÁLISIS
+  //  ESTADÍSTICAS Y ANÁLISIS
   getDetailedCircuitStats() {
     return {
       profile: this.userProfile,
@@ -830,7 +829,7 @@ export class CircuitQuestionGenerator {
   }
 }
 
-// 📊 ANALIZADOR DE RENDIMIENTO
+//  ANALIZADOR DE RENDIMIENTO
 class CircuitPerformanceAnalyzer {
   analyzeQuizResults(questions, userAnswers) {
     const analysis = {

@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react'
 
 const QuizSystem = () => {
-  const [quizMode, setQuizMode] = useState('practice')
+  // Estados principales (mismo patrón que EvaluacionModulo)
+  const [examState, setExamState] = useState('intro') // 'intro', 'active', 'results'
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [userAnswers, setUserAnswers] = useState({})
-  const [showResults, setShowResults] = useState(false)
-  const [quizCompleted, setQuizCompleted] = useState(false)
-  const [score, setScore] = useState(0)
-  const [timeLeft, setTimeLeft] = useState(0)
-  const [quizStarted, setQuizStarted] = useState(false)
   const [questions, setQuestions] = useState([])
+  const [timeLeft, setTimeLeft] = useState(600) // 10 minutos
+  const [score, setScore] = useState(0)
   const [generatingQuestions, setGeneratingQuestions] = useState(false)
 
+  // Banco de preguntas (mantenido sin cambios)
   const questionBank = {
     conversion: {
       easy: [
@@ -186,26 +185,38 @@ const QuizSystem = () => {
     }
   }
 
-  const generateSmartQuestions = (mode, count = 5) => {
+  // ⏱️ TEMPORIZADOR (igual que EvaluacionModulo)
+  useEffect(() => {
+    if (examState === 'active' && timeLeft > 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            finishExam()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [examState, timeLeft])
+
+  // 🎯 GENERAR EXAMEN (adaptado del código original)
+  const generateExam = () => {
     setGeneratingQuestions(true)
     
-    // Simular tiempo de "generación" para mejor UX
     setTimeout(() => {
       const questions = []
       const usedQuestions = new Set()
-      
-      const difficulties = mode === 'practice' 
-        ? ['easy', 'easy', 'medium', 'medium', 'hard']
-        : ['easy', 'easy', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard']
-      
+      const count = 10 // Siempre 10 preguntas en modo examen
+      const difficulties = ['easy', 'easy', 'medium', 'medium', 'medium', 'hard', 'hard', 'hard', 'hard', 'hard']
       const categories = Object.keys(questionBank)
       
-      // ✅ CAMBIO: Usar while loop para garantizar el número exacto
       let attempts = 0
-      const maxAttempts = count * 5 // Evitar bucle infinito
+      const maxAttempts = count * 5
       
       while (questions.length < count && attempts < maxAttempts) {
-        const questionIndex = questions.length // Usar el índice actual como posición
+        const questionIndex = questions.length
         const category = categories[Math.floor(Math.random() * categories.length)]
         const difficulty = difficulties[questionIndex % difficulties.length] || 'medium'
         
@@ -213,13 +224,12 @@ const QuizSystem = () => {
         
         if (availableQuestions.length === 0) {
           attempts++
-          continue // Intentar con otra categoría
+          continue
         }
         
         const questionTemplate = availableQuestions[Math.floor(Math.random() * availableQuestions.length)]
-        const questionKey = `${category}-${difficulty}-${questionTemplate.question}-${Math.floor(attempts/10)}` // Permitir repeticiones después de varios intentos
+        const questionKey = `${category}-${difficulty}-${questionTemplate.question}-${Math.floor(attempts/10)}`
         
-        // ✅ CAMBIO: Ser menos estricto con preguntas repetidas después de muchos intentos
         if (usedQuestions.has(questionKey) && attempts < maxAttempts * 0.8) {
           attempts++
           continue
@@ -235,39 +245,38 @@ const QuizSystem = () => {
         attempts++
       }
       
-      // ✅ CAMBIO: Si aún faltan preguntas, llenar con preguntas básicas garantizadas
+      // Rellenar con preguntas fallback si es necesario
       while (questions.length < count) {
         const missingIndex = questions.length
         const fallbackQuestion = createFallbackQuestion(missingIndex + 1)
         questions.push(fallbackQuestion)
       }
       
-      // ✅ VERIFICACIÓN FINAL: Asegurar que tenemos exactamente el número solicitado
-      console.log(`✅ Quiz generado: ${questions.length} preguntas (solicitadas: ${count})`)
+      console.log(`✅ Examen generado: ${questions.length} preguntas`)
       
-      setQuestions(questions.slice(0, count)) // Por seguridad, cortar exactamente al número solicitado
+      setQuestions(questions.slice(0, count))
       setGeneratingQuestions(false)
+      setExamState('active')
+      setTimeLeft(600) // Reiniciar tiempo
     }, 1500)
   }
-  
 
-  // 🏭 FACTORÍA DE PREGUNTAS DINÁMICAS
+  // 🏭 CREAR PREGUNTA DESDE TEMPLATE (mantenido sin cambios)
   const createQuestionFromTemplate = (template, category, difficulty, id) => {
     let questionData
     
-    // Generar números aleatorios para las preguntas
     if (template.question.includes('{number}')) {
-      const num = Math.floor(Math.random() * 50) + 10 // 10-59
+      const num = Math.floor(Math.random() * 50) + 10
       questionData = template.generator(num)
       questionData.question = template.question.replace('{number}', num)
     }
     else if (template.question.includes('{binary}')) {
-      const num = Math.floor(Math.random() * 31) + 1 // 1-31
+      const num = Math.floor(Math.random() * 31) + 1
       questionData = template.generator(num)
       questionData.question = template.question.replace('{binary}', num.toString(2))
     }
     else if (template.question.includes('{hex}')) {
-      const num = Math.floor(Math.random() * 255) + 16 // 16-270
+      const num = Math.floor(Math.random() * 255) + 16
       questionData = template.generator(num)
       questionData.question = template.question.replace('{hex}', num.toString(16).toUpperCase())
     }
@@ -308,7 +317,6 @@ const QuizSystem = () => {
       questionData.question = template.question
     }
     
-    // Mezclar opciones
     const correctAnswer = questionData.options[0]
     const shuffledOptions = [...questionData.options].sort(() => Math.random() - 0.5)
     const newCorrectIndex = shuffledOptions.indexOf(correctAnswer)
@@ -326,111 +334,34 @@ const QuizSystem = () => {
       timestamp: new Date().toISOString()
     }
   }
+
   const createFallbackQuestion = (id) => {
-    const fallbackQuestions = [
-      {
-        question: `Convierte ${Math.floor(Math.random() * 30) + 10} decimal a binario`,
-        type: 'conversion',
-        difficulty: 'easy'
-      },
-      {
-        question: `¿Cuántos dígitos usa el sistema octal?`,
-        type: 'theory', 
-        difficulty: 'easy'
-      },
-      {
-        question: `¿Cuál es el valor decimal de ${Math.floor(Math.random() * 15 + 1).toString(2)} binario?`,
-        type: 'conversion',
-        difficulty: 'medium'
-      }
-    ]
-    
-    const template = fallbackQuestions[id % fallbackQuestions.length]
     const num = Math.floor(Math.random() * 30) + 10
-    
-    if (template.type === 'conversion' && template.question.includes('decimal a binario')) {
-      return {
-        id: Date.now() + id + Math.random(),
-        type: 'conversion',
-        difficulty: 'easy',
-        question: `Convierte ${num} decimal a binario`,
-        options: [
-          num.toString(2),
-          (num + 1).toString(2), 
-          (num - 1).toString(2),
-          (num + 2).toString(2)
-        ].sort(() => Math.random() - 0.5),
-        correct: [
-          num.toString(2),
-          (num + 1).toString(2),
-          (num - 1).toString(2), 
-          (num + 2).toString(2)
-        ].sort(() => Math.random() - 0.5).indexOf(num.toString(2)),
-        explanation: `${num} en binario es ${num.toString(2)}`,
-        hint: `Divide ${num} repetidamente por 2`,
-        generated: true
-      }
-    }
-    
-    if (template.type === 'theory') {
-      return {
-        id: Date.now() + id + Math.random(),
-        type: 'theory',
-        difficulty: 'easy', 
-        question: '¿Cuántos dígitos usa el sistema octal?',
-        options: ['8', '7', '9', '6'].sort(() => Math.random() - 0.5),
-        correct: ['8', '7', '9', '6'].sort(() => Math.random() - 0.5).indexOf('8'),
-        explanation: 'El sistema octal usa 8 dígitos: 0, 1, 2, 3, 4, 5, 6, 7',
-        hint: 'El nombre "octal" viene de "octo" = 8',
-        generated: true
-      }
-    }
-    
-    // Pregunta binario a decimal
-    const binaryNum = Math.floor(Math.random() * 15) + 1
-    const binaryStr = binaryNum.toString(2)
     
     return {
       id: Date.now() + id + Math.random(),
       type: 'conversion',
-      difficulty: 'medium',
-      question: `¿Cuál es el valor decimal de ${binaryStr} binario?`,
+      difficulty: 'easy',
+      question: `Convierte ${num} decimal a binario`,
       options: [
-        binaryNum.toString(),
-        (binaryNum + 1).toString(),
-        (binaryNum - 1).toString(),
-        (binaryNum + 2).toString()
+        num.toString(2),
+        (num + 1).toString(2), 
+        (num - 1).toString(2),
+        (num + 2).toString(2)
       ].sort(() => Math.random() - 0.5),
       correct: [
-        binaryNum.toString(),
-        (binaryNum + 1).toString(), 
-        (binaryNum - 1).toString(),
-        (binaryNum + 2).toString()
-      ].sort(() => Math.random() - 0.5).indexOf(binaryNum.toString()),
-      explanation: `${binaryStr} binario = ${binaryNum} decimal`,
-      hint: 'Suma las potencias de 2 donde hay 1s',
+        num.toString(2),
+        (num + 1).toString(2),
+        (num - 1).toString(2), 
+        (num + 2).toString(2)
+      ].sort(() => Math.random() - 0.5).indexOf(num.toString(2)),
+      explanation: `${num} en binario es ${num.toString(2)}`,
+      hint: `Divide ${num} repetidamente por 2`,
       generated: true
     }
   }
 
-  const startQuiz = (mode) => {
-    setQuizMode(mode)
-    setCurrentQuestion(0)
-    setUserAnswers({})
-    setShowResults(false)
-    setQuizCompleted(false)
-    setScore(0)
-    setQuizStarted(true)
-    
-    if (mode === 'exam') {
-      setTimeLeft(600) // 10 minutos
-    }
-    
-    // Generar preguntas inteligentemente
-    const count = mode === 'practice' ? 5 : 8
-    generateSmartQuestions(mode, count)
-  }
-
+  // 🎮 FUNCIONES DE CONTROL
   const handleAnswerSelect = (questionId, answerIndex) => {
     setUserAnswers(prev => ({
       ...prev,
@@ -441,8 +372,6 @@ const QuizSystem = () => {
   const nextQuestion = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1)
-    } else {
-      finishQuiz()
     }
   }
 
@@ -452,7 +381,7 @@ const QuizSystem = () => {
     }
   }
 
-  const finishQuiz = () => {
+  const finishExam = () => {
     let correctAnswers = 0
     questions.forEach(question => {
       if (userAnswers[question.id] === question.correct) {
@@ -461,20 +390,22 @@ const QuizSystem = () => {
     })
     
     setScore(correctAnswers)
-    setQuizCompleted(true)
-    setShowResults(true)
-    setQuizStarted(false)
+    setExamState('results')
   }
 
-  const resetQuiz = () => {
-    setQuestions([])
+  const resetExam = () => {
+    setExamState('intro')
     setCurrentQuestion(0)
     setUserAnswers({})
-    setShowResults(false)
-    setQuizCompleted(false)
+    setQuestions([])
     setScore(0)
-    setTimeLeft(0)
-    setQuizStarted(false)
+    setTimeLeft(600)
+  }
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
   const getScoreColor = (score, total) => {
@@ -492,23 +423,7 @@ const QuizSystem = () => {
     return 'Necesitas estudiar más. Te recomendamos repasar la teoría.'
   }
 
-  // Timer para examen
-  useEffect(() => {
-    if (quizMode === 'exam' && timeLeft > 0 && quizStarted) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
-      return () => clearTimeout(timer)
-    } else if (timeLeft === 0 && quizStarted && quizMode === 'exam') {
-      finishQuiz()
-    }
-  }, [timeLeft, quizStarted, quizMode])
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  // Pantalla de generación
+  // 🔄 PANTALLA DE CARGA
   if (generatingQuestions) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -518,299 +433,408 @@ const QuizSystem = () => {
             <span className="text-2xl">🧠</span>
           </div>
         </div>
-        <h3 className="text-lg font-semibold text-gray-700 mt-4 mb-2">Generando Quiz </h3>
+        <h3 className="text-lg font-semibold text-gray-700 mt-4 mb-2">Generando Examen</h3>
         <p className="text-sm text-gray-500 text-center max-w-md">
-          Creando preguntas ...
+          Creando preguntas sobre sistemas numéricos...
         </p>
-        <div className="mt-4 flex space-x-1">
-          {[0,1,2,3].map(i => (
-            <div 
-              key={i}
-              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-              style={{ animationDelay: `${i * 0.1}s` }}
-            ></div>
-          ))}
-        </div>
       </div>
     )
   }
 
-  if (!quizStarted && !showResults) {
+  // 📝 PANTALLA DE INTRODUCCIÓN (diseño del Módulo 2)
+  if (examState === 'intro') {
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto p-6">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            🎯 Sistema de Quiz
-          </h2>
-          <p className="text-gray-600">
-            Quiz para practicar y evaluar tus conocimientos.
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            📝 Evaluación del Módulo
+          </h1>
+          <p className="text-lg text-gray-600">
+            Sistemas Numéricos y Conversión de Bases
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          <div className="card text-center border-2 border-blue-200 hover:border-blue-400 transition-colors">
-            <div className="text-4xl mb-4">📚</div>
-            <h3 className="text-xl font-semibold mb-3">Modo Práctica</h3>
-            <p className="text-gray-600 mb-4">
-             Pon en practica tus conocimientos.
-            </p>
-            <div className="text-sm text-gray-500 mb-4">
-              ✓ Sin tiempo límite<br/>
-              ✓ Preguntas sobre el tema<br/>
-              ✓ Preguntas adaptativas
+        <div className="bg-white border-2 border-blue-200 rounded-lg p-8 shadow-lg mb-6">
+          <div className="flex items-start space-x-4 mb-6">
+            <div className="text-4xl">📚</div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">Sobre este Examen</h2>
+              <p className="text-gray-700 mb-4">
+                En este examen podrás <strong>repasar lo visto en el módulo</strong> a través de preguntas 
+                sobre conversión de bases, sistemas numéricos y sus aplicaciones.
+              </p>
+              <p className="text-gray-700">
+                Recuerda que tendrás un <strong>tiempo límite</strong> para responder. Una vez finalices, 
+                recibirás retroalimentación detallada con tus resultados.
+              </p>
             </div>
-            <button
-              onClick={() => startQuiz('practice')}
-              className="btn-primary w-full"
-            >
-            🚀 Comenzar Práctica
-            </button>
-          </div>    
-          <div className="card text-center border-2 border-red-200 hover:border-red-400 transition-colors">
-            <div className="text-4xl mb-4">🎯</div>
-            <h3 className="text-xl font-semibold mb-3">Modo Examen</h3>
-            <p className="text-gray-600 mb-4">
-              8 preguntas con dificultad progresiva.
-            </p>
-            <div className="text-sm text-gray-500 mb-4">
-              ✓ Tiempo límite: 10 min<br/>
-              ✓ Dificultad progresiva<br/>
-              ✓ Evaluación completa<br/>
-            </div>
-            <button
-              onClick={() => startQuiz('exam')}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors w-full"
-            >
-              ⚡ Comenzar Examen
-            </button>
           </div>
-        </div>
 
-        <div className="card bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-          <h3 className="font-semibold text-blue-900 mb-3 text-center">
-            🧬 Quiz con preguntas dinamicas y adaptadas a tu nivel.
-          </h3>
-          <div className="grid md:grid-cols-3 gap-4 text-sm">
-            <div className="bg-white p-3 rounded border text-center">
-              <div className="text-2xl mb-2">🎲</div>
-              <div className="font-semibold text-blue-800">Preguntas dinamicas</div>
-              <div className="text-blue-600">Preguntas aleatorias</div>
-            </div>
-            <div className="bg-white p-3 rounded border text-center">
-              <div className="text-2xl mb-2">🎯</div>
-              <div className="font-semibold text-purple-800">Dificultad Adaptativa</div>
-              <div className="text-purple-600">Se ajusta automáticamente a tu nivel</div>
-            </div>
-            <div className="bg-white p-3 rounded border text-center">
-              <div className="text-2xl mb-2">♾️</div>
-              <div className="font-semibold text-green-800">Modo Examen para practicar para el parcial</div>
-              <div className="text-green-600">Miles de combinaciones posibles</div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-3">📋 Características del Examen</h3>
+            <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
+              <div className="flex items-start">
+                <span className="text-blue-600 mr-2">✓</span>
+                <span><strong>10 preguntas</strong> sobre los temas del módulo</span>
+              </div>
+              <div className="flex items-start">
+                <span className="text-blue-600 mr-2">✓</span>
+                <span><strong>10 minutos</strong> de tiempo límite</span>
+              </div>
+              <div className="flex items-start">
+                <span className="text-blue-600 mr-2">✓</span>
+                <span><strong>Dificultad progresiva</strong> según los temas del módulo</span>
+              </div>
+              <div className="flex items-start">
+                <span className="text-blue-600 mr-2">✓</span>
+                <span><strong>Retroalimentación sobre el examen</strong> al finalizar</span>
+              </div>
+              <div className="flex items-start">
+                <span className="text-blue-600 mr-2">✓</span>
+                <span>Navegación <strong>libre entre preguntas</strong></span>
+              </div>
+              <div className="flex items-start">
+                <span className="text-blue-600 mr-2">✓</span>
+                <span><strong>Explicaciones detalladas</strong> de cada respuesta</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    )
-  }
 
-  if (showResults) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            📊 Resultados del {quizMode === 'practice' ? 'Ejercicio' : 'Examen'}
-          </h2>
-        </div>
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Recomendaciones</h3>
+            <ul className="text-sm text-yellow-800 space-y-1">
+              <li>• Asegúrate de tener una conexión estable a internet</li>
+              <li>• Busca un lugar tranquilo sin distracciones</li>
+              <li>• Lee cuidadosamente cada pregunta antes de responder</li>
+              <li>• Administra bien tu tiempo: tienes 1 minuto por pregunta aproximadamente</li>
+              <li>• Puedes revisar y cambiar tus respuestas antes de finalizar</li>
+            </ul>
+          </div>
 
-        <div className="card text-center bg-gradient-to-r from-blue-50 to-purple-50">
-          <div className={`text-6xl font-bold mb-2 ${getScoreColor(score, questions.length)}`}>
-            {score}/{questions.length}
-          </div>
-          <div className="text-2xl text-gray-600 mb-4">
-            {Math.round((score / questions.length) * 100)}% de aciertos
-          </div>
-          <div className="text-gray-700 mb-6 text-lg">
-            {getScoreMessage(score, questions.length)}
-          </div>
           <button
-            onClick={resetQuiz}
-            className="btn-primary text-lg px-8 py-3"
+            onClick={generateExam}
+            className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold text-lg shadow-md"
           >
-            🔄 Nuevo {quizMode === 'practice' ? 'Ejercicio' : 'Examen'}
+            🚀 Comenzar Examen
           </button>
         </div>
 
-        <div className="space-y-4">
-          {questions.map((question, index) => {
-            const userAnswer = userAnswers[question.id]
-            const isCorrect = userAnswer === question.correct
-            
-            return (
-              <div key={question.id} className={`card ${
-                isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-              }`}>
-                <div className="flex items-start justify-between mb-3">
-                  <h4 className="font-semibold flex-1">
-                    <span className="text-gray-500">#{index + 1}</span> {question.question}
-                  </h4>
-                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
-                  }`}>
-                    {isCorrect ? '✅ Correcta' : '❌ Incorrecta'}
-                  </div>
-                </div>
-                
-                <div className="space-y-2 mb-4">
-                  {question.options.map((option, optionIndex) => (
-                    <div key={optionIndex} className={`p-3 rounded-lg border ${
-                      optionIndex === question.correct ? 'bg-green-100 border-green-300' :
-                      optionIndex === userAnswer && !isCorrect ? 'bg-red-100 border-red-300' :
-                      'bg-gray-50 border-gray-200'
-                    }`}>
-                      <span className={`font-bold mr-3 ${
-                        optionIndex === question.correct ? 'text-green-700' :
-                        optionIndex === userAnswer && !isCorrect ? 'text-red-700' :
-                        'text-gray-600'
-                      }`}>
-                        {String.fromCharCode(65 + optionIndex)}. 
-                      </span>
-                      <span className={optionIndex === question.correct ? 'text-green-700 font-semibold' : ''}>
-                        {option}
-                      </span>
-                      {optionIndex === question.correct && (
-                        <span className="ml-2 text-green-600 font-semibold">← Respuesta correcta</span>
-                      )}
-                      {optionIndex === userAnswer && !isCorrect && (
-                        <span className="ml-2 text-red-600 font-semibold">← Tu respuesta</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="font-semibold text-blue-800 mb-2">💡 Explicación:</div>
-                  <div className="text-blue-700">{question.explanation}</div>
-                </div>
-              </div>
-            )
-          })}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+          <h3 className="font-semibold text-gray-900 mb-3">📖 Temas Evaluados</h3>
+          <div className="grid md:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center space-x-2">
+              <span className="text-blue-600">🔄</span>
+              <span className="text-gray-700">Conversión entre bases (binario, octal, decimal, hexadecimal)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-purple-600">📚</span>
+              <span className="text-gray-700">Teoría de sistemas numéricos</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-green-600">💡</span>
+              <span className="text-gray-700">Aplicaciones prácticas en computación</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-orange-600">🧮</span>
+              <span className="text-gray-700">Operaciones aritméticas en diferentes bases</span>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
-  const currentQ = questions[currentQuestion]
-  const userAnswer = userAnswers[currentQ?.id]
+  // 🎮 PANTALLA DE EXAMEN ACTIVO (diseño del Módulo 2)
+  if (examState === 'active') {
+    const currentQ = questions[currentQuestion]
+    const userAnswer = userAnswers[currentQ?.id]
+    const answeredCount = Object.keys(userAnswers).length
+    const progress = ((currentQuestion + 1) / questions.length) * 100
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg">
-        <div>
-          <h2 className="text-xl font-semibold">
-            {quizMode === 'practice' ? '📚 Ejercicio de Práctica' : '🎯 Examen'}
-          </h2>
-          <p className="text-sm text-gray-600">
-            Pregunta generada dinámicamente • {currentQ?.generated ? '🎲 Única' : '📝 Estática'}
-          </p>
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        {/* Header con temporizador */}
+        <div className="bg-white border-2 border-gray-200 rounded-lg p-4 mb-6 shadow-md sticky top-4 z-10">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-4">
+              <div className="text-sm">
+                <span className="text-gray-600">Pregunta</span>
+                <span className="ml-2 font-bold text-lg text-gray-900">
+                  {currentQuestion + 1} / {questions.length}
+                </span>
+              </div>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <div className="text-sm">
+                <span className="text-gray-600">Respondidas:</span>
+                <span className="ml-2 font-bold text-green-600">{answeredCount}/{questions.length}</span>
+              </div>
+            </div>
+
+            <div className={`flex items-center space-x-3 px-4 py-2 rounded-lg ${
+              timeLeft < 300 ? 'bg-red-100 text-red-800 border-2 border-red-300' : 'bg-blue-100 text-blue-800'
+            }`}>
+              <span className="text-2xl">{timeLeft < 300 ? '⏰' : '⏱️'}</span>
+              <span className="font-mono text-xl font-bold">{formatTime(timeLeft)}</span>
+            </div>
+          </div>
+
+          {/* Barra de progreso */}
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
         </div>
-        <div className="flex items-center space-x-4">
-          {quizMode === 'exam' && (
-            <div className="text-lg font-mono text-red-600 bg-red-50 px-3 py-1 rounded">
-              ⏱️ {formatTime(timeLeft)}
+
+        {/* Pregunta */}
+        <div className="bg-white border-2 border-gray-200 rounded-lg p-8 mb-6 shadow-md">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-4">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  currentQ?.type === 'conversion' ? 'bg-blue-100 text-blue-800' :
+                  currentQ?.type === 'theory' ? 'bg-purple-100 text-purple-800' :
+                  'bg-orange-100 text-orange-800'
+                }`}>
+                  {currentQ?.type === 'conversion' ? '🔄 Conversión' :
+                   currentQ?.type === 'theory' ? '📚 Teoría' : '💡 Aplicación'}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  currentQ?.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                  currentQ?.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {currentQ?.difficulty === 'easy' ? 'Básica' :
+                   currentQ?.difficulty === 'medium' ? 'Intermedia' : 'Avanzada'}
+                </span>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {currentQ?.question}
+              </h2>
+            </div>
+            {userAnswer !== undefined && (
+              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                ✓ Respondida
+              </span>
+            )}
+          </div>
+
+          {/* Opciones */}
+          <div className="space-y-3">
+            {currentQ?.options.map((option, index) => (
+              <button
+                key={index}
+                onClick={() => handleAnswerSelect(currentQ.id, index)}
+                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                  userAnswer === index
+                    ? 'border-blue-500 bg-blue-50 shadow-md'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center">
+                  <div className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center ${
+                    userAnswer === index
+                      ? 'border-blue-500 bg-blue-500'
+                      : 'border-gray-300'
+                  }`}>
+                    {userAnswer === index && (
+                      <span className="text-white text-sm">✓</span>
+                    )}
+                  </div>
+                  <span className="font-bold mr-3 text-lg">{String.fromCharCode(65 + index)}.</span>
+                  <span className="font-medium text-gray-900">{option}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Pista */}
+          {currentQ?.hint && (
+            <div className="mt-4 bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+              <div className="text-sm text-yellow-800">
+                <strong>💡 Pista:</strong> {currentQ.hint}
+              </div>
             </div>
           )}
-          <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded">
-            {currentQuestion + 1} de {questions.length}
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <span className={`text-sm px-3 py-1 rounded-full ${
-              currentQ?.type === 'conversion' ? 'bg-blue-100 text-blue-800' :
-              currentQ?.type === 'theory' ? 'bg-purple-100 text-purple-800' :
-              'bg-orange-100 text-orange-800'
-            }`}>
-              {currentQ?.type === 'conversion' ? '🔄 Conversión' :
-               currentQ?.type === 'theory' ? '📚 Teoría' :
-               '💡 Aplicación'}
-            </span>
-            <span className={`text-sm px-3 py-1 rounded-full ${
-              currentQ?.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
-              currentQ?.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-red-100 text-red-800'
-            }`}>
-              {currentQ?.difficulty === 'easy' ? '😊 Fácil' :
-               currentQ?.difficulty === 'medium' ? '🤔 Medio' : '🔥 Difícil'}
-            </span>
-          </div>
-          <h3 className="text-xl font-semibold mb-4 text-gray-800">
-            {currentQ?.question}
-          </h3>
         </div>
 
-        <div className="space-y-3 mb-6">
-          {currentQ?.options.map((option, index) => (
-            <label key={index} className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-              userAnswer === index ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-            }`}>
-              <input
-                type="radio"
-                name={`question-${currentQ.id}`}
-                value={index}
-                checked={userAnswer === index}
-                onChange={() => handleAnswerSelect(currentQ.id, index)}
-                className="mr-4 w-4 h-4"
-              />
-              <span className="font-bold mr-3 text-lg">{String.fromCharCode(65 + index)}.</span>
-              <span className="text-lg">{option}</span>
-            </label>
-          ))}
-        </div>
-
-        {currentQ?.hint && (
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
-            <div className="text-sm text-yellow-800">
-              <strong>💡 Pista:</strong> {currentQ.hint}
-            </div>
-          </div>
-        )}
-
-        <div className="flex justify-between">
+        {/* Navegación */}
+        <div className="flex items-center justify-between mb-6">
           <button
             onClick={previousQuestion}
             disabled={currentQuestion === 0}
-            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
           >
             ← Anterior
           </button>
-          
+
+          <div className="flex flex-wrap gap-2 justify-center">
+            {questions.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentQuestion(index)}
+                className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                  index === currentQuestion
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : userAnswers[questions[index].id] !== undefined
+                    ? 'bg-green-100 text-green-800 border-2 border-green-300'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+
           <button
-            onClick={nextQuestion}
-            disabled={userAnswer === undefined}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            onClick={currentQuestion === questions.length - 1 ? finishExam : nextQuestion}
+            disabled={userAnswer === undefined && currentQuestion === questions.length - 1}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
           >
-            {currentQuestion === questions.length - 1 ? 'Finalizar Quiz' : 'Siguiente →'}
+            {currentQuestion === questions.length - 1 ? '✓ Finalizar' : 'Siguiente →'}
+          </button>
+        </div>
+
+        {/* Advertencia */}
+        {answeredCount < questions.length && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+            <p className="text-sm text-yellow-800">
+              ⚠️ Tienes <strong>{questions.length - answeredCount}</strong> pregunta(s) sin responder. 
+              Puedes navegar usando los números arriba.
+            </p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // 📊 PANTALLA DE RESULTADOS (diseño del Módulo 2)
+  if (examState === 'results') {
+    const percentage = (score / questions.length) * 100
+
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            📊 Resultados del Examen
+          </h1>
+        </div>
+
+        {/* Resumen */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-lg p-8 mb-6 shadow-lg">
+          <div className="text-center">
+            <div className="text-7xl mb-4">
+              {percentage >= 90 ? '🏆' : percentage >= 70 ? '🎉' : percentage >= 50 ? '👍' : '📚'}
+            </div>
+            <div className={`text-5xl font-bold mb-2 ${getScoreColor(score, questions.length)}`}>
+              {score}/{questions.length}
+            </div>
+            <div className="text-2xl text-gray-600 mb-4">
+              {percentage.toFixed(1)}% de aciertos
+            </div>
+            <p className="text-lg text-gray-700 mb-6 max-w-2xl mx-auto">
+              {getScoreMessage(score, questions.length)}
+            </p>
+            
+            <button
+              onClick={resetExam}
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg shadow-md"
+            >
+              🔄 Realizar Nuevo Examen
+            </button>
+          </div>
+        </div>
+
+        {/* Análisis detallado */}
+        <div className="bg-white border-2 border-gray-200 rounded-lg p-6 mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">📝 Revisión Detallada</h3>
+          
+          <div className="space-y-4">
+            {questions.map((question, index) => {
+              const userAnswer = userAnswers[question.id]
+              const isCorrect = userAnswer === question.correct
+              
+              return (
+                <div 
+                  key={question.id}
+                  className={`border-2 rounded-lg p-6 ${
+                    isCorrect 
+                      ? 'border-green-200 bg-green-50' 
+                      : 'border-red-200 bg-red-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-2xl">
+                          {isCorrect ? '✅' : '❌'}
+                        </span>
+                        <span className="font-bold text-gray-900">
+                          Pregunta {index + 1}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          question.type === 'conversion' ? 'bg-blue-100 text-blue-800' :
+                          question.type === 'theory' ? 'bg-purple-100 text-purple-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {question.type === 'conversion' ? 'Conversión' :
+                           question.type === 'theory' ? 'Teoría' : 'Aplicación'}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 font-medium mb-3">{question.question}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    {question.options.map((option, optionIndex) => (
+                      <div
+                        key={optionIndex}
+                        className={`p-3 rounded-lg border ${
+                          optionIndex === question.correct
+                            ? 'bg-green-100 border-green-300 font-semibold'
+                            : optionIndex === userAnswer && !isCorrect
+                            ? 'bg-red-100 border-red-300'
+                            : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        <span className="font-bold mr-3">
+                          {String.fromCharCode(65 + optionIndex)}.
+                        </span>
+                        <span>{option}</span>
+                        {optionIndex === question.correct && (
+                          <span className="ml-2 text-green-600 font-semibold">← Correcta</span>
+                        )}
+                        {optionIndex === userAnswer && !isCorrect && (
+                          <span className="ml-2 text-red-600 font-semibold">← Tu respuesta</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="font-semibold text-blue-800 mb-2">💡 Explicación:</div>
+                    <div className="text-blue-700">{question.explanation}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="text-center">
+          <button
+            onClick={resetExam}
+            className="px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+          >
+            ← Volver al Inicio
           </button>
         </div>
       </div>
+    )
+  }
 
-      {/* Barra de progreso mejorada */}
-      <div className="bg-gray-100 rounded-full h-3 overflow-hidden">
-        <div 
-          className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-500 ease-out"
-          style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-        >
-          <div className="h-full bg-white/20 animate-pulse"></div>
-        </div>
-      </div>
-      
-      <div className="text-center text-sm text-gray-500">
-        Progreso: {currentQuestion + 1}/{questions.length} preguntas completadas
-      </div>
-    </div>
-  )
+  return null
 }
 
 export default QuizSystem

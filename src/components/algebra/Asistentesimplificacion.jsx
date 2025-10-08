@@ -1,4 +1,3 @@
-// src/components/algebra/SimplificationWizard.jsx
 import { useState, useEffect } from 'react'
 import { booleanSimplifier } from '../../utils/BooleanSimplifier'
 

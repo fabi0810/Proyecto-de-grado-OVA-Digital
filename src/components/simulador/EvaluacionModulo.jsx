@@ -10,7 +10,7 @@ const EvaluacionModulo= () => {
   const [score, setScore] = useState(0)
   const [generatingExam, setGeneratingExam] = useState(false)
 
-  // ⏱️ TEMPORIZADOR
+  //  TIEMPO DEL EXAME
   useEffect(() => {
     if (examState === 'active' && timeLeft > 0) {
       const timer = setTimeout(() => {
@@ -26,7 +26,7 @@ const EvaluacionModulo= () => {
     }
   }, [examState, timeLeft])
 
-  // 🎯 GENERAR EXAMEN
+  //  SE GENERA EL  EXAMEN
   const generateExam = () => {
     setGeneratingExam(true)
 
@@ -41,7 +41,7 @@ const EvaluacionModulo= () => {
         setQuestions(examQuestions)
         setGeneratingExam(false)
         setExamState('active')
-        setTimeLeft(600) // Reiniciar tiempo
+        setTimeLeft(600) 
         
       } catch (error) {
         console.error('Error generando examen:', error)
@@ -96,7 +96,7 @@ const EvaluacionModulo= () => {
     }
   }
 
-  // 🎮 FUNCIONES DE CONTROL
+  //  FUNCIONES DE CONTROL
   const handleAnswerSelect = (questionId, answerIndex) => {
     setUserAnswers(prev => ({
       ...prev,
@@ -296,7 +296,7 @@ const EvaluacionModulo= () => {
     )
   }
 
-  // 🎮 PANTALLA DE EXAMEN ACTIVO
+  //  PANTALLA DE EXAMEN ACTIVO
   if (examState === 'active') {
     const currentQ = questions[currentQuestion]
     const userAnswer = userAnswers[currentQ?.id]

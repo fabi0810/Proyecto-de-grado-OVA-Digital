@@ -12,7 +12,6 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
-// Importar componentes separados
 import LogicGateNode from './simulador/LogicaNodos'
 import InputNode from './simulador/EntradaNodo'
 import GatePalette from './simulador/Paletasimulador'
@@ -24,7 +23,6 @@ import ResultsDisplay from './simulador/ResultadoCircuito'
 import TheoryModule from './simulador/ModuloTeoria'
 import AdvancedQuestionGenerator from './simulador/EvaluacionModulo'
 
-// ============= COMPONENTE PRINCIPAL =============
 function CircuitSimulator() {
   
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -52,7 +50,6 @@ function CircuitSimulator() {
   const tabs = [
     { id: 'theory', label: 'Teoría', icon: '📚' },
     { id: 'design', label: 'Diseño', icon: '🎨' },
-    { id: 'simulate', label: 'Simular', icon: '⚡' },
     { id: 'analyze', label: 'Analizar', icon: '🔍' },
     { id: 'challenges', label: 'Retos', icon: '🎯' },
     { id: 'questions', label: 'Preguntas', icon: '❓' }
