@@ -11,8 +11,9 @@ const GatePalette = ({ onGateSelect, selectedGate, onAddInput }) => {
     { id: 'XNOR', name: 'XNOR', color: 'bg-pink-100 hover:bg-pink-200' }
   ]
 
-  const onDragStart = (event, gateType) => {
-    event.dataTransfer.setData('application/reactflow', gateType)
+  const onDragStart = (event, payload) => {
+    const data = typeof payload === 'string' ? payload : JSON.stringify(payload)
+    event.dataTransfer.setData('application/reactflow', data)
   }
 
   const handleAddInput = () => {
@@ -43,7 +44,7 @@ const GatePalette = ({ onGateSelect, selectedGate, onAddInput }) => {
           <div
             key={gate.id}
             draggable
-            onDragStart={(e) => onDragStart(e, gate.id)}
+            onDragStart={(e) => onDragStart(e, { type: 'logicGate', id: gate.id, gateType: gate.id })}
             onClick={() => onGateSelect(gate)}
             className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
               selectedGate?.id === gate.id 
@@ -65,6 +66,34 @@ const GatePalette = ({ onGateSelect, selectedGate, onAddInput }) => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Extras: Constantes y Salidas */}
+      <div className="mt-4">
+        <h4 className="text-sm font-semibold text-gray-900 mb-2">Fuentes y Salidas</h4>
+        <div className="grid grid-cols-2 gap-3">
+          <div
+            draggable
+            onDragStart={(e) => onDragStart(e, { type: 'constant', id: 'CONST0', data: { value: 0, label: 'Const 0' } })}
+            className="p-3 rounded-lg border-2 cursor-move bg-white border-gray-300 hover:shadow-sm"
+          >
+            <div className="text-center text-sm font-bold">Const 0</div>
+          </div>
+          <div
+            draggable
+            onDragStart={(e) => onDragStart(e, { type: 'constant', id: 'CONST1', data: { value: 1, label: 'Const 1' } })}
+            className="p-3 rounded-lg border-2 cursor-move bg-white border-gray-300 hover:shadow-sm"
+          >
+            <div className="text-center text-sm font-bold">Const 1</div>
+          </div>
+          <div
+            draggable
+            onDragStart={(e) => onDragStart(e, { type: 'output', id: 'OUTPUT', data: { label: 'OUT' } })}
+            className="p-3 rounded-lg border-2 cursor-move bg-white border-gray-300 hover:shadow-sm col-span-2"
+          >
+            <div className="text-center text-sm font-bold">Salida (Probe/LED)</div>
+          </div>
+        </div>
       </div>
       
       {selectedGate && (

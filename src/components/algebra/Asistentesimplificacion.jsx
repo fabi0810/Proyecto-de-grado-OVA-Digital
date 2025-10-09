@@ -3,21 +3,12 @@ import { booleanSimplifier } from '../../utils/BooleanSimplifier'
 
 function SimplificationWizard({ expression, parsedExpression, simplificationResult, onSimplification, onExpressionChange }) {
   const [simplificationOptions, setSimplificationOptions] = useState(() => {
-    const saved = localStorage.getItem('simplificationOptionsDefaults')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        return {
-          showAllSteps: true,
-          targetForm: parsed.targetForm || 'SOP',
-          useKarnaugh: parsed.useKarnaugh !== undefined ? parsed.useKarnaugh : true
-        }
-      } catch (_) {}
-    }
+    // ✅ ELIMINADO: localStorage - usar estado en memoria
     return {
       showAllSteps: true,
       targetForm: 'SOP',
-      useKarnaugh: true
+      useKarnaugh: true,
+      maxSteps: 50
     }
   })
   const [currentStep, setCurrentStep] = useState(0)
@@ -33,14 +24,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
     }
   }, [simplificationResult])
 
-  // Persistir preferencias por defecto
-  useEffect(() => {
-    const defaults = {
-      targetForm: simplificationOptions.targetForm,
-      useKarnaugh: simplificationOptions.useKarnaugh
-    }
-    localStorage.setItem('simplificationOptionsDefaults', JSON.stringify(defaults))
-  }, [simplificationOptions.targetForm, simplificationOptions.useKarnaugh])
+  // ✅ ELIMINADO: useEffect con localStorage
 
   // Auto-reproducción de pasos
   useEffect(() => {
@@ -429,12 +413,19 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
                 {simplificationResult.steps[currentStep].equivalence && (
                   <div className="mt-4 p-4 rounded-lg border bg-white">
                     {simplificationResult.steps[currentStep].equivalence.equivalent ? (
-                      <div className="text-green-700 text-sm">Equivalente ✔️</div>
+                      <div className="text-green-700 text-sm font-medium flex items-center space-x-2">
+                        <span>✔️</span>
+                        <span>Expresiones equivalentes verificadas</span>
+                      </div>
                     ) : (
                       <div className="text-red-700 text-sm">
-                        No equivalente ✖️{simplificationResult.steps[currentStep].equivalence.counterExample && (
-                          <div className="mt-2 text-xs text-red-600">
-                            Contraejemplo: {Object.entries(simplificationResult.steps[currentStep].equivalence.counterExample).map(([k,v])=>`${k}=${v?1:0}`).join(', ')}
+                        <div className="font-medium flex items-center space-x-2 mb-2">
+                          <span>✖️</span>
+                          <span>No equivalente</span>
+                        </div>
+                        {simplificationResult.steps[currentStep].equivalence.counterExample && (
+                          <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                            <strong>Contraejemplo:</strong> {Object.entries(simplificationResult.steps[currentStep].equivalence.counterExample).map(([k,v])=>`${k}=${v?1:0}`).join(', ')}
                           </div>
                         )}
                       </div>
@@ -490,8 +481,8 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
                           {step.from} → {step.to}
                         </div>
                         {step.equivalence && (
-                          <div className={`mt-1 text-xs ${step.equivalence.equivalent ? 'text-green-700' : 'text-red-700'}`}>
-                            {step.equivalence.equivalent ? 'Equivalente' : 'No equivalente'}
+                          <div className={`mt-1 text-xs font-medium ${step.equivalence.equivalent ? 'text-green-700' : 'text-red-700'}`}>
+                            {step.equivalence.equivalent ? '✔️ Equivalente' : '✖️ No equivalente'}
                           </div>
                         )}
                       </div>

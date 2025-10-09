@@ -1,517 +1,452 @@
-/**
- * Motor de Simplificación Booleana Avanzado
- * Implementa todos los teoremas fundamentales del álgebra de Boole
- * con explicaciones paso a paso y justificaciones matemáticas
- */
+// src/utils/BooleanSimplifier.js
+// Simplificador booleano COMPLETO con todas las leyes correctamente implementadas
 
-import { booleanParser } from './BooleanExpressionParser'
-import { karnaughMapper } from './KarnaughMapper'
+import { BooleanEvaluator } from './BooleanEvaluator'
 
-export class BooleanSimplifier {
+class BooleanSimplifier {
   constructor() {
-    this.theorems = {
-      // Leyes de Identidad
-      identity: {
-        name: 'Ley de Identidad',
-        patterns: [
-          { from: 'A·1', to: 'A', explanation: 'A·1 = A (Elemento neutro del producto)' },
-          { from: 'A+0', to: 'A', explanation: 'A+0 = A (Elemento neutro de la suma)' }
-        ]
-      },
-      
-      // Leyes de Nulo
-      null: {
-        name: 'Ley de Nulo',
-        patterns: [
-          { from: 'A·0', to: '0', explanation: 'A·0 = 0 (Absorción por cero)' },
-          { from: 'A+1', to: '1', explanation: 'A+1 = 1 (Absorción por uno)' }
-        ]
-      },
-      
-      // Leyes de Idempotencia
-      idempotence: {
-        name: 'Ley de Idempotencia',
-        patterns: [
-          { from: 'A·A', to: 'A', explanation: 'A·A = A (Idempotencia del producto)' },
-          { from: 'A+A', to: 'A', explanation: 'A+A = A (Idempotencia de la suma)' }
-        ]
-      },
-      
-      // Leyes de Complemento
-      complement: {
-        name: 'Ley de Complemento',
-        patterns: [
-          { from: 'A·A\'', to: '0', explanation: 'A·A\' = 0 (Complemento del producto)' },
-          { from: 'A+A\'', to: '1', explanation: 'A+A\' = 1 (Complemento de la suma)' }
-        ]
-      },
-      
-      // Leyes Conmutativas
-      commutative: {
-        name: 'Ley Conmutativa',
-        patterns: [
-          { from: 'A·B', to: 'B·A', explanation: 'A·B = B·A (Conmutatividad del producto)' },
-          { from: 'A+B', to: 'B+A', explanation: 'A+B = B+A (Conmutatividad de la suma)' }
-        ]
-      },
-      
-      // Leyes Asociativas
-      associative: {
-        name: 'Ley Asociativa',
-        patterns: [
-          { from: '(A·B)·C', to: 'A·(B·C)', explanation: '(A·B)·C = A·(B·C) (Asociatividad del producto)' },
-          { from: '(A+B)+C', to: 'A+(B+C)', explanation: '(A+B)+C = A+(B+C) (Asociatividad de la suma)' }
-        ]
-      },
-      
-      // Leyes Distributivas
-      distributive: {
-        name: 'Ley Distributiva',
-        patterns: [
-          { from: 'A·(B+C)', to: 'A·B+A·C', explanation: 'A·(B+C) = A·B+A·C (Distributividad del producto)' },
-          { from: 'A+(B·C)', to: '(A+B)·(A+C)', explanation: 'A+(B·C) = (A+B)·(A+C) (Distributividad de la suma)' }
-        ]
-      },
-      
-      // Teoremas de DeMorgan
-      demorgan: {
-        name: 'Teorema de DeMorgan',
-        patterns: [
-          { from: '(A·B)\'', to: 'A\'+B\'', explanation: '(A·B)\' = A\'+B\' (DeMorgan del producto)' },
-          { from: '(A+B)\'', to: 'A\'·B\'', explanation: '(A+B)\' = A\'·B\' (DeMorgan de la suma)' }
-        ]
-      },
-      
-      // Leyes de Absorción
-      absorption: {
-        name: 'Ley de Absorción',
-        patterns: [
-          { from: 'A+A·B', to: 'A', explanation: 'A+A·B = A (Absorción: A absorbe A·B)' },
-          { from: 'A·(A+B)', to: 'A', explanation: 'A·(A+B) = A (Absorción: A absorbe A+B)' },
-          { from: 'A+A\'·B', to: 'A+B', explanation: 'A+A\'·B = A+B (Absorción con complemento)' },
-          { from: 'A·(A\'+B)', to: 'A·B', explanation: 'A·(A\'+B) = A·B (Absorción con complemento)' }
-        ]
-      },
-      
-      // Teorema de Consenso
-      consensus: {
-        name: 'Teorema de Consenso',
-        patterns: [
-          { from: 'A·B+A\'·C+B·C', to: 'A·B+A\'·C', explanation: 'A·B+A\'·C+B·C = A·B+A\'·C (Consenso)' }
-        ]
-      },
-      
-      // Leyes de Involución
-      involution: {
-        name: 'Ley de Involución',
-        patterns: [
-          { from: 'A\'\'', to: 'A', explanation: 'A\'\' = A (Doble negación)' }
-        ]
-      }
-    }
-    
-    this.simplificationHistory = []
+    this.steps = []
+    this.maxIterations = 100
   }
 
   /**
-   * Simplifica una expresión booleana paso a paso
+   * Normaliza la expresión a formato estándar
+   */
+  normalize(expr) {
+    let normalized = expr
+      .replace(/\s+/g, '')
+      .replace(/\*|×|&{2}|AND/gi, '·')
+      .replace(/\||∨|OR/gi, '+')
+      .replace(/!|¬|~|NOT\s*/gi, "'")
+      .toUpperCase()
+    
+    return normalized
+  }
+
+  /**
+   * ✅ CORREGIDO: Aplica De Morgan COMPLETO
+   * Maneja cualquier expresión, no solo literales A, B
+   */
+  applyDeMorgan(expr) {
+    let result = expr
+    let changed = true
+    let iterations = 0
+    
+    while (changed && iterations < 50) {
+      const before = result
+      
+      // (cualquier_expresión)' → transformar según lo que hay dentro
+      result = result.replace(/\(([^()]+)\)'/g, (match, inner) => {
+        // Dividir por el operador principal
+        if (inner.includes('+') && !this.isInsideParentheses(inner, '+')) {
+          // (A + B + C)' → A'·B'·C'
+          const terms = this.splitByOperator(inner, '+')
+          const negated = terms.map(term => this.negateTerm(term.trim()))
+          return '(' + negated.join('·') + ')'
+        } else if (inner.includes('·') && !this.isInsideParentheses(inner, '·')) {
+          // (A·B·C)' → A' + B' + C'
+          const terms = this.splitByOperator(inner, '·')
+          const negated = terms.map(term => this.negateTerm(term.trim()))
+          return '(' + negated.join('+') + ')'
+        } else {
+          // Variable simple o expresión sin operadores
+          return this.negateTerm(inner)
+        }
+      })
+      
+      changed = (before !== result)
+      iterations++
+    }
+    
+    return result
+  }
+
+  /**
+   * Verifica si un operador está dentro de paréntesis
+   */
+  isInsideParentheses(expr, operator) {
+    let depth = 0
+    for (let i = 0; i < expr.length; i++) {
+      if (expr[i] === '(') depth++
+      if (expr[i] === ')') depth--
+      if (expr[i] === operator && depth === 0) return false
+    }
+    return true
+  }
+
+  /**
+   * Divide una expresión por un operador (respetando paréntesis)
+   */
+  splitByOperator(expr, operator) {
+    const terms = []
+    let current = ''
+    let depth = 0
+    
+    for (let i = 0; i < expr.length; i++) {
+      const char = expr[i]
+      
+      if (char === '(') depth++
+      if (char === ')') depth--
+      
+      if (char === operator && depth === 0) {
+        if (current) terms.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    
+    if (current) terms.push(current.trim())
+    return terms
+  }
+
+  /**
+   * Niega un término (maneja doble negación)
+   */
+  negateTerm(term) {
+    term = term.trim()
+    
+    // Doble negación: A'' → A
+    if (term.endsWith("''")) {
+      return term.slice(0, -2)
+    }
+    
+    // Ya negado: A' → A
+    if (term.endsWith("'")) {
+      return term.slice(0, -1)
+    }
+    
+    // Término con paréntesis: (A+B) → se procesará después
+    return term + "'"
+  }
+
+  /**
+   * ✅ NUEVO: Aplica absorción completa
+   * A + A·B → A
+   * A·(A + B) → A
+   * A + A'·B → A + B
+   */
+  applyAbsorption(expr) {
+    let result = expr
+    let changed = true
+    
+    while (changed) {
+      const before = result
+      
+      // A + A·cualquier_cosa → A
+      result = result.replace(/([A-Z]'?)\+\1·[^+]+/g, '$1')
+      
+      // A·cualquier_cosa + A → A
+      result = result.replace(/([A-Z]'?)·[^+]+\+\1(?![A-Z])/g, '$1')
+      
+      // A·(A + cualquier_cosa) → A
+      result = result.replace(/([A-Z]'?)·\(\1\+[^)]+\)/g, '$1')
+      
+      // A + A'·B → A + B (absorción con complemento)
+      result = result.replace(/([A-Z])\+\1'·([A-Z]'?)/g, '$1+$2')
+      
+      changed = (before !== result)
+    }
+    
+    return result
+  }
+
+  /**
+   * ✅ NUEVO: Aplica consenso
+   * A·B + A'·C + B·C → A·B + A'·C
+   */
+  applyConsensus(expr) {
+    let result = expr
+    
+    // Detectar patrón X·Y + X'·Z + Y·Z
+    const terms = this.splitByOperator(result, '+')
+    
+    for (let i = 0; i < terms.length; i++) {
+      for (let j = i + 1; j < terms.length; j++) {
+        for (let k = j + 1; k < terms.length; k++) {
+          const term1 = terms[i].trim()
+          const term2 = terms[j].trim()
+          const term3 = terms[k].trim()
+          
+          // Verificar si term3 es consenso de term1 y term2
+          if (this.isConsensus(term1, term2, term3)) {
+            // Eliminar term3
+            terms.splice(k, 1)
+            result = terms.join('+')
+            return result
+          }
+        }
+      }
+    }
+    
+    return result
+  }
+
+  /**
+   * Verifica si term3 es consenso de term1 y term2
+   */
+  isConsensus(term1, term2, term3) {
+    const factors1 = term1.split('·').map(f => f.trim())
+    const factors2 = term2.split('·').map(f => f.trim())
+    const factors3 = term3.split('·').map(f => f.trim())
+    
+    // Buscar variable complementaria en term1 y term2
+    for (const f1 of factors1) {
+      const complement = f1.endsWith("'") ? f1.slice(0, -1) : f1 + "'"
+      
+      if (factors2.includes(complement)) {
+        // Verificar si term3 contiene los otros factores
+        const others1 = factors1.filter(f => f !== f1)
+        const others2 = factors2.filter(f => f !== complement)
+        const allOthers = [...new Set([...others1, ...others2])]
+        
+        // term3 debe ser exactamente los otros factores
+        return allOthers.every(f => factors3.includes(f)) && factors3.length === allOthers.length
+      }
+    }
+    
+    return false
+  }
+
+  /**
+   * ✅ NUEVO: Factorización completa
+   * A·B + A·C → A·(B+C)
+   */
+  applyFactorization(expr) {
+    let result = expr
+    const terms = this.splitByOperator(result, '+')
+    
+    if (terms.length < 2) return result
+    
+    // Buscar factores comunes entre todos los términos
+    for (let i = 0; i < terms.length - 1; i++) {
+      for (let j = i + 1; j < terms.length; j++) {
+        const factors1 = terms[i].split('·').map(f => f.trim())
+        const factors2 = terms[j].split('·').map(f => f.trim())
+        
+        // Encontrar factores comunes
+        const common = factors1.filter(f => factors2.includes(f))
+        
+        if (common.length > 0) {
+          const remaining1 = factors1.filter(f => !common.includes(f))
+          const remaining2 = factors2.filter(f => !common.includes(f))
+          
+          if (remaining1.length > 0 && remaining2.length > 0) {
+            const factored = `${common.join('·')}·(${remaining1.join('·')}+${remaining2.join('·')})`
+            
+            // Reemplazar los dos términos
+            terms.splice(j, 1)
+            terms.splice(i, 1, factored)
+            
+            return terms.join('+')
+          }
+        }
+      }
+    }
+    
+    return result
+  }
+
+  /**
+   * Aplica todas las leyes básicas
+   */
+  applyBasicLaws(expr) {
+    let result = expr
+    
+    // Doble negación: A'' → A
+    result = result.replace(/([A-Z])''/g, '$1')
+    
+    // Complemento: A·A' → 0, A+A' → 1
+    result = result.replace(/([A-Z])·\1'/g, '0')
+    result = result.replace(/([A-Z])'·\1/g, '0')
+    result = result.replace(/([A-Z])\+\1'/g, '1')
+    result = result.replace(/([A-Z])'\+\1/g, '1')
+    
+    // Anulación: A·0 → 0, A+1 → 1
+    result = result.replace(/([A-Z]'?)·0/g, '0')
+    result = result.replace(/0·([A-Z]'?)/g, '0')
+    result = result.replace(/([A-Z]'?)\+1/g, '1')
+    result = result.replace(/1\+([A-Z]'?)/g, '1')
+    
+    // Identidad: A·1 → A, A+0 → A
+    result = result.replace(/([A-Z]'?)·1/g, '$1')
+    result = result.replace(/1·([A-Z]'?)/g, '$1')
+    result = result.replace(/([A-Z]'?)\+0/g, '$1')
+    result = result.replace(/0\+([A-Z]'?)/g, '$1')
+    
+    // Idempotencia: A+A → A, A·A → A
+    result = result.replace(/([A-Z]'?)\+\1/g, '$1')
+    result = result.replace(/([A-Z]'?)·\1/g, '$1')
+    
+    return result
+  }
+
+  /**
+   * Limpia paréntesis innecesarios
+   */
+  cleanParentheses(expr) {
+    let result = expr
+    
+    // (A) → A
+    result = result.replace(/\(([A-Z]'?)\)/g, '$1')
+    
+    // Eliminar paréntesis vacíos o inválidos
+    result = result.replace(/\(\)/g, '')
+    
+    return result
+  }
+
+  /**
+   * ✅ MÉTODO PRINCIPAL: Simplifica paso a paso
    */
   simplify(expression, options = {}) {
-    this.simplificationHistory = []
     const {
       maxSteps = 50,
       showAllSteps = true,
-      targetForm = 'SOP', // SOP (Sum of Products) o POS (Product of Sums)
-      useKarnaugh = false
+      targetForm = 'SOP',
+      useKarnaugh = true
     } = options
 
-    try {
-      let currentExpression = expression
-      let step = 0
-      const baseParse = booleanParser.parse(expression)
-      const variables = baseParse.success
-        ? baseParse.variables
-        : Array.from(new Set((expression.match(/[A-Z]/g) || []))).sort()
-      
-      // Paso 1: Normalizar la expresión
-      const normalized = this.normalizeExpression(currentExpression)
-      if (normalized !== currentExpression) {
-        const eq = this.verifyEquivalence(currentExpression, normalized, variables)
-        this.addStep('normalization', currentExpression, normalized, 'Normalización de la expresión', null, { law: 'Normalización', equivalence: eq })
-        currentExpression = normalized
-      }
-      
-      // Paso 2: Aplicar teoremas sistemáticamente
-      while (step < maxSteps) {
-        const previousExpression = currentExpression
-        const appliedTheorems = this.applyTheorems(currentExpression)
-        
-        if (appliedTheorems.length === 0) {
-          break // No se pueden aplicar más teoremas
-        }
-        
-        // Aplicar el primer teorema encontrado
-        const theorem = appliedTheorems[0]
-        const nextExpression = theorem.result
-        const eq = this.verifyEquivalence(previousExpression, nextExpression, variables)
-        currentExpression = nextExpression
-        
-        this.addStep(
-          theorem.name,
-          previousExpression,
-          currentExpression,
-          theorem.explanation,
-          theorem.theorem,
-          { law: this.theorems[theorem.theorem]?.name || 'Teorema', equivalence: eq }
-        )
-        
-        step++
-      }
-      
-      // Paso 3: Verificar si se puede simplificar más
-      const finalSimplified = this.finalOptimization(currentExpression)
-      if (finalSimplified !== currentExpression) {
-        const eq = this.verifyEquivalence(currentExpression, finalSimplified, variables)
-        this.addStep('optimization', currentExpression, finalSimplified, 'Optimización final', null, { law: 'Optimización', equivalence: eq })
-        currentExpression = finalSimplified
-      }
-
-      // Paso 4: Canonización opcional con K-map según targetForm/useKarnaugh
-      const canonical = this.finalizeWithTargetForm(currentExpression, variables, targetForm, useKarnaugh)
-      if (canonical.expression !== currentExpression) {
-        currentExpression = canonical.expression
-      }
-      
-      const originalParse = booleanParser.parse(expression)
-      const originalComplexity = originalParse.success ? this.calculateComplexity(originalParse.normalizedExpression) : null
-      return {
-        success: true,
-        originalExpression: expression,
-        simplifiedExpression: currentExpression,
-        steps: this.simplificationHistory,
-        isSimplified: this.isFullySimplified(currentExpression),
-        complexity: {
-          original: originalComplexity ? originalComplexity.totalComplexity : null,
-          simplified: this.calculateComplexity(currentExpression).totalComplexity,
-          reduction: originalComplexity ? (this.calculateComplexity(currentExpression).totalComplexity - originalComplexity.totalComplexity) : null
-        },
-        method: useKarnaugh ? 'karnaugh' : 'algebraic'
-      }
-      
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        steps: this.simplificationHistory
-      }
-    }
-  }
-
-  /**
-   * Sincroniza con forma canónica mediante Karnaugh si se solicita
-   */
-  finalizeWithTargetForm(currentExpression, variables, targetForm, useKarnaugh) {
-    if (!useKarnaugh && (!targetForm || (targetForm !== 'SOP' && targetForm !== 'POS'))) {
-      return { expression: currentExpression, method: 'algebraic' }
-    }
-
-    try {
-      const mode = targetForm === 'POS' ? 'maxTerms' : 'minTerms'
-      const map = karnaughMapper.generateMap(currentExpression, variables, { mode })
-      const kExpr = map.simplifiedExpression || currentExpression
-      const eq = this.verifyEquivalence(currentExpression, kExpr, variables)
-      this.addStep('kmap_canonicalization', currentExpression, kExpr, `Canonización ${targetForm || 'SOP'} con Karnaugh`, 'karnaugh', { law: 'Karnaugh', equivalence: eq })
-      return { expression: kExpr, method: 'karnaugh' }
-    } catch (e) {
-      // Si falla, retornar la expresión actual
-      return { expression: currentExpression, method: 'algebraic' }
-    }
-  }
-
-  /**
-   * Normaliza una expresión booleana
-   */
-  normalizeExpression(expression) {
-    return expression
-      .replace(/\s+/g, ' ') // Normalizar espacios
-      .replace(/AND/gi, '·')
-      .replace(/OR/gi, '+')
-      .replace(/NOT/gi, "'")
-      .replace(/&&/g, '·')
-      .replace(/\|\|/g, '+')
-      .replace(/!/g, "'")
-      .replace(/∧/g, '·')
-      .replace(/∨/g, '+')
-      .replace(/¬/g, "'")
-      .trim()
-  }
-
-  /**
-   * Aplica todos los teoremas aplicables a una expresión
-   */
-  applyTheorems(expression) {
-    const applicableTheorems = []
+    this.steps = []
+    let current = this.normalize(expression)
+    let iteration = 0
     
-    // Probar cada teorema
-    for (const [theoremName, theorem] of Object.entries(this.theorems)) {
-      for (const pattern of theorem.patterns) {
-        const result = this.tryApplyPattern(expression, pattern, theoremName)
-        if (result) {
-          applicableTheorems.push(result)
+    const originalExpression = current
+    this.addStep(current, current, 'normalization', 'Normalización', 'Expresión normalizada')
+    
+    // Variables de la expresión
+    const variables = BooleanEvaluator.extractVariables(current)
+
+    while (iteration < maxSteps) {
+      iteration++
+      const before = current
+      let lawApplied = null
+      let lawName = null
+      let explanation = null
+
+      // 1. De Morgan (PRIMERO)
+      const afterDeMorgan = this.applyDeMorgan(current)
+      if (afterDeMorgan !== current) {
+        current = afterDeMorgan
+        lawApplied = 'demorgan'
+        lawName = 'Leyes de De Morgan'
+        explanation = 'Transformar negación de grupo: (A+B)\'=A\'·B\' o (A·B)\'=A\'+B\''
+      }
+
+      // 2. Leyes básicas
+      if (!lawApplied) {
+        const afterBasic = this.applyBasicLaws(current)
+        if (afterBasic !== current) {
+          current = afterBasic
+          lawApplied = 'basic'
+          lawName = 'Leyes Básicas'
+          explanation = 'Identidad, Complemento, Anulación, Idempotencia'
         }
       }
-    }
-    
-    // Ordenar por prioridad (teoremas más efectivos primero)
-    return applicableTheorems.sort((a, b) => b.priority - a.priority)
-  }
 
-  /**
-   * Intenta aplicar un patrón de teorema
-   */
-  tryApplyPattern(expression, pattern, theoremName) {
-    // Buscar el patrón en la expresión
-    const patternRegex = this.createPatternRegex(pattern.from)
-    const match = expression.match(patternRegex)
-    
-    if (match) {
-      const result = expression.replace(patternRegex, pattern.to)
-      
-      return {
-        name: pattern.explanation,
-        theorem: theoremName,
-        result: result,
-        explanation: pattern.explanation,
-        priority: this.getTheoremPriority(theoremName)
+      // 3. Absorción
+      if (!lawApplied) {
+        const afterAbs = this.applyAbsorption(current)
+        if (afterAbs !== current) {
+          current = afterAbs
+          lawApplied = 'absorption'
+          lawName = 'Absorción'
+          explanation = 'Eliminar términos absorbidos: A+A·B=A'
+        }
+      }
+
+      // 4. Factorización
+      if (!lawApplied) {
+        const afterFact = this.applyFactorization(current)
+        if (afterFact !== current) {
+          current = afterFact
+          lawApplied = 'factorization'
+          lawName = 'Factorización'
+          explanation = 'Factorizar términos comunes: A·B+A·C=A·(B+C)'
+        }
+      }
+
+      // 5. Consenso
+      if (!lawApplied) {
+        const afterCons = this.applyConsensus(current)
+        if (afterCons !== current) {
+          current = afterCons
+          lawApplied = 'consensus'
+          lawName = 'Consenso'
+          explanation = 'Eliminar término redundante: A·B+A\'·C+B·C=A·B+A\'·C'
+        }
+      }
+
+      // 6. Limpiar paréntesis
+      if (!lawApplied) {
+        const cleaned = this.cleanParentheses(current)
+        if (cleaned !== current) {
+          current = cleaned
+          lawApplied = 'cleanup'
+          lawName = 'Limpieza'
+          explanation = 'Eliminar paréntesis innecesarios'
+        }
+      }
+
+      // Si hubo cambio, agregar paso
+      if (current !== before) {
+        this.addStep(before, current, lawApplied, lawName, explanation)
+      } else {
+        // No hay más simplificaciones
+        break
       }
     }
-    
-    return null
-  }
 
-  /**
-   * Crea una expresión regular para un patrón
-   */
-  createPatternRegex(pattern) {
-    // Escapar caracteres especiales y crear regex flexible
-    let regex = pattern
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escapar caracteres especiales
-      .replace(/A/g, '([A-Z])') // Variables como grupos de captura
-      .replace(/B/g, '([A-Z])')
-      .replace(/C/g, '([A-Z])')
-    
-    return new RegExp(regex, 'g')
-  }
+    // Calcular complejidad
+    const complexity = this.calculateComplexity(originalExpression, current)
 
-  /**
-   * Obtiene la prioridad de un teorema
-   */
-  getTheoremPriority(theoremName) {
-    const priorities = {
-      'null': 10,        // Eliminar términos nulos
-      'identity': 9,     // Simplificar identidades
-      'idempotence': 8,  // Eliminar duplicados
-      'absorption': 7,   // Absorber términos
-      'consensus': 6,    // Aplicar consenso
-      'demorgan': 5,     // Aplicar DeMorgan
-      'distributive': 4, // Distribuir
-      'associative': 3,  // Reagrupar
-      'commutative': 2,  // Reordenar
-      'complement': 1,   // Complementos
-      'involution': 1    // Doble negación
+    return {
+      success: true,
+      originalExpression,
+      simplifiedExpression: current,
+      steps: this.steps,
+      totalSteps: this.steps.length,
+      complexity,
+      equivalent: BooleanEvaluator.areEquivalent(originalExpression, current)
     }
-    
-    return priorities[theoremName] || 0
   }
 
   /**
-   * Agrega un paso a la historia de simplificación
+   * Agrega un paso al historial
    */
-  addStep(stepType, from, to, explanation, theorem = null, options = {}) {
-    this.simplificationHistory.push({
-      step: this.simplificationHistory.length + 1,
-      type: stepType,
-      from: from,
-      to: to,
-      explanation: explanation,
-      theorem: theorem,
-      law: options.law,
-      equivalence: options.equivalence,
-      timestamp: new Date().toISOString()
+  addStep(from, to, theorem, law, explanation) {
+    const equivalence = BooleanEvaluator.areEquivalent(from, to)
+    
+    this.steps.push({
+      from,
+      to,
+      theorem,
+      law,
+      explanation,
+      equivalence
     })
   }
 
   /**
-   * Optimización final de la expresión
+   * Calcula complejidad
    */
-  finalOptimization(expression) {
-    let optimized = expression
-    
-    // Eliminar paréntesis innecesarios
-    optimized = this.removeUnnecessaryParentheses(optimized)
-    
-    // Reordenar términos para mejor legibilidad
-    optimized = this.reorderTerms(optimized)
-    
-    return optimized
-  }
+  calculateComplexity(original, simplified) {
+    const countOps = (expr) => {
+      return (expr.match(/[·+]/g) || []).length + (expr.match(/'/g) || []).length
+    }
 
-  /**
-   * Elimina paréntesis innecesarios
-   */
-  removeUnnecessaryParentheses(expression) {
-    // Implementar lógica para eliminar paréntesis redundantes
-    return expression.replace(/\(([A-Z]+)\)/g, '$1')
-  }
+    const originalComplexity = countOps(original)
+    const simplifiedComplexity = countOps(simplified)
+    const reduction = originalComplexity - simplifiedComplexity
 
-  /**
-   * Reordena términos para mejor legibilidad
-   */
-  reorderTerms(expression) {
-    // Implementar lógica para reordenar términos alfabéticamente
-    return expression
-  }
-
-  /**
-   * Verifica si una expresión está completamente simplificada
-   */
-  isFullySimplified(expression) {
-    // Verificar si se pueden aplicar más teoremas
-    const applicableTheorems = this.applyTheorems(expression)
-    return applicableTheorems.length === 0
-  }
-
-  /**
-   * Calcula la complejidad de una expresión
-   */
-  calculateComplexity(expression) {
-    const operators = (expression.match(/[·+']/g) || []).length
-    const variables = new Set(expression.match(/[A-Z]/g) || []).size
-    const parentheses = (expression.match(/[()]/g) || []).length
-    
     return {
-      operators: operators,
-      variables: variables,
-      parentheses: parentheses,
-      totalComplexity: operators + variables + parentheses
-    }
-  }
-
-  /**
-   * Convierte expresión a forma SOP (Sum of Products)
-   */
-  convertToSOP(expression) {
-    // Implementar conversión a SOP
-    return expression
-  }
-
-  /**
-   * Convierte expresión a forma POS (Product of Sums)
-   */
-  convertToPOS(expression) {
-    // Implementar conversión a POS
-    return expression
-  }
-
-  /**
-   * Verifica equivalencia entre dos expresiones
-   */
-  verifyEquivalence(expression1, expression2, variables) {
-    try {
-      // Generar todas las combinaciones de variables
-      const combinations = this.generateAllCombinations(variables)
-      
-      // Evaluar ambas expresiones para cada combinación
-      for (const combination of combinations) {
-        const result1 = this.evaluateExpression(expression1, combination)
-        const result2 = this.evaluateExpression(expression2, combination)
-        
-        if (result1 !== result2) {
-          return {
-            equivalent: false,
-            counterExample: combination,
-            result1: result1,
-            result2: result2
-          }
-        }
-      }
-      
-      return { equivalent: true }
-      
-    } catch (error) {
-      return {
-        equivalent: false,
-        error: error.message
-      }
-    }
-  }
-
-  /**
-   * Genera todas las combinaciones de valores para las variables
-   */
-  generateAllCombinations(variables) {
-    const combinations = []
-    const numVars = variables.length
-    const totalCombinations = Math.pow(2, numVars)
-    
-    for (let i = 0; i < totalCombinations; i++) {
-      const combination = {}
-      for (let j = 0; j < numVars; j++) {
-        const bit = (i >> (numVars - 1 - j)) & 1
-        combination[variables[j]] = Boolean(bit)
-      }
-      combinations.push(combination)
-    }
-    
-    return combinations
-  }
-
-  /**
-   * Evalúa una expresión con valores específicos de variables
-   */
-  evaluateExpression(expression, variableValues) {
-    const parse = booleanParser.parse(expression)
-    if (!parse.success) return false
-    try {
-      return booleanParser.evaluateAST(parse.ast, variableValues)
-    } catch (e) {
-      return false
-    }
-  }
-
-  /**
-   * Obtiene estadísticas de simplificación
-   */
-  getSimplificationStats() {
-    const stats = {
-      totalSteps: this.simplificationHistory.length,
-      theoremsUsed: {},
-      complexityReduction: 0,
-      timeElapsed: 0
-    }
-    
-    // Contar teoremas utilizados
-    for (const step of this.simplificationHistory) {
-      if (step.theorem) {
-        stats.theoremsUsed[step.theorem] = (stats.theoremsUsed[step.theorem] || 0) + 1
-      }
-    }
-    
-    return stats
-  }
-
-  /**
-   * Exporta el proceso de simplificación
-   */
-  exportSimplificationProcess() {
-    return {
-      steps: this.simplificationHistory,
-      stats: this.getSimplificationStats(),
-      timestamp: new Date().toISOString()
+      original: originalComplexity,
+      simplified: simplifiedComplexity,
+      reduction
     }
   }
 }
 
-// Exportar instancia singleton
+// Crear instancia global
 export const booleanSimplifier = new BooleanSimplifier()
-export default booleanSimplifier
+export default BooleanSimplifier

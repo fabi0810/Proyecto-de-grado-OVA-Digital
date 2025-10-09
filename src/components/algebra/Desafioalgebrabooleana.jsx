@@ -100,30 +100,29 @@ class BooleanChallengeGenerator {
     }
   }
 
-    generateTruthTable(expression, variables) {
-        const rows = Math.pow(2, variables.length)
-        const table = []
+  generateTruthTable(expression, variables) {
+    const rows = Math.pow(2, variables.length)
+    const table = []
 
-        for (let i = 0; i < rows; i++) {
-            const values = {}
-            variables.forEach((variable, index) => {
-                values[variable] = (i >> (variables.length - 1 - index)) & 1
-            })
+    for (let i = 0; i < rows; i++) {
+      const values = {}
+      variables.forEach((variable, index) => {
+        values[variable] = (i >> (variables.length - 1 - index)) & 1
+      })
 
-            //  CORRECCIÓN: Usar BooleanEvaluator
-            const result = BooleanEvaluator.evaluate(expression, values)
+      // ✅ CORREGIDO: Usar BooleanEvaluator con De Morgan aplicado
+      const result = BooleanEvaluator.evaluate(expression, values)
 
-            table.push({
-                ...values,
-                result: result,
-                index: i
-            })
-        }
-
-        return table
+      table.push({
+        ...values,
+        result: result,
+        index: i
+      })
     }
 
-  
+    return table
+  }
+
   generateKarnaughMap(truthTable, variables) {
     if (variables.length === 2) {
       return {
@@ -136,6 +135,7 @@ class BooleanChallengeGenerator {
         cols: ['0', '1']
       }
     } else if (variables.length === 3) {
+      // ✅ CORREGIDO: Usar código Gray correcto: 00, 01, 11, 10
       return {
         type: '3var',
         cells: [
@@ -146,7 +146,7 @@ class BooleanChallengeGenerator {
         cols: ['00', '01', '11', '10']
       }
     }
-      return BooleanEvaluator.generateKarnaughMap(expression, variables)
+    return { type: 'unsupported', cells: [] }
   }
 }
 
@@ -217,41 +217,42 @@ function BooleanChallengeModule() {
     startNewChallenge()
   }, [])
 
-    const validateSimplification = () => {
-        if (!currentChallenge) return
+  // ✅ CORREGIDO: Validación con BooleanEvaluator mejorado
+  const validateSimplification = () => {
+    if (!currentChallenge) return
 
-        const userInput = userAnswers.simplification.trim()
-        const correct = currentChallenge.simplified.trim()
+    const userInput = userAnswers.simplification.trim()
+    const correct = currentChallenge.simplified.trim()
 
-        const validation = BooleanEvaluator.areEquivalent(userInput, correct)
+    const validation = BooleanEvaluator.areEquivalent(userInput, correct)
 
-        setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
+    setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
 
-        if (validation.equivalent) {
-            setFeedback(prev => ({
-                ...prev,
-                simplification: {
-                    correct: true,
-                    message: '¡Correcto! Excelente simplificación. Las expresiones son lógicamente equivalentes.'
-                }
-            }))
-        } else {
-            const hints = getSimplificationHints(currentChallenge.laws, attempts.simplification)
-            let message = hints
-
-            if (validation.counterExample) {
-                const counterEx = Object.entries(validation.counterExample)
-                    .map(([k, v]) => `${k}=${v}`)
-                    .join(', ')
-                message += `\n\nContraejemplo: Con ${counterEx}, las expresiones dan resultados diferentes.`
-            }
-
-            setFeedback(prev => ({
-                ...prev,
-                simplification: { correct: false, message }
-            }))
+    if (validation.equivalent) {
+      setFeedback(prev => ({
+        ...prev,
+        simplification: {
+          correct: true,
+          message: '¡Correcto! Excelente simplificación. Las expresiones son lógicamente equivalentes.'
         }
+      }))
+    } else {
+      const hints = getSimplificationHints(currentChallenge.laws, attempts.simplification)
+      let message = hints
+
+      if (validation.counterExample) {
+        const counterEx = Object.entries(validation.counterExample)
+          .map(([k, v]) => `${k}=${v}`)
+          .join(', ')
+        message += `\n\nContraejemplo: Con ${counterEx}, las expresiones dan resultados diferentes.`
+      }
+
+      setFeedback(prev => ({
+        ...prev,
+        simplification: { correct: false, message }
+      }))
     }
+  }
 
   const finalizeChallenge = () => {
     if (!currentChallenge) return
@@ -328,8 +329,6 @@ function BooleanChallengeModule() {
     setChallengeComplete(true)
     setTimerActive(false)
   }
-
-
 
   const getSimplificationHints = (laws, attemptCount) => {
     if (attemptCount === 0) {
@@ -471,7 +470,7 @@ function BooleanChallengeModule() {
                     ? 'bg-green-50 border-green-500'
                     : 'bg-red-50 border-red-500'
                 }`}>
-                  <p className={`text-sm font-medium ${
+                  <p className={`text-sm font-medium whitespace-pre-line ${
                     feedback.simplification.correct ? 'text-green-800' : 'text-red-800'
                   }`}>
                     {feedback.simplification.message}

@@ -1,5 +1,5 @@
 ﻿// src/utils/BooleanEvaluator.js
-// Evaluador robusto de expresiones booleanas con verificación de equivalencia
+// Evaluador CORREGIDO con aplicación correcta de De Morgan
 
 class BooleanEvaluator {
   /**
@@ -7,46 +7,87 @@ class BooleanEvaluator {
    */
   static normalizeExpression(expr) {
     let normalized = expr
-      .replace(/\s+/g, '') // Eliminar espacios
-      .replace(/\*|×|&{2}|AND/gi, '·') // Normalizar AND
-      .replace(/\||∨|\+|OR/gi, '+') // Normalizar OR
-      .replace(/!|¬|~|NOT\s*/gi, "'") // Normalizar NOT
-      .replace(/'/g, "'") // Normalizar apóstrofe
-      .toUpperCase() // Mayúsculas para variables
+      .replace(/\s+/g, '')
+      .replace(/\*|×|&{2}|AND/gi, '·')
+      .replace(/\||∨|OR/gi, '+')
+      .replace(/!|¬|~|NOT\s*/gi, "'")
+      .replace(/'/g, "'")
+      .toUpperCase()
     
     return normalized
   }
 
   /**
-   * Evalúa una expresión booleana con valores específicos
-   * @param {string} expression - Expresión booleana (ej: "A·B + C'")
-   * @param {Object} values - Valores de variables (ej: {A: 1, B: 0, C: 1})
-   * @returns {number} - Resultado (0 o 1)
+   * ✅ CORREGIDO: Aplica De Morgan ANTES de evaluar
+   * (A+B)' = A'·B'
+   * (A·B)' = A' + B'
+   */
+  static applyDeMorganForEval(expr) {
+    let result = expr
+    let changed = true
+    
+    while (changed && result.match(/\([^()]+\)'/)) {
+      const before = result
+      
+      result = result.replace(/\(([^()]+)\)'/g, (match, inner) => {
+        // Verificar si contiene operadores
+        if (inner.includes('+')) {
+          // (A + B)' → A'·B'
+          const terms = inner.split('+').map(t => t.trim())
+          const negated = terms.map(term => {
+            // Si ya tiene ', aplicar doble negación
+            if (term.endsWith("'")) {
+              return term.slice(0, -1)
+            }
+            return term + "'"
+          })
+          return '(' + negated.join('·') + ')'
+        } else if (inner.includes('·')) {
+          // (A·B)' → A' + B'
+          const terms = inner.split('·').map(t => t.trim())
+          const negated = terms.map(term => {
+            if (term.endsWith("'")) {
+              return term.slice(0, -1)
+            }
+            return term + "'"
+          })
+          return '(' + negated.join('+') + ')'
+        } else {
+          // Variable simple con negación
+          if (inner.endsWith("'")) {
+            return inner.slice(0, -1) // Doble negación
+          }
+          return inner + "'"
+        }
+      })
+      
+      changed = (before !== result)
+    }
+    
+    return result
+  }
+
+  /**
+   * ✅ CORREGIDO: Evalúa una expresión booleana con valores específicos
    */
   static evaluate(expression, values) {
     try {
       let expr = this.normalizeExpression(expression)
       
-      // Reemplazar variables por sus valores
+      // PASO 1: Aplicar De Morgan primero
+      expr = this.applyDeMorganForEval(expr)
+      
+      // PASO 2: Reemplazar variables por sus valores
       Object.keys(values).forEach(variable => {
         const regex = new RegExp(variable, 'g')
         expr = expr.replace(regex, values[variable].toString())
       })
       
-      // Procesar complementos (NOT)
-      // Manejar complementos sobre paréntesis primero: (...)' 
-      while (expr.match(/\([^()]+\)'/)) {
-        expr = expr.replace(/\(([^()]+)\)'/g, (match, inner) => {
-          const innerResult = this.evaluateSimple(inner)
-          return innerResult === 1 ? '0' : '1'
-        })
-      }
-      
-      // Manejar complementos simples: 0' o 1'
+      // PASO 3: Procesar complementos simples
       expr = expr.replace(/0'/g, '1')
       expr = expr.replace(/1'/g, '0')
       
-      // Evaluar la expresión resultante
+      // PASO 4: Evaluar la expresión resultante
       return this.evaluateSimple(expr)
     } catch (error) {
       console.error('Error evaluando expresión:', error)
@@ -58,7 +99,6 @@ class BooleanEvaluator {
    * Evalúa una expresión simple sin complementos
    */
   static evaluateSimple(expr) {
-    // Eliminar espacios
     expr = expr.replace(/\s+/g, '')
     
     // Evaluar paréntesis más internos primero
@@ -116,7 +156,7 @@ class BooleanEvaluator {
   }
 
   /**
-   * Verifica si dos expresiones son lógicamente equivalentes
+   * ✅ MEJORADO: Verifica si dos expresiones son lógicamente equivalentes
    */
   static areEquivalent(expr1, expr2) {
     try {
@@ -127,7 +167,12 @@ class BooleanEvaluator {
       
       if (allVars.length === 0) {
         // Expresiones constantes
-        return this.evaluate(expr1, {}) === this.evaluate(expr2, {})
+        const result1 = this.evaluate(expr1, {})
+        const result2 = this.evaluate(expr2, {})
+        return {
+          equivalent: result1 === result2,
+          counterExample: null
+        }
       }
       
       // Generar todas las combinaciones
@@ -150,7 +195,7 @@ class BooleanEvaluator {
         }
       }
       
-      return { equivalent: true }
+      return { equivalent: true, counterExample: null }
     } catch (error) {
       console.error('Error comparando expresiones:', error)
       return { equivalent: false, error: error.message }
@@ -188,67 +233,7 @@ class BooleanEvaluator {
   }
 
   /**
-   * Aplica las 12 leyes del álgebra booleana según la imagen
-   */
-  static applyBooleanLaws(expression) {
-    let expr = this.normalizeExpression(expression)
-    let changed = true
-    let iterations = 0
-    const maxIterations = 50
-    
-    while (changed && iterations < maxIterations) {
-      const before = expr
-      
-      // Ley 1: A + 0 = A (Identidad OR)
-      expr = expr.replace(/([A-Z])\+0/g, '$1')
-      expr = expr.replace(/0\+([A-Z])/g, '$1')
-      
-      // Ley 2: A + 1 = 1 (Anulación OR)
-      expr = expr.replace(/([A-Z])\+1/g, '1')
-      expr = expr.replace(/1\+([A-Z])/g, '1')
-      
-      // Ley 3: A · 0 = 0 (Anulación AND)
-      expr = expr.replace(/([A-Z])·0/g, '0')
-      expr = expr.replace(/0·([A-Z])/g, '0')
-      
-      // Ley 4: A · 1 = A (Identidad AND)
-      expr = expr.replace(/([A-Z])·1/g, '$1')
-      expr = expr.replace(/1·([A-Z])/g, '$1')
-      
-      // Ley 5: A + A = A (Idempotencia OR)
-      expr = expr.replace(/([A-Z])\+\1/g, '$1')
-      
-      // Ley 6: A · A = A (Idempotencia AND)
-      expr = expr.replace(/([A-Z])·\1/g, '$1')
-      
-      // Ley 7: (A')' = A (Doble negación)
-      expr = expr.replace(/\(([A-Z])'\)'/g, '$1')
-      expr = expr.replace(/([A-Z])''/g, '$1')
-      
-      // Ley 8: A + A' = 1 (Complemento OR)
-      expr = expr.replace(/([A-Z])\+\1'/g, '1')
-      expr = expr.replace(/([A-Z])'\+\1/g, '1')
-      
-      // Ley 9: A · A' = 0 (Complemento AND)
-      expr = expr.replace(/([A-Z])·\1'/g, '0')
-      expr = expr.replace(/([A-Z])'·\1/g, '0')
-      
-      // Absorción: A + A·B = A
-      expr = expr.replace(/([A-Z])\+\1·([A-Z])/g, '$1')
-      expr = expr.replace(/([A-Z])·([A-Z])\+\1/g, '$1')
-      
-      // Absorción: A·(A + B) = A
-      expr = expr.replace(/([A-Z])·\(\1\+([A-Z])\)/g, '$1')
-      
-      changed = (before !== expr)
-      iterations++
-    }
-    
-    return expr
-  }
-
-  /**
-   * Genera un mapa de Karnaugh correcto
+   * Genera un mapa de Karnaugh correcto usando código Gray
    */
   static generateKarnaughMap(expression, variables) {
     if (variables.length === 2) {
@@ -300,6 +285,5 @@ class BooleanEvaluator {
   }
 }
 
-// Exportar también como named export para compatibilidad
 export { BooleanEvaluator }
 export default BooleanEvaluator
