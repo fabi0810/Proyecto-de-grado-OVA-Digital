@@ -1,3 +1,4 @@
+// ✅ DESAFÍOS CORREGIDOS - VERSIÓN COMPLETA
 import { useState, useEffect } from 'react'
 import { BooleanEvaluator } from '../../utils/BooleanEvaluator'
 
@@ -8,7 +9,7 @@ class BooleanChallengeGenerator {
         expression: "A + A·B",
         simplified: "A",
         variables: ['A', 'B'],
-        difficulty: 'hard',
+        difficulty: 'easy',
         laws: ['Absorción'],
         hint: 'Aplica la ley de absorción: A + A·B = A'
       },
@@ -16,23 +17,23 @@ class BooleanChallengeGenerator {
         expression: "A·B' + C",
         simplified: "A·B' + C",
         variables: ['A', 'B', 'C'],
-        difficulty: 'hard',
+        difficulty: 'easy',
         laws: ['Ya está simplificada'],
         hint: 'Esta expresión ya está en su forma más simple'
       },
       {
-        expression: "(A + B)·(A' + C)",
-        simplified: "A·C + A'·B + B·C",
+        expression: "(A + B)·(A + C)",
+        simplified: "A + B·C",
         variables: ['A', 'B', 'C'],
-        difficulty: 'hard',
-        laws: ['Distributiva', 'Consenso'],
-        hint: 'Expande usando la propiedad distributiva y simplifica'
+        difficulty: 'medium',
+        laws: ['Distributiva', 'Absorción'],
+        hint: 'Aplica distributiva: A + A·C + A·B + B·C = A(1+C+B) + B·C = A + B·C'
       },
       {
         expression: "A·B + A·B'",
         simplified: "A",
         variables: ['A', 'B'],
-        difficulty: 'hard',
+        difficulty: 'easy',
         laws: ['Factorización', 'Complemento'],
         hint: 'Factoriza A: A(B + B\') = A·1 = A'
       },
@@ -40,39 +41,39 @@ class BooleanChallengeGenerator {
         expression: "A'·B + A·B + A·B'",
         simplified: "A + B",
         variables: ['A', 'B'],
-        difficulty: 'hard',
-        laws: ['Absorción', 'Idempotencia'],
-        hint: 'Agrupa términos con A y simplifica'
+        difficulty: 'medium',
+        laws: ['Factorización', 'Idempotencia'],
+        hint: 'Simplifica A·B + A·B\' = A, luego A + A\'·B = A + B'
       },
       {
-        expression: "(A + B')·(A + C)·(B' + C)",
-        simplified: "(A + B')·(B' + C)",
+        expression: "A·B + A·C + B·C",
+        simplified: "A·B + A·C",
         variables: ['A', 'B', 'C'],
         difficulty: 'hard',
         laws: ['Consenso'],
-        hint: 'El término (A + C) es redundante por consenso'
+        hint: 'B·C es redundante (consenso de A·B y A·C)'
       },
       {
         expression: "A·B·C + A·B·C' + A·B'·C",
         simplified: "A·B + A·B'·C",
         variables: ['A', 'B', 'C'],
-        difficulty: 'hard',
+        difficulty: 'medium',
         laws: ['Factorización', 'Complemento'],
-        hint: 'Factoriza A·B de los primeros dos términos'
+        hint: 'Factoriza A·B de los primeros dos términos: A·B(C+C\')=A·B'
       },
       {
         expression: "(A + B)·(A + B')",
         simplified: "A",
         variables: ['A', 'B'],
-        difficulty: 'hard',
+        difficulty: 'medium',
         laws: ['Distributiva', 'Complemento'],
-        hint: 'Distribuye: A + B·B\' = A + 0 = A'
+        hint: 'Distribuye: A·A + A·B\' + B·A + B·B\' = A + 0 = A'
       },
       {
         expression: "A'·B'·C + A·B'·C + A·B·C",
         simplified: "B'·C + A·B·C",
         variables: ['A', 'B', 'C'],
-        difficulty: 'hard',
+        difficulty: 'medium',
         laws: ['Factorización'],
         hint: 'Factoriza B\'·C de los primeros dos términos'
       },
@@ -82,7 +83,7 @@ class BooleanChallengeGenerator {
         variables: ['A', 'B'],
         difficulty: 'hard',
         laws: ['De Morgan', 'Complemento'],
-        hint: 'Aplica De Morgan en ambos términos'
+        hint: 'Aplica De Morgan: (A·B)\'=A\'+B\', (A\'+B\')\'=A·B, luego A\'+B\'+A·B=1'
       }
     ]
   }
@@ -110,7 +111,6 @@ class BooleanChallengeGenerator {
         values[variable] = (i >> (variables.length - 1 - index)) & 1
       })
 
-      // ✅ CORREGIDO: Usar BooleanEvaluator con De Morgan aplicado
       const result = BooleanEvaluator.evaluate(expression, values)
 
       table.push({
@@ -135,7 +135,6 @@ class BooleanChallengeGenerator {
         cols: ['0', '1']
       }
     } else if (variables.length === 3) {
-      // ✅ CORREGIDO: Usar código Gray correcto: 00, 01, 11, 10
       return {
         type: '3var',
         cells: [
@@ -150,7 +149,6 @@ class BooleanChallengeGenerator {
   }
 }
 
-// Componente Principal del Desafío
 function BooleanChallengeModule() {
   const generator = new BooleanChallengeGenerator()
   
@@ -180,21 +178,9 @@ function BooleanChallengeModule() {
   const startNewChallenge = () => {
     const challenge = generator.generateChallenge()
     setCurrentChallenge(challenge)
-    setUserAnswers({
-      simplification: '',
-      truthTable: {},
-      karnaughMap: {}
-    })
-    setFeedback({
-      simplification: null,
-      truthTable: {},
-      karnaughMap: {}
-    })
-    setAttempts({
-      simplification: 0,
-      truthTable: 0,
-      karnaughMap: 0
-    })
+    setUserAnswers({ simplification: '', truthTable: {}, karnaughMap: {} })
+    setFeedback({ simplification: null, truthTable: {}, karnaughMap: {} })
+    setAttempts({ simplification: 0, truthTable: 0, karnaughMap: 0 })
     setShowHint(false)
     setChallengeComplete(false)
     setFinalScore(null)
@@ -217,7 +203,6 @@ function BooleanChallengeModule() {
     startNewChallenge()
   }, [])
 
-  // ✅ CORREGIDO: Validación con BooleanEvaluator mejorado
   const validateSimplification = () => {
     if (!currentChallenge) return
 
@@ -237,14 +222,13 @@ function BooleanChallengeModule() {
         }
       }))
     } else {
-      const hints = getSimplificationHints(currentChallenge.laws, attempts.simplification)
-      let message = hints
+      let message = getSimplificationHints(currentChallenge.laws, attempts.simplification)
 
       if (validation.counterExample) {
         const counterEx = Object.entries(validation.counterExample)
           .map(([k, v]) => `${k}=${v}`)
           .join(', ')
-        message += `\n\nContraejemplo: Con ${counterEx}, las expresiones dan resultados diferentes.`
+        message += `\n\nContraejemplo: Con ${counterEx}, tu expresión y la esperada dan resultados diferentes.`
       }
 
       setFeedback(prev => ({
@@ -257,7 +241,6 @@ function BooleanChallengeModule() {
   const finalizeChallenge = () => {
     if (!currentChallenge) return
     
-    // Validar tabla de verdad
     const truthTableFeedback = {}
     currentChallenge.truthTable.forEach((row, index) => {
       const userValue = parseInt(userAnswers.truthTable[index])
@@ -268,16 +251,14 @@ function BooleanChallengeModule() {
       }
     })
     
-    // Validar mapa de Karnaugh
     const karnaughFeedback = {}
     if (currentChallenge.karnaughMap.type === '2var') {
       currentChallenge.karnaughMap.cells.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
           const userValue = parseInt(userAnswers.karnaughMap[`${rowIndex}-${colIndex}`])
-          const correct = cell
           karnaughFeedback[`${rowIndex}-${colIndex}`] = {
-            correct: userValue === correct,
-            value: correct
+            correct: userValue === cell,
+            value: cell
           }
         })
       })
@@ -285,10 +266,9 @@ function BooleanChallengeModule() {
       currentChallenge.karnaughMap.cells.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
           const userValue = parseInt(userAnswers.karnaughMap[`${rowIndex}-${colIndex}`])
-          const correct = cell
           karnaughFeedback[`${rowIndex}-${colIndex}`] = {
-            correct: userValue === correct,
-            value: correct
+            correct: userValue === cell,
+            value: cell
           }
         })
       })
@@ -300,20 +280,15 @@ function BooleanChallengeModule() {
       karnaughMap: karnaughFeedback
     }))
     
-    // Calcular puntajes
     const simplificationScore = feedback.simplification?.correct ? 100 : 0
-    
     const truthTableCorrect = Object.values(truthTableFeedback).filter(f => f.correct).length
     const truthTableTotal = currentChallenge.truthTable.length
     const truthTableScore = truthTableTotal > 0 ? (truthTableCorrect / truthTableTotal) * 100 : 0
-    
     const karnaughCorrect = Object.values(karnaughFeedback).filter(f => f.correct).length
     const karnaughTotal = currentChallenge.karnaughMap.cells.flat().length
     const karnaughScore = karnaughTotal > 0 ? (karnaughCorrect / karnaughTotal) * 100 : 0
-    
     const totalScore = (simplificationScore * 0.5) + (truthTableScore * 0.25) + (karnaughScore * 0.25)
     const grade = (totalScore / 100) * 5
-    
     const badge = getBadge(grade)
     
     setFinalScore({
@@ -331,13 +306,9 @@ function BooleanChallengeModule() {
   }
 
   const getSimplificationHints = (laws, attemptCount) => {
-    if (attemptCount === 0) {
-      return `Intenta aplicar: ${laws[0]}`
-    } else if (attemptCount === 1) {
-      return `Revisa la Ley de ${laws[0]}. ¿Puedes identificar el patrón?`
-    } else {
-      return `Pista: ${currentChallenge.hint}`
-    }
+    if (attemptCount === 0) return `Intenta aplicar: ${laws[0]}`
+    if (attemptCount === 1) return `Revisa la Ley de ${laws[0]}. ¿Puedes identificar el patrón?`
+    return `Pista: ${currentChallenge.hint}`
   }
 
   const getBadge = (grade) => {
@@ -364,7 +335,6 @@ function BooleanChallengeModule() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50">
-      {/* Header */}
       <div className="bg-white shadow-lg border-b border-emerald-200">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -372,9 +342,7 @@ function BooleanChallengeModule() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
                 🎯 Desafío de Álgebra Booleana
               </h1>
-              <p className="text-gray-600">
-                Resuelve las tres secciones para obtener tu calificación
-              </p>
+              <p className="text-gray-600">Resuelve las tres secciones para obtener tu calificación</p>
             </div>
             <div className="text-right space-y-2">
               <div className="flex items-center space-x-2 text-sm">
@@ -386,7 +354,6 @@ function BooleanChallengeModule() {
         </div>
       </div>
 
-      {/* Expresión del Desafío */}
       <div className="container mx-auto px-4 py-6">
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl shadow-lg p-6 mb-6">
           <div className="text-center">
@@ -400,7 +367,6 @@ function BooleanChallengeModule() {
           </div>
         </div>
 
-        {/* Navegación por Secciones */}
         <div className="bg-white rounded-lg shadow-md p-2 mb-6">
           <div className="flex space-x-2">
             {[
@@ -427,13 +393,10 @@ function BooleanChallengeModule() {
           </div>
         </div>
 
-        {/* Sección de Simplificación */}
         {activeSection === 'simplification' && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">
-                🧮 Simplificación (50%)
-              </h3>
+              <h3 className="text-xl font-bold text-gray-900">🧮 Simplificación (50%)</h3>
               <button
                 onClick={() => setShowHint(!showHint)}
                 className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors text-sm font-medium"
@@ -485,9 +448,7 @@ function BooleanChallengeModule() {
                 >
                   Verificar Simplificación
                 </button>
-                <div className="text-sm text-gray-500">
-                  Intentos: {attempts.simplification}
-                </div>
+                <div className="text-sm text-gray-500">Intentos: {attempts.simplification}</div>
               </div>
 
               <div className="bg-emerald-50 p-4 rounded-lg">
@@ -504,17 +465,12 @@ function BooleanChallengeModule() {
           </div>
         )}
 
-        {/* Sección de Tabla de Verdad */}
         {activeSection === 'truthTable' && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              📊 Tabla de Verdad (25%)
-            </h3>
-
+            <h3 className="text-xl font-bold text-gray-900 mb-4">📊 Tabla de Verdad (25%)</h3>
             <p className="text-sm text-gray-600 mb-4">
               Completa los valores de salida (columna "Resultado") para cada combinación de entradas:
             </p>
-
             <div className="overflow-x-auto">
               <table className="w-full border-collapse border-2 border-gray-300">
                 <thead>
@@ -567,7 +523,6 @@ function BooleanChallengeModule() {
                 </tbody>
               </table>
             </div>
-
             <div className="mt-4 p-4 bg-teal-50 rounded-lg">
               <p className="text-sm text-teal-800">
                 <strong>💡 Tip:</strong> Evalúa la expresión "{currentChallenge.expression}" para cada combinación de entradas.
@@ -576,17 +531,12 @@ function BooleanChallengeModule() {
           </div>
         )}
 
-        {/* Sección de Mapa de Karnaugh */}
         {activeSection === 'karnaugh' && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              🗺️ Mapa de Karnaugh (25%)
-            </h3>
-
+            <h3 className="text-xl font-bold text-gray-900 mb-4">🗺️ Mapa de Karnaugh (25%)</h3>
             <p className="text-sm text-gray-600 mb-4">
               Completa las celdas del mapa con los valores correctos (0 o 1):
             </p>
-
             <div className="flex justify-center mb-6">
               {currentChallenge.karnaughMap.type === '2var' && (
                 <table className="border-collapse border-2 border-gray-400">
@@ -690,7 +640,6 @@ function BooleanChallengeModule() {
                 </table>
               )}
             </div>
-
             <div className="bg-emerald-50 p-4 rounded-lg">
               <h4 className="font-semibold text-emerald-900 mb-2">Reglas del Mapa de Karnaugh:</h4>
               <ul className="space-y-1 text-sm text-emerald-800">
@@ -702,7 +651,6 @@ function BooleanChallengeModule() {
           </div>
         )}
 
-        {/* Botón Finalizar */}
         {!challengeComplete && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between">
@@ -720,14 +668,11 @@ function BooleanChallengeModule() {
           </div>
         )}
 
-        {/* Resultado Final */}
         {challengeComplete && finalScore && (
           <div className="bg-white rounded-xl shadow-2xl p-8 mb-6 border-4 border-yellow-400">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">{finalScore.badge.icon}</div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                ¡Desafío Completado!
-              </h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">¡Desafío Completado!</h2>
               <div className={`text-xl font-semibold mb-4 ${
                 finalScore.badge.color === 'gold' ? 'text-yellow-600' :
                 finalScore.badge.color === 'silver' ? 'text-gray-600' :
@@ -787,7 +732,6 @@ function BooleanChallengeModule() {
               </div>
             </div>
 
-            {/* Recomendaciones */}
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded mb-6">
               <h4 className="font-semibold text-yellow-900 mb-2">💡 Recomendaciones:</h4>
               <ul className="space-y-1 text-sm text-yellow-800">

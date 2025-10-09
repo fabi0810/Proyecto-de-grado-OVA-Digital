@@ -16,7 +16,6 @@ import GatePalette from './simulador/Paletasimulador'
 import ControlPanel from './simulador/ControlPanel'
 import TruthTableGenerator from './simulador/tabladeverdad'
 import ChallengeSystem from './simulador/DesafiosSimulador'
-import CircuitAnalyzer from './simulador/Circuitoanalizado'
 import ResultsDisplay from './simulador/ResultadoCircuito'
 import AnalisisPanel from './simulador/AnalisisPanel'
 import ConstanteNodo from './simulador/ConstanteNodo'
@@ -24,6 +23,8 @@ import SalidaNodo from './simulador/SalidaNodo'
 import { evaluateCircuitGraph } from '../utils/evaluateCircuitGraph'
 import TheoryModule from './simulador/ModuloTeoria'
 import AdvancedQuestionGenerator from './simulador/EvaluacionModulo'
+
+
 
 function CircuitSimulator() {
   
