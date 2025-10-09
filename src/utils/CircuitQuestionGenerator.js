@@ -880,6 +880,5 @@ class CircuitPerformanceAnalyzer {
   }
 }
 
-// Exportar instancia singleton
 export const circuitQuestionGenerator = new CircuitQuestionGenerator()
 export default circuitQuestionGenerator

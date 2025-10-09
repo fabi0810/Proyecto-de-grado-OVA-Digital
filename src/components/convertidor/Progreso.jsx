@@ -36,7 +36,7 @@ const ProgressTracker = ({ userActivity, onRecommendation }) => {
       icon: '🔢',
       condition: (stats) => stats.binaryConversions >= 10,
       unlocked: false
-    },
+    },    
     {
       id: 'perfect_quiz',
       name: 'Quiz Perfecto',

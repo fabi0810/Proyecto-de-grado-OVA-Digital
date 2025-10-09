@@ -9,14 +9,14 @@ const LogicGateNode = ({ data, isConnectable }) => {
     const designs = {
       AND: (
         <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
-          {/* Forma rectangular con lado derecho curvo */}
+          {}
           <path 
             d="M10 10 L70 10 Q90 10 90 40 Q90 70 70 70 L10 70 Z" 
             fill="white" 
             stroke="#3b82f6" 
             strokeWidth="2"
           />
-          {/* Símbolo AND */}
+          {}
           <text x="50" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#1e40af">
             &
           </text>
@@ -24,14 +24,14 @@ const LogicGateNode = ({ data, isConnectable }) => {
       ),
       OR: (
         <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
-          {/* Forma curva característica de OR */}
+          {}
           <path 
             d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 90 40 Q50 20 10 10" 
             fill="white" 
             stroke="#10b981" 
             strokeWidth="2"
           />
-          {/* Símbolo OR */}
+          {}
           <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#047857">
             ≥1
           </text>
@@ -39,16 +39,16 @@ const LogicGateNode = ({ data, isConnectable }) => {
       ),
       NOT: (
         <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
-          {/* Triángulo */}
+          {}
           <path 
             d="M10 10 L10 70 L70 40 Z" 
             fill="white" 
             stroke="#8b5cf6" 
             strokeWidth="2"
           />
-          {/* Círculo de negación */}
+          {}
           <circle cx="75" cy="40" r="8" fill="white" stroke="#8b5cf6" strokeWidth="2"/>
-          {/* Símbolo NOT */}
+          {}
           <text x="40" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#6d28d9">
             1
           </text>
@@ -56,14 +56,14 @@ const LogicGateNode = ({ data, isConnectable }) => {
       ),
       NAND: (
         <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
-          {/* Forma rectangular con lado derecho curvo */}
+          {}
           <path 
             d="M10 10 L70 10 Q85 10 85 40 Q85 70 70 70 L10 70 Z" 
             fill="white" 
             stroke="#f97316" 
             strokeWidth="2"
           />
-          {/* Círculo de negación */}
+          {}
           <circle cx="90" cy="40" r="8" fill="white" stroke="#f97316" strokeWidth="2"/>
           {/* Símbolo NAND */}
           <text x="50" y="45" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#ea580c">
@@ -73,16 +73,16 @@ const LogicGateNode = ({ data, isConnectable }) => {
       ),
       NOR: (
         <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
-          {/* Forma curva característica de OR */}
+          {}
           <path 
             d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 85 40 Q50 20 10 10" 
             fill="white" 
             stroke="#ef4444" 
             strokeWidth="2"
           />
-          {/* Círculo de negación */}
+          {}
           <circle cx="90" cy="40" r="8" fill="white" stroke="#ef4444" strokeWidth="2"/>
-          {/* Símbolo NOR */}
+          {}
           <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#dc2626">
             ≥1
           </text>
@@ -90,21 +90,21 @@ const LogicGateNode = ({ data, isConnectable }) => {
       ),
       XOR: (
         <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
-          {/* Línea curva adicional para XOR */}
+          {}
           <path 
             d="M5 10 Q20 10 30 40 Q20 70 5 70" 
             fill="none" 
             stroke="#eab308" 
             strokeWidth="2"
           />
-          {/* Forma curva principal */}
+          {}
           <path 
             d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 90 40 Q50 20 10 10" 
             fill="white" 
             stroke="#eab308" 
             strokeWidth="2"
           />
-          {/* Símbolo XOR */}
+          {}
           <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#ca8a04">
             =1
           </text>
@@ -112,23 +112,23 @@ const LogicGateNode = ({ data, isConnectable }) => {
       ),
       XNOR: (
         <svg width="100" height="80" viewBox="0 0 100 80" className="drop-shadow-sm">
-          {/* Línea curva adicional para XNOR */}
+          {}
           <path 
             d="M5 10 Q20 10 30 40 Q20 70 5 70" 
             fill="none" 
             stroke="#ec4899" 
             strokeWidth="2"
           />
-          {/* Forma curva principal */}
+          {}
           <path 
             d="M10 10 Q30 10 40 40 Q30 70 10 70 Q50 60 85 40 Q50 20 10 10" 
             fill="white" 
             stroke="#ec4899" 
             strokeWidth="2"
           />
-          {/* Círculo de negación */}
+          {}
           <circle cx="90" cy="40" r="8" fill="white" stroke="#ec4899" strokeWidth="2"/>
-          {/* Símbolo XNOR */}
+          {}
           <text x="50" y="45" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#be185d">
             =1
           </text>
@@ -149,7 +149,7 @@ const LogicGateNode = ({ data, isConnectable }) => {
     <div className={`relative transition-all duration-200 ${
       isActive ? 'drop-shadow-lg scale-105' : 'drop-shadow-md'
     }`}>
-      {/* Handles de entrada */}
+      {}
       {Array.from({ length: inputCount }, (_, index) => (
         <Handle
           key={`input-${index}`}

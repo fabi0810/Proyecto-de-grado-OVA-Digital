@@ -8,7 +8,6 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
       try {
         const parsed = JSON.parse(saved)
         return {
-          maxSteps: 50,
           showAllSteps: true,
           targetForm: parsed.targetForm || 'SOP',
           useKarnaugh: parsed.useKarnaugh !== undefined ? parsed.useKarnaugh : true
@@ -16,7 +15,6 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
       } catch (_) {}
     }
     return {
-      maxSteps: 50,
       showAllSteps: true,
       targetForm: 'SOP',
       useKarnaugh: true

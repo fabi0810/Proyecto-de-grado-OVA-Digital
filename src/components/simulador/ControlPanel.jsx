@@ -52,7 +52,7 @@ const ControlPanel = ({
         </div>
       </div>
 
-      
+      {/* Valores de Entrada */}
       <div className="mb-4">
         <h4 className="text-sm font-semibold text-gray-700 mb-3">
           Valores de Entrada

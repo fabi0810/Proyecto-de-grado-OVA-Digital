@@ -7,6 +7,34 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utils\\CircuitQuestionGenerator.js||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\utils\\CircuitQuestionGenerator||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utils\\CircuitQuestionGenerator||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\utils\\BooleanEvaluator.js||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\utils\\BooleanEvaluator.js||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Desafioalgebrabooleana.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\algebra\\Desafioalgebrabooleana.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Asistentesimplificacion.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\algebra\\Asistentesimplificacion.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Editorexpresiones.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\algebra\\Editorexpresiones.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Examenalgebrabooleana.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\algebra\\Examenalgebrabooleana.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\convertidor\\ConvertidorPasoapaso.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\convertidor\\ConvertidorPasoapaso.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\CircuitSimulator.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\CircuitSimulator.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
     },
@@ -15,28 +43,12 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\NumericConverter.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Editorexpresiones.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\algebra\\Editorexpresiones.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Asistentesimplificacion.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\algebra\\Asistentesimplificacion.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\BooleanAlgebra.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\BooleanAlgebra.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Desafiosalgebrabooleana.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\algebra\\Desafiosalgebrabooleana.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\convertidor\\Examen.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\convertidor\\Examen.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Examenalgebrabooleana.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:src\\components\\algebra\\Examenalgebrabooleana.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\simulador\\EvaluacionModulo.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
@@ -70,7 +82,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 300,
-          "SelectedChildIndex": 15,
+          "SelectedChildIndex": 18,
           "Children": [
             {
               "$type": "Bookmark",
@@ -83,6 +95,58 @@
             {
               "$type": "Document",
               "DocumentIndex": 3,
+              "Title": "Desafioalgebrabooleana.jsx",
+              "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Desafioalgebrabooleana.jsx",
+              "RelativeDocumentMoniker": "src\\components\\algebra\\Desafioalgebrabooleana.jsx",
+              "ToolTip": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Desafioalgebrabooleana.jsx",
+              "RelativeToolTip": "src\\components\\algebra\\Desafioalgebrabooleana.jsx",
+              "ViewState": "AgIAAB4DAAAAAAAAAAAYwD4DAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
+              "WhenOpened": "2025-10-08T23:20:21.662Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CircuitQuestionGenerator",
+              "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\utils\\CircuitQuestionGenerator",
+              "RelativeDocumentMoniker": "src\\utils\\CircuitQuestionGenerator",
+              "ToolTip": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\utils\\CircuitQuestionGenerator",
+              "RelativeToolTip": "src\\utils\\CircuitQuestionGenerator",
+              "ViewState": "AgIAALkAAAAAAAAAAAAAAMkAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-10-08T23:15:24.634Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "BooleanEvaluator.js",
+              "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\utils\\BooleanEvaluator.js",
+              "RelativeDocumentMoniker": "src\\utils\\BooleanEvaluator.js",
+              "ToolTip": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\utils\\BooleanEvaluator.js",
+              "RelativeToolTip": "src\\utils\\BooleanEvaluator.js",
+              "ViewState": "AgIAABABAAAAAAAAAAAYwCUBAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2025-10-08T23:14:48.888Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ConvertidorPasoapaso.jsx",
+              "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\convertidor\\ConvertidorPasoapaso.jsx",
+              "RelativeDocumentMoniker": "src\\components\\convertidor\\ConvertidorPasoapaso.jsx",
+              "ToolTip": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\convertidor\\ConvertidorPasoapaso.jsx",
+              "RelativeToolTip": "src\\components\\convertidor\\ConvertidorPasoapaso.jsx",
+              "ViewState": "AgIAAK0AAAAAAAAAAAAAALQAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
+              "WhenOpened": "2025-10-08T18:59:58.928Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
               "Title": "Editorexpresiones.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Editorexpresiones.jsx",
               "RelativeDocumentMoniker": "src\\components\\algebra\\Editorexpresiones.jsx",
@@ -101,14 +165,14 @@
               "RelativeDocumentMoniker": "src\\components\\algebra\\Asistentesimplificacion.jsx",
               "ToolTip": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Asistentesimplificacion.jsx",
               "RelativeToolTip": "src\\components\\algebra\\Asistentesimplificacion.jsx",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAL4AAAAVAAAAAAAAAA==",
+              "ViewState": "AgIAADkAAAAAAAAAAAAAAEsAAAAyAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
               "WhenOpened": "2025-10-08T16:30:59.423Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 10,
               "Title": "BooleanAlgebra.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\BooleanAlgebra.jsx",
               "RelativeDocumentMoniker": "src\\components\\BooleanAlgebra.jsx",
@@ -116,25 +180,11 @@
               "RelativeToolTip": "src\\components\\BooleanAlgebra.jsx",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T16:26:27.538Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T16:26:27.538Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "Desafiosalgebrabooleana.jsx",
-              "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Desafiosalgebrabooleana.jsx",
-              "RelativeDocumentMoniker": "src\\components\\algebra\\Desafiosalgebrabooleana.jsx",
-              "ToolTip": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Desafiosalgebrabooleana.jsx",
-              "RelativeToolTip": "src\\components\\algebra\\Desafiosalgebrabooleana.jsx",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAQAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T16:22:24.307Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 11,
               "Title": "Examen.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\convertidor\\Examen.jsx",
               "RelativeDocumentMoniker": "src\\components\\convertidor\\Examen.jsx",
@@ -142,25 +192,24 @@
               "RelativeToolTip": "src\\components\\convertidor\\Examen.jsx",
               "ViewState": "AgIAACcDAAAAAAAAAAAYwEcDAAAZAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T16:04:09.356Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T16:04:09.356Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 6,
               "Title": "Examenalgebrabooleana.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Examenalgebrabooleana.jsx",
               "RelativeDocumentMoniker": "src\\components\\algebra\\Examenalgebrabooleana.jsx",
               "ToolTip": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\algebra\\Examenalgebrabooleana.jsx",
               "RelativeToolTip": "src\\components\\algebra\\Examenalgebrabooleana.jsx",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAUAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
               "WhenOpened": "2025-10-08T16:03:19.012Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 12,
               "Title": "EvaluacionModulo.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\simulador\\EvaluacionModulo.jsx",
               "RelativeDocumentMoniker": "src\\components\\simulador\\EvaluacionModulo.jsx",
@@ -168,12 +217,11 @@
               "RelativeToolTip": "src\\components\\simulador\\EvaluacionModulo.jsx",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAgAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T15:40:03.568Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T15:40:03.568Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 13,
               "Title": "Logicacompuertas.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\simulador\\Logicacompuertas.jsx",
               "RelativeDocumentMoniker": "src\\components\\simulador\\Logicacompuertas.jsx",
@@ -181,12 +229,11 @@
               "RelativeToolTip": "src\\components\\simulador\\Logicacompuertas.jsx",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T15:21:56.366Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T15:21:56.366Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 14,
               "Title": "ModuloTeoria.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\simulador\\ModuloTeoria.jsx",
               "RelativeDocumentMoniker": "src\\components\\simulador\\ModuloTeoria.jsx",
@@ -194,12 +241,11 @@
               "RelativeToolTip": "src\\components\\simulador\\ModuloTeoria.jsx",
               "ViewState": "AgIAAKICAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T15:21:42.748Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T15:21:42.748Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 9,
               "Title": "NumericConverter.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\NumericConverter.jsx",
               "RelativeDocumentMoniker": "src\\components\\NumericConverter.jsx",
@@ -207,12 +253,11 @@
               "RelativeToolTip": "src\\components\\NumericConverter.jsx",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAABFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T15:21:36.626Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T15:21:36.626Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 8,
               "Title": "CircuitSimulator.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\CircuitSimulator.jsx",
               "RelativeDocumentMoniker": "src\\components\\CircuitSimulator.jsx",
@@ -220,12 +265,11 @@
               "RelativeToolTip": "src\\components\\CircuitSimulator.jsx",
               "ViewState": "AgIAACUAAAAAAAAAAAAAADMAAAAhAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T14:30:34.66Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T14:30:34.66Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 15,
               "Title": "Circuitoanalizado.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\simulador\\Circuitoanalizado.jsx",
               "RelativeDocumentMoniker": "src\\components\\simulador\\Circuitoanalizado.jsx",
@@ -233,12 +277,11 @@
               "RelativeToolTip": "src\\components\\simulador\\Circuitoanalizado.jsx",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T14:30:01.737Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T14:30:01.737Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 16,
               "Title": "AdvancedQuestionGenerator.jsx",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\components\\simulador\\AdvancedQuestionGenerator.jsx",
               "RelativeDocumentMoniker": "src\\components\\simulador\\AdvancedQuestionGenerator.jsx",
@@ -246,8 +289,7 @@
               "RelativeToolTip": "src\\components\\simulador\\AdvancedQuestionGenerator.jsx",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-10-08T14:29:59.171Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-08T14:29:59.171Z"
             },
             {
               "$type": "Document",
@@ -257,14 +299,14 @@
               "RelativeDocumentMoniker": "src\\utils\\CircuitQuestionGenerator.js",
               "ToolTip": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\utils\\CircuitQuestionGenerator.js",
               "RelativeToolTip": "src\\utils\\CircuitQuestionGenerator.js",
-              "ViewState": "AgIAAFQDAAAAAAAAAAAYwGgDAAAVAAAAAAAAAA==",
+              "ViewState": "AgIAAFgDAAAAAAAAAAAAAG8DAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
               "WhenOpened": "2025-09-25T21:41:53.204Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 17,
               "Title": "advancedQuestionGenerator.js",
               "DocumentMoniker": "C:\\Users\\fdcm0\\ova-logica-digital\\src\\utils\\advancedQuestionGenerator.js",
               "RelativeDocumentMoniker": "src\\utils\\advancedQuestionGenerator.js",
@@ -272,8 +314,7 @@
               "RelativeToolTip": "src\\utils\\advancedQuestionGenerator.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2025-09-25T21:41:44.23Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-09-25T21:41:44.23Z"
             },
             {
               "$type": "Bookmark",

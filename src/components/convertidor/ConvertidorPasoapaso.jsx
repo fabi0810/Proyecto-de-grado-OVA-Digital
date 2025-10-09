@@ -49,7 +49,6 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
       }
 
       const targetBases = [2, 8, 10, 16].filter(base => base !== fromBase)
-      
       targetBases.forEach(targetBase => {
         const result = convertToBase(decimalValue, targetBase)
         newSteps.push({
@@ -150,7 +149,6 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
       setCurrentStep(0)
       setIsAnimating(true)
       
-      // Animar pasos automáticamente
       if (newSteps.length > 0) {
         let stepIndex = 0
         const interval = setInterval(() => {
@@ -179,9 +177,8 @@ const StepByStepConverter = ({ inputValue, fromBase, onStepComplete }) => {
     return (
       <div
         key={index}
-        className={`transition-all duration-500 ${
-          isActive ? 'opacity-100 scale-100' : 'opacity-50 scale-95'
-        }`}
+            className={`transition-all duration-500 ${isActive ? 'opacity-100 scale-100' : 'opacity-100 scale-95'
+                }`}
       >
         <div className={`card ${isCompleted ? 'bg-green-50 border-green-200' : ''}`}>
           <div className="flex items-center mb-3">

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
+import { BooleanEvaluator } from '../../utils/BooleanEvaluator'
 
-// Generador de Desafíos Booleanos
 class BooleanChallengeGenerator {
   constructor() {
     this.challenges = [
-      // Nivel Avanzado - Estudiantes de 6to semestre
       {
         expression: "A + A·B",
         simplified: "A",
@@ -101,44 +100,30 @@ class BooleanChallengeGenerator {
     }
   }
 
-  generateTruthTable(expression, variables) {
-    const rows = Math.pow(2, variables.length)
-    const table = []
-    
-    for (let i = 0; i < rows; i++) {
-      const row = {}
-      variables.forEach((variable, index) => {
-        row[variable] = (i >> (variables.length - 1 - index)) & 1
-      })
-      row.result = this.evaluateExpression(expression, row)
-      row.index = i
-      table.push(row)
-    }
-    
-    return table
-  }
+    generateTruthTable(expression, variables) {
+        const rows = Math.pow(2, variables.length)
+        const table = []
 
-  evaluateExpression(expression, values) {
-    let expr = expression
-    
-    Object.keys(values).forEach(variable => {
-      const regex = new RegExp(variable, 'g')
-      expr = expr.replace(regex, values[variable].toString())
-    })
-    
-    try {
-      expr = expr.replace(/·/g, '&&')
-                 .replace(/\+/g, '||')
-                 .replace(/'/g, '!')
-                 .replace(/([A-Z])/g, '$1')
-      
-      const result = Math.random() > 0.5 ? 1 : 0
-      return result
-    } catch {
-      return 0
-    }
-  }
+        for (let i = 0; i < rows; i++) {
+            const values = {}
+            variables.forEach((variable, index) => {
+                values[variable] = (i >> (variables.length - 1 - index)) & 1
+            })
 
+            //  CORRECCIÓN: Usar BooleanEvaluator
+            const result = BooleanEvaluator.evaluate(expression, values)
+
+            table.push({
+                ...values,
+                result: result,
+                index: i
+            })
+        }
+
+        return table
+    }
+
+  
   generateKarnaughMap(truthTable, variables) {
     if (variables.length === 2) {
       return {
@@ -161,7 +146,7 @@ class BooleanChallengeGenerator {
         cols: ['00', '01', '11', '10']
       }
     }
-    return { type: 'unsupported', cells: [] }
+      return BooleanEvaluator.generateKarnaughMap(expression, variables)
   }
 }
 
@@ -232,29 +217,41 @@ function BooleanChallengeModule() {
     startNewChallenge()
   }, [])
 
-  const validateSimplification = () => {
-    if (!currentChallenge) return
-    
-    const userInput = userAnswers.simplification.trim().replace(/\s/g, '')
-    const correct = currentChallenge.simplified.replace(/\s/g, '')
-    
-    const isCorrect = normalizeExpression(userInput) === normalizeExpression(correct)
-    
-    setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
-    
-    if (isCorrect) {
-      setFeedback(prev => ({
-        ...prev,
-        simplification: { correct: true, message: '¡Correcto! Excelente simplificación.' }
-      }))
-    } else {
-      const hints = getSimplificationHints(currentChallenge.laws, attempts.simplification)
-      setFeedback(prev => ({
-        ...prev,
-        simplification: { correct: false, message: hints }
-      }))
+    const validateSimplification = () => {
+        if (!currentChallenge) return
+
+        const userInput = userAnswers.simplification.trim()
+        const correct = currentChallenge.simplified.trim()
+
+        const validation = BooleanEvaluator.areEquivalent(userInput, correct)
+
+        setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
+
+        if (validation.equivalent) {
+            setFeedback(prev => ({
+                ...prev,
+                simplification: {
+                    correct: true,
+                    message: '¡Correcto! Excelente simplificación. Las expresiones son lógicamente equivalentes.'
+                }
+            }))
+        } else {
+            const hints = getSimplificationHints(currentChallenge.laws, attempts.simplification)
+            let message = hints
+
+            if (validation.counterExample) {
+                const counterEx = Object.entries(validation.counterExample)
+                    .map(([k, v]) => `${k}=${v}`)
+                    .join(', ')
+                message += `\n\nContraejemplo: Con ${counterEx}, las expresiones dan resultados diferentes.`
+            }
+
+            setFeedback(prev => ({
+                ...prev,
+                simplification: { correct: false, message }
+            }))
+        }
     }
-  }
 
   const finalizeChallenge = () => {
     if (!currentChallenge) return
@@ -332,13 +329,7 @@ function BooleanChallengeModule() {
     setTimerActive(false)
   }
 
-  const normalizeExpression = (expr) => {
-    return expr.toLowerCase()
-              .replace(/\s/g, '')
-              .replace(/\*/g, '·')
-              .replace(/&/g, '·')
-              .replace(/\|/g, '+')
-  }
+
 
   const getSimplificationHints = (laws, attemptCount) => {
     if (attemptCount === 0) {

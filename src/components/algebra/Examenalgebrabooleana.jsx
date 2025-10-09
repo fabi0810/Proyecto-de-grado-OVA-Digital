@@ -10,7 +10,7 @@ const BoolenaExamModule = () => {
   const [score, setScore] = useState(0)
   const [generatingExam, setGeneratingExam] = useState(false)
 
-  // ⏱️ TEMPORIZADOR
+  // ⏱ TEMPORIZADOR
   useEffect(() => {
     if (examState === 'active' && timeLeft > 0) {
       const timer = setTimeout(() => {
@@ -26,7 +26,7 @@ const BoolenaExamModule = () => {
     }
   }, [examState, timeLeft])
 
-  // 🎯 GENERAR EXAMEN
+  //  GENERAR EXAMEN
   const generateExam = () => {
     setGeneratingExam(true)
 
@@ -41,13 +41,13 @@ const BoolenaExamModule = () => {
         setQuestions(examQuestions)
         setGeneratingExam(false)
         setExamState('active')
-        setTimeLeft(600) // Reiniciar tiempo
+        setTimeLeft(600) 
         
       } catch (error) {
         console.error('Error generando examen:', error)
         
-        // Fallback: generar preguntas básicas
-        const fallbackQuestions = generateFallbackExam(10)
+          //pregubasi        
+          const fallbackQuestions = generateFallbackExam(10)
         setQuestions(fallbackQuestions)
         setGeneratingExam(false)
         setExamState('active')

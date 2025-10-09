@@ -87,7 +87,7 @@ const ChallengeSystem = ({ onStartChallenge }) => {
         generator: function(expr, difficulty)  {
           const config = this.difficulties[difficulty]
           return {
-            title: `${difficultyLabels[difficulty]}: ${expr}`,
+            title: `${difficultyLabels[difficulty]}: ${expr}`,  
             description: `Implementa la expresión lógica: ${expr}`,
             requirements: {
               gates: extractGatesFromExpression(expr),
