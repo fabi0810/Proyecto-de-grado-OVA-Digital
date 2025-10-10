@@ -113,6 +113,64 @@ export function expressionFromCircuit(nodes = [], edges = [], maxInputs = 6) {
 
   return { inputNames, outputs, expressions };
 }
+// Agregar al archivo src/utils/booleanTools.js
+
+/**
+ * Genera expresión POS (Producto de Sumas) desde maxterms
+ */
+export function posFromMaxterms(maxterms = [], inputNames = []) {
+  if (!maxterms.length) return '1';
+  if (maxterms.length === (1 << inputNames.length)) return '0';
+
+  const terms = maxterms.map(idx => {
+    const literals = [];
+    for (let i = 0; i < inputNames.length; i++) {
+      const bit = (idx >> (inputNames.length - 1 - i)) & 1;
+      const name = inputNames[i];
+      // En POS, invertimos la lógica: bit=0 → variable sin negar, bit=1 → variable negada
+      literals.push(bit ? `${name}'` : name);
+    }
+    return `(${literals.join(' + ')})`;
+  });
+
+  return terms.join('·');
+}
+
+/**
+ * Genera expresiones SOP y POS desde el circuito
+ */
+export function expressionsComplete(nodes = [], edges = [], maxInputs = 6) {
+  const t = generateTruthTable(nodes, edges, maxInputs);
+  if (t.error) return { error: t.error };
+  if (t.warning && !t.rows.length) {
+    return { warning: t.warning, expressions: {} };
+  }
+
+  const { rows, inputNames, outputs } = t;
+  const expressions = {};
+  
+  for (const outName of outputs) {
+    const minterms = [];
+    const maxterms = [];
+    
+    for (let idx = 0; idx < rows.length; idx++) {
+      if ((rows[idx].outputs[outName] ?? 0) === 1) {
+        minterms.push(idx);
+      } else {
+        maxterms.push(idx);
+      }
+    }
+    
+    expressions[outName] = {
+      sop: sopFromMinterms(minterms, inputNames),
+      pos: posFromMaxterms(maxterms, inputNames),
+      minterms,
+      maxterms
+    };
+  }
+
+  return { inputNames, outputs, expressions };
+}
 
 function countOnes(n) {
   let c = 0;

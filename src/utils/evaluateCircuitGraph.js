@@ -1,183 +1,158 @@
 // utils/evaluateCircuitGraph.js
-// Motor de evaluación de circuitos combinacionales con detección de ciclos y orden topológico.
-// Requisitos cubiertos:
-// - Construye mapas de nodos y aristas, topological sort, detecta ciclos (hasCycle)
-// - Evalúa compuertas con orden determinista de entradas (por targetHandle si existe)
-// - Permite inputOverrides para forzar combinaciones de entradas
-// - Robusto ante nodos sin entradas o con múltiples edges
+// Evaluador de grafos de circuitos lógicos con detección de ciclos y actualización de salidas
 
-function getNodeId(node) {
-    return typeof node?.id === 'string' ? node.id : String(node?.id ?? '');
-  }
+/**
+ * Evalúa el circuito completo y devuelve los valores de todos los nodos
+ * @param {Array} nodes - Nodos del circuito
+ * @param {Array} edges - Conexiones entre nodos
+ * @param {Object} options - Opciones de evaluación
+ * @returns {Object} { nodeValues: Map, outputs: Object, hasCycle: boolean }
+ */
+export function evaluateCircuitGraph(nodes = [], edges = [], options = {}) {
+  const { inputOverrides = {} } = options;
   
-  function buildGraph(nodes = [], edges = []) {
-    const idToNode = new Map();
-    const inEdges = new Map();
-    const outEdges = new Map();
+  // Mapa de valores de nodos
+  const nodeValues = new Map();
   
-    for (const n of nodes) {
-      const id = getNodeId(n);
-      idToNode.set(id, n);
-      inEdges.set(id, []);
-      outEdges.set(id, []);
+  // Inicializar valores de entrada y constantes
+  nodes.forEach(node => {
+    if (node.type === 'input') {
+      // Usar override si existe, sino el valor del nodo
+      const value = inputOverrides[node.id] !== undefined 
+        ? inputOverrides[node.id] 
+        : (node.data?.value ?? 0);
+      nodeValues.set(node.id, value);
+    } else if (node.type === 'constant') {
+      const value = node.data?.value === 1 ? 1 : 0;
+      nodeValues.set(node.id, value);
     }
+  });
+
+  // Crear mapa de adyacencia para detectar ciclos
+  const adjList = new Map();
+  const inDegree = new Map();
   
-    for (const e of edges) {
-      const src = e?.source;
-      const tgt = e?.target;
-      if (!idToNode.has(src) || !idToNode.has(tgt)) continue;
-      outEdges.get(src).push(e);
-      inEdges.get(tgt).push(e);
+  nodes.forEach(node => {
+    adjList.set(node.id, []);
+    inDegree.set(node.id, 0);
+  });
+
+  edges.forEach(edge => {
+    if (!adjList.has(edge.source)) adjList.set(edge.source, []);
+    adjList.get(edge.source).push(edge);
+    inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
+  });
+
+  // Ordenamiento topológico (Kahn's algorithm) para detectar ciclos
+  const queue = [];
+  nodes.forEach(node => {
+    if (inDegree.get(node.id) === 0) {
+      queue.push(node.id);
     }
-  
-    return { idToNode, inEdges, outEdges };
-  }
-  
-  function detectCycleKahn(idToNode, inEdges, outEdges) {
-    const inDegree = new Map();
-    for (const id of idToNode.keys()) {
-      inDegree.set(id, (inEdges.get(id) || []).length);
-    }
-  
-    const queue = [];
-    for (const [id, deg] of inDegree) {
-      if (deg === 0) queue.push(id);
-    }
-  
-    const topoOrder = [];
-    while (queue.length) {
-      const id = queue.shift();
-      topoOrder.push(id);
-      for (const e of outEdges.get(id) || []) {
-        const t = e.target;
-        const deg = inDegree.get(t) ?? 0;
-        inDegree.set(t, deg - 1);
-        if (deg - 1 === 0) queue.push(t);
+  });
+
+  const topoOrder = [];
+  while (queue.length > 0) {
+    const nodeId = queue.shift();
+    topoOrder.push(nodeId);
+    
+    const outEdges = adjList.get(nodeId) || [];
+    for (const edge of outEdges) {
+      const targetId = edge.target;
+      inDegree.set(targetId, inDegree.get(targetId) - 1);
+      if (inDegree.get(targetId) === 0) {
+        queue.push(targetId);
       }
     }
-  
-    const hasCycle = topoOrder.length !== idToNode.size;
-    return { hasCycle, topoOrder };
   }
-  
-  function readNodeType(node) {
-    // Compatibilidad con tipos existentes: 'logicGate', 'input'
-    // Nuevos: 'constant', 'output'
-    return node?.type || 'logicGate';
-  }
-  
-  function readGateType(node) {
-    return node?.data?.gateType || node?.data?.label || node?.data?.type || '';
-  }
-  
-  function evaluateGate(gateType, inputValues) {
-    if (!Array.isArray(inputValues)) return 0;
-    if (inputValues.length === 0) return 0;
-    if (inputValues.some(v => v === undefined || v === null)) return undefined;
-  
-    switch (gateType) {
-      case 'AND': return inputValues.every(v => v === 1) ? 1 : 0;
-      case 'OR': return inputValues.some(v => v === 1) ? 1 : 0;
-      case 'NOT': return inputValues[0] === 1 ? 0 : 1;
-      case 'NAND': return inputValues.every(v => v === 1) ? 0 : 1;
-      case 'NOR': return inputValues.some(v => v === 1) ? 0 : 1;
-      case 'XOR': return inputValues.filter(v => v === 1).length % 2 === 1 ? 1 : 0;
-      case 'XNOR': return inputValues.filter(v => v === 1).length % 2 === 0 ? 1 : 0;
-      default: return 0;
-    }
-  }
-  
-  function sortInEdgesDeterministically(inEdgesForNode) {
-    // Orden determinista por targetHandle (si existe) y luego por source/sourceHandle
-    return [...(inEdgesForNode || [])].sort((a, b) => {
-      const ah = a?.targetHandle ?? '';
-      const bh = b?.targetHandle ?? '';
-      if (ah < bh) return -1;
-      if (ah > bh) return 1;
-      const as = (a?.source ?? '') + ':' + (a?.sourceHandle ?? '');
-      const bs = (b?.source ?? '') + ':' + (b?.sourceHandle ?? '');
-      if (as < bs) return -1;
-      if (as > bs) return 1;
-      return 0;
-    });
-  }
-  
-  export function evaluateCircuitGraph(nodes = [], edges = [], options = {}) {
-    // options: { inputOverrides?: Record<inputNodeId, 0|1> }
-    const { idToNode, inEdges, outEdges } = buildGraph(nodes, edges);
-    const { hasCycle, topoOrder } = detectCycleKahn(idToNode, inEdges, outEdges);
-  
-    if (hasCycle) {
-      return {
-        hasCycle: true,
-        values: {},
-        outputs: {},
-        error: 'Ciclo detectado',
-      };
-    }
-  
-    const values = {}; // nodeId -> 0|1|undefined
-    const inputOverrides = options?.inputOverrides || {};
-  
-    // Paso 1: inicializar valores de nodos de entrada/constante
-    for (const id of topoOrder) {
-      const node = idToNode.get(id);
-      const type = readNodeType(node);
-  
-      if (type === 'input') {
-        const overridden = inputOverrides[id];
-        if (overridden === 0 || overridden === 1) {
-          values[id] = overridden;
-        } else {
-          // Leer desde node.data.value si existe
-          const val = node?.data?.value ?? 0;
-          values[id] = val === 1 ? 1 : 0;
-        }
-      } else if (type === 'constant') {
-        const val = node?.data?.value ?? 0;
-        values[id] = val === 1 ? 1 : 0;
-      }
-    }
-  
-    // Paso 2: evaluar por orden topológico
-    for (const id of topoOrder) {
-      const node = idToNode.get(id);
-      const type = readNodeType(node);
-  
-      if (type === 'logicGate') {
-        const ins = sortInEdgesDeterministically(inEdges.get(id));
-        const inputValues = ins.map(e => values[e.source]);
-        const gateType = readGateType(node);
-        const out = evaluateGate(gateType, inputValues);
-        values[id] = out;
-      } else if (type === 'output') {
-        // La salida toma el valor de su (única) entrada si existe
-        const ins = sortInEdgesDeterministically(inEdges.get(id));
-        if (!ins.length) {
-          values[id] = 0;
-        } else {
-          const v = values[ins[0].source];
-          values[id] = v === 1 ? 1 : 0;
-        }
-      } else {
-        // 'input' y 'constant' ya asignados
-      }
-    }
-  
-    // Paso 3: recolectar salidas (todos los nodos type === 'output')
-    const outputs = {};
-    for (const id of topoOrder) {
-      const node = idToNode.get(id);
-      if (readNodeType(node) === 'output') {
-        const label = node?.data?.label || id;
-        outputs[label] = values[id] ?? 0;
-      }
-    }
-  
-    return {
-      hasCycle: false,
-      values,
-      outputs,
-      error: null,
+
+  // Si el orden topológico no incluye todos los nodos, hay un ciclo
+  if (topoOrder.length !== nodes.length) {
+    return { 
+      nodeValues, 
+      outputs: {}, 
+      hasCycle: true 
     };
   }
+
+  // Evaluar nodos en orden topológico
+  for (const nodeId of topoOrder) {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) continue;
+
+    if (node.type === 'logicGate') {
+      // Obtener conexiones de entrada
+      const inputEdges = edges.filter(edge => edge.target === nodeId);
+      const inputCount = node.data.gateType === 'NOT' ? 1 : 2;
+      const inputValues = [];
+
+      for (let i = 0; i < inputCount; i++) {
+        const edge = inputEdges.find(e => e.targetHandle === `input-${i}`);
+        if (edge) {
+          const sourceValue = nodeValues.get(edge.source);
+          inputValues[i] = sourceValue !== undefined ? sourceValue : undefined;
+        } else {
+          inputValues[i] = undefined;
+        }
+      }
+
+      // Calcular salida de la compuerta
+      const output = calculateGateValue(node.data.gateType, inputValues);
+      nodeValues.set(nodeId, output);
+    } else if (node.type === 'output') {
+      // Obtener valor de entrada del nodo de salida
+      const inputEdge = edges.find(edge => edge.target === nodeId);
+      if (inputEdge) {
+        const sourceValue = nodeValues.get(inputEdge.source);
+        nodeValues.set(nodeId, sourceValue !== undefined ? sourceValue : 0);
+      } else {
+        nodeValues.set(nodeId, 0);
+      }
+    }
+  }
+
+  // Recopilar valores de salida
+  const outputs = {};
+  nodes.forEach(node => {
+    if (node.type === 'output') {
+      const label = node.data?.label || node.id;
+      outputs[label] = nodeValues.get(node.id) ?? 0;
+    }
+  });
+
+  return { 
+    nodeValues, 
+    outputs, 
+    hasCycle: false 
+  };
+}
+
+/**
+ * Calcula el valor de salida de una compuerta lógica
+ * @param {string} gateType - Tipo de compuerta (AND, OR, NOT, etc.)
+ * @param {Array} inputValues - Valores de entrada
+ * @returns {number} Valor de salida (0 o 1)
+ */
+function calculateGateValue(gateType, inputValues) {
+  if (!inputValues || inputValues.length === 0) return undefined;
+  if (inputValues.some(val => val === undefined || val === null)) return undefined;
+
+  switch (gateType) {
+    case 'AND':
+      return inputValues.every(val => val === 1) ? 1 : 0;
+    case 'OR':
+      return inputValues.some(val => val === 1) ? 1 : 0;
+    case 'NOT':
+      return inputValues[0] === 1 ? 0 : 1;
+    case 'NAND':
+      return inputValues.every(val => val === 1) ? 0 : 1;
+    case 'NOR':
+      return inputValues.some(val => val === 1) ? 0 : 1;
+    case 'XOR':
+      return inputValues.filter(val => val === 1).length % 2 === 1 ? 1 : 0;
+    case 'XNOR':
+      return inputValues.filter(val => val === 1).length % 2 === 0 ? 1 : 0;
+    default:
+      return 0;
+  }
+}

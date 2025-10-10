@@ -6,7 +6,9 @@ import ReactFlow, {
   useNodesState, 
   useEdgesState, 
   addEdge,
-  ReactFlowProvider
+  ReactFlowProvider,
+  Handle,
+  Position
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
@@ -16,15 +18,13 @@ import GatePalette from './simulador/Paletasimulador'
 import ControlPanel from './simulador/ControlPanel'
 import TruthTableGenerator from './simulador/tabladeverdad'
 import ChallengeSystem from './simulador/DesafiosSimulador'
+import CircuitAnalyzer from './simulador/Circuitoanalizado'
 import ResultsDisplay from './simulador/ResultadoCircuito'
-import AnalisisPanel from './simulador/AnalisisPanel'
-import ConstanteNodo from './simulador/ConstanteNodo'
-import SalidaNodo from './simulador/SalidaNodo'
-import { evaluateCircuitGraph } from '../utils/evaluateCircuitGraph'
 import TheoryModule from './simulador/ModuloTeoria'
 import AdvancedQuestionGenerator from './simulador/EvaluacionModulo'
-
-
+import SalidaNodo from './simulador/SalidaNodo'
+import ConstanteNodo from './simulador/ConstanteNodo'  
+import AnalisisPanel from './simulador/AnalisisPanel'
 
 function CircuitSimulator() {
   
@@ -35,7 +35,7 @@ function CircuitSimulator() {
   const [inputs, setInputs] = useState({ A: 0, B: 0 })
   const [circuitStats, setCircuitStats] = useState({
     gateCount: 0,
- 
+    connectionCount: 0,
     inputCount: 0,
     outputCount: 0,
     complexity: 'Básico'
@@ -48,8 +48,8 @@ function CircuitSimulator() {
   const nodeTypes = {
     logicGate: LogicGateNode,
     input: InputNode,
-    constant: ConstanteNodo,
-    output: SalidaNodo,
+    output: SalidaNodo,      // ← AGREGAR ESTA LÍNEA
+  constant: ConstanteNodo
   }
 
   const tabs = [
@@ -98,7 +98,8 @@ function CircuitSimulator() {
     nodes.forEach(node => {
       if (node.type === 'input') {
         nodeValues.set(node.id, node.data.value || 0)
-        console.log(`Entrada ${node.id}: ${node.data.value}`)
+      } else if (node.type === 'constant') {
+        nodeValues.set(node.id, node.data.value || 0)
       }
     })
     
@@ -139,7 +140,20 @@ function CircuitSimulator() {
           if (nodeValues.get(node.id) !== output) {
             nodeValues.set(node.id, output)
             changed = true
-            console.log(`Nodo ${node.id} actualizado: salida = ${output}`)
+          }
+        } else if (node.type === 'output') {
+          // ← ESTA ES LA PARTE CLAVE PARA EL LED
+          const inputEdges = edges.filter(edge => edge.target === node.id)
+          if (inputEdges.length > 0) {
+            const sourceValue = nodeValues.get(inputEdges[0].source)
+            if (sourceValue !== undefined && nodeValues.get(node.id) !== sourceValue) {
+              nodeValues.set(node.id, sourceValue)
+              changed = true
+            }
+          } else if (nodeValues.get(node.id) !== 0) {
+            // Si no hay conexión, el LED está apagado
+            nodeValues.set(node.id, 0)
+            changed = true
           }
         }
       })
@@ -169,6 +183,16 @@ function CircuitSimulator() {
               ...node.data,
               inputValues,
               output: nodeValues.get(node.id)
+            }
+          }
+        }
+        else if (node.type === 'output') {
+          // ← ACTUALIZAR EL VALOR DEL LED
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              value: nodeValues.get(node.id) || 0
             }
           }
         }
@@ -247,57 +271,58 @@ function CircuitSimulator() {
     
     const gateData = event.dataTransfer.getData('application/reactflow')
     if (!gateData || !reactFlowInstance) return
-
-    let payload
-    try {
-      payload = JSON.parse(gateData)
-    } catch {
-      payload = { type: 'logicGate', id: gateData, gateType: gateData }
-    }
-
+  
     const position = reactFlowInstance.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
     })
-
-    if (payload.type === 'constant') {
-      const id = `CONST-${Date.now()}`
-      const newNode = {
-        id,
-        type: 'constant',
-        position,
-        data: { label: payload?.data?.label ?? 'Const', value: payload?.data?.value === 1 ? 1 : 0 }
+  
+    try {
+      const payload = JSON.parse(gateData)
+      
+      // Manejar diferentes tipos de nodos
+      if (payload.type === 'constant') {
+        // Agregar nodo constante
+        setNodes((nds) => nds.concat({
+          id: `CONST-${Date.now()}`,
+          type: 'constant',
+          position,
+          data: { 
+            label: payload?.data?.label ?? 'Const', 
+            value: payload?.data?.value === 1 ? 1 : 0 
+          }
+        }))
+      } else if (payload.type === 'output') {
+        // Agregar nodo de salida LED
+        setNodes((nds) => nds.concat({
+          id: `OUT-${Date.now()}`,
+          type: 'output',
+          position,
+          data: { 
+            label: payload?.data?.label ?? 'OUT', 
+            value: 0 
+          }
+        }))
+      } else if (payload.type === 'logicGate' && payload.gateType) {
+        // Agregar compuerta lógica
+        const gateType = payload.gateType
+        setNodes((nds) => nds.concat({
+          id: `${gateType}-${Date.now()}`,
+          type: 'logicGate',
+          position,
+          data: { 
+            gateType,
+            output: 0,
+            inputValues: gateType === 'NOT' ? [0] : [0, 0],
+            label: gateType
+          }
+        }))
+      } else {
+        console.warn('Tipo de nodo no reconocido:', payload)
       }
-      setNodes((nds) => nds.concat(newNode))
-      return
+    } catch (error) {
+      console.error('Error al procesar el drop:', error)
     }
-
-    if (payload.type === 'output') {
-      const id = `OUT-${Date.now()}`
-      const newNode = {
-        id,
-        type: 'output',
-        position,
-        data: { label: payload?.data?.label ?? 'OUT', value: 0 }
-      }
-      setNodes((nds) => nds.concat(newNode))
-      return
-    }
-
-    const gateType = payload.gateType || payload.id
-    const newNode = {
-      id: `${gateType}-${Date.now()}`,
-      type: 'logicGate',
-      position,
-      data: { 
-        gateType,
-        output: 0,
-        inputValues: gateType === 'NOT' ? [0] : [0, 0],
-        label: gateType
-      },
-    }
-
-    setNodes((nds) => nds.concat(newNode))
   }, [reactFlowInstance, setNodes])
 
   const onDragOver = useCallback((event) => {
@@ -589,7 +614,11 @@ function CircuitSimulator() {
               />
             </div>
             <div>
-              <AnalisisPanel nodes={nodes} edges={edges} />
+              <AnalisisPanel 
+                circuitStats={circuitStats}
+                nodes={nodes}
+                edges={edges}
+              />
             </div>
           </div>
         )}
