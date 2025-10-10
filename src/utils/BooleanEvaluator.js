@@ -1,6 +1,6 @@
 ﻿// src/utils/BooleanEvaluator.js
 // Evaluador CORREGIDO con aplicación correcta de De Morgan
-
+import { QuineMcCluskey } from 'quine-mccluskey'
 class BooleanEvaluator {
   /**
    * Normaliza una expresión booleana a formato estándar
@@ -16,6 +16,104 @@ class BooleanEvaluator {
     
     return normalized
   }
+    // Agregar después del método normalize() y antes de applyDeMorgan()
+
+/**
+ * ✅ NUEVO: Simplificación exacta usando Quine-McCluskey
+ * Garantiza el mínimo lógico mediante tabla de verdad
+ */
+simplifyByTruthTable(expression, variables, targetForm = 'SOP') {
+  try {
+    // 1. Generar tabla de verdad completa
+    const truthTableData = BooleanEvaluator.generateTruthTable(expression)
+    const { table } = truthTableData
+    
+    // 2. Extraer mintérminos (índices donde result = 1)
+    const minterms = table
+      .filter(row => row.result === true)
+      .map(row => row.index)
+    
+    // 3. Extraer maxtérminos (índices donde result = 0) 
+    const maxterms = table
+      .filter(row => row.result === false)
+      .map(row => row.index)
+    
+    // Si no hay mintérminos, la expresión es siempre 0
+    if (minterms.length === 0) {
+      return { expression: '0', form: targetForm }
+    }
+    
+    // Si todos son mintérminos, la expresión es siempre 1
+    if (minterms.length === Math.pow(2, variables.length)) {
+      return { expression: '1', form: targetForm }
+    }
+    
+    // 4. Aplicar Quine-McCluskey según la forma objetivo
+    let simplified
+    
+    if (targetForm === 'SOP') {
+      // Minimizar mintérminos para SOP
+      const qm = new QuineMcCluskey(variables.length)
+      const primeImplicants = qm.getImplicants(minterms, [])
+      simplified = this.convertImplicantsToExpression(primeImplicants, variables, 'SOP')
+    } else {
+      // Minimizar maxtérminos para POS
+      const qm = new QuineMcCluskey(variables.length)
+      const primeImplicants = qm.getImplicants(maxterms, [])
+      simplified = this.convertImplicantsToExpression(primeImplicants, variables, 'POS')
+    }
+    
+    return {
+      expression: simplified,
+      form: targetForm,
+      minterms: minterms,
+      maxterms: maxterms
+    }
+    
+  } catch (error) {
+    console.error('Error en simplificación por tabla de verdad:', error)
+    return null
+  }
+}
+
+/**
+ * ✅ NUEVO: Convierte implicantes primos a expresión legible
+ */
+convertImplicantsToExpression(implicants, variables, form = 'SOP') {
+  if (!implicants || implicants.length === 0) {
+    return form === 'SOP' ? '0' : '1'
+  }
+  
+  const terms = implicants.map(imp => {
+    const literals = []
+    
+    // imp es un string binario con '-' para variables eliminadas
+    // Ejemplo: "1-0" significa: var[0]=1, var[1]=no importa, var[2]=0
+    for (let i = 0; i < imp.length; i++) {
+      if (imp[i] === '1') {
+        literals.push(variables[i])
+      } else if (imp[i] === '0') {
+        literals.push(variables[i] + "'")
+      }
+      // Si es '-', la variable no aparece (fue eliminada)
+    }
+    
+    if (literals.length === 0) return '1'
+    
+    if (form === 'SOP') {
+      return literals.join('·')
+    } else {
+      // POS: envolver en paréntesis y usar +
+      return '(' + literals.join('+') + ')'
+    }
+  })
+  
+  if (form === 'SOP') {
+    return terms.join(' + ')
+  } else {
+    return terms.join('·')
+  }
+}
 
   /**
    * ✅ CORREGIDO: Aplica De Morgan ANTES de evaluar

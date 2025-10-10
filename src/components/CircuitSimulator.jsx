@@ -506,73 +506,75 @@ function CircuitSimulator() {
           <TheoryModule />
         )}
 
-        {activeTab === 'design' && (
-          <div className="grid lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-1 space-y-4">
-              {/* Paleta de Compuertas */}
-              <GatePalette 
-                onGateSelect={setSelectedGate}
-                selectedGate={selectedGate}
-                onAddInput={handleAddInput}
-              />
 
-              {/* Control Panel */}
-              <ControlPanel
-                inputs={inputs}
-                onInputChange={handleInputChange}
-                onRemoveInput={handleRemoveInput}
-                onClearCircuit={handleClearCircuit}
-                onSaveCircuit={handleSaveCircuit}
-              />
+{activeTab === 'design' && (
+  <div className="grid lg:grid-cols-4 gap-6">
+    <div className="lg:col-span-1 space-y-4">
+      {/* Paleta de Compuertas */}
+      <GatePalette 
+        onGateSelect={setSelectedGate}
+        selectedGate={selectedGate}
+        onAddInput={handleAddInput}
+      />
 
-              {/* Botón de finalizar desafío */}
-              {showFinishButton && currentChallenge && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-yellow-900 mb-2">
-                    Desafío Activo: {currentChallenge.title}
-                  </h3>
-                  <p className="text-yellow-800 text-sm mb-3">
-                    {currentChallenge.description}
-                  </p>
-                  <button
-                    onClick={handleFinishChallenge}
-                    className="w-full px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors font-semibold"
-                  >
-                    ✅ Finalizar Desafío
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="lg:col-span-3">
-              <div className="h-96 border border-gray-300 rounded-lg bg-gray-50">
-                <ReactFlowProvider>
-                  <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onConnect={onConnect}
-                    onInit={setReactFlowInstance}
-                    onDrop={onDrop}
-                    onDragOver={onDragOver}
-                    nodeTypes={nodeTypes}
-                    fitView
-                    connectionLineType="smoothstep"
-                    defaultEdgeOptions={{
-                      style: { strokeWidth: 2, stroke: '#3b82f6' },
-                      type: 'smoothstep'
-                    }}
-                  >
-                    <Controls />
-                    <MiniMap />
-                    <Background variant="dots" gap={12} size={1} />
-                  </ReactFlow>
-                </ReactFlowProvider>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Botón de finalizar desafío */}
+      {showFinishButton && currentChallenge && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+            Desafío Activo: {currentChallenge.title}
+          </h3>
+          <p className="text-yellow-800 text-sm mb-3">
+            {currentChallenge.description}
+          </p>
+          <button
+            onClick={handleFinishChallenge}
+            className="w-full px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors font-semibold"
+          >
+            ✅ Finalizar Desafío
+          </button>
+        </div>
+      )}
+    </div>
+    
+    <div className="lg:col-span-3 space-y-4">
+      {/* MOVER EL CONTROL PANEL AQUÍ - ARRIBA DEL CANVAS */}
+      <ControlPanel
+        inputs={inputs}
+        onInputChange={handleInputChange}
+        onRemoveInput={handleRemoveInput}
+        onClearCircuit={handleClearCircuit}
+        onSaveCircuit={handleSaveCircuit}
+      />
+
+      {/* Canvas de diseño */}
+      <div className="h-[600px] border border-gray-300 rounded-lg bg-gray-50 shadow-sm">
+        <ReactFlowProvider>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onInit={setReactFlowInstance}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            nodeTypes={nodeTypes}
+            fitView
+            connectionLineType="smoothstep"
+            defaultEdgeOptions={{
+              style: { strokeWidth: 2, stroke: '#3b82f6' },
+              type: 'smoothstep'
+            }}
+          >
+            <Controls />
+            <MiniMap />
+            <Background variant="dots" gap={12} size={1} />
+          </ReactFlow>
+        </ReactFlowProvider>
+      </div>
+    </div>
+  </div>
+)}
 
         {activeTab === 'simulate' && (
           <div className="grid lg:grid-cols-2 gap-6">

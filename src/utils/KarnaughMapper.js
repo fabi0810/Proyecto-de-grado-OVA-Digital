@@ -143,58 +143,75 @@ export class KarnaughMapper {
   /**
    * Crea mapa para 3 variables
    */
-  create3VarMap(variables) {
-    const [var1, var2, var3] = variables
-    
-    return {
-      type: '3var',
-      rows: [
-        { label: `${var1}'${var2}'`, values: [0, 1, 3, 2] },
-        { label: `${var1}'${var2}`, values: [4, 5, 7, 6] },
-        { label: `${var1}${var2}`, values: [12, 13, 15, 14] },
-        { label: `${var1}${var2}'`, values: [8, 9, 11, 10] }
-      ],
-      cols: [
-        { label: `${var3}'`, value: 0 },
-        { label: `${var3}`, value: 1 }
-      ],
-      cells: [
-        [0, 1, 3, 2],
-        [4, 5, 7, 6],
-        [12, 13, 15, 14],
-        [8, 9, 11, 10]
-      ]
-    }
+ /**
+ * ✅ CORREGIDO: Mapa de 3 variables con código Gray correcto
+ */
+/**
+ * ✅ CORREGIDO: Mapa de 3 variables con código Gray correcto
+ */
+create3VarMap(variables) {
+  const [var1, var2, var3] = variables
+  
+  // Código Gray para columnas: 0, 1
+  // Código Gray para filas: 00, 01, 11, 10
+  return {
+    type: '3var',
+    rows: [
+      { label: `${var1}'${var2}'`, values: [0, 1] },   // 00
+      { label: `${var1}'${var2}`, values: [2, 3] },    // 01
+      { label: `${var1}${var2}`, values: [6, 7] },     // 11
+      { label: `${var1}${var2}'`, values: [4, 5] }     // 10
+    ],
+    cols: [
+      { label: `${var3}'`, value: 0 },
+      { label: `${var3}`, value: 1 }
+    ],
+    // Índices en código Gray
+    cells: [
+      [0, 1],   // 000, 001
+      [2, 3],   // 010, 011
+      [6, 7],   // 110, 111
+      [4, 5]    // 100, 101
+    ]
   }
-
+}
   /**
    * Crea mapa para 4 variables
    */
-  create4VarMap(variables) {
-    const [var1, var2, var3, var4] = variables
-    
-    return {
-      type: '4var',
-      rows: [
-        { label: `${var1}'${var2}'`, values: [0, 1, 3, 2] },
-        { label: `${var1}'${var2}`, values: [4, 5, 7, 6] },
-        { label: `${var1}${var2}`, values: [12, 13, 15, 14] },
-        { label: `${var1}${var2}'`, values: [8, 9, 11, 10] }
-      ],
-      cols: [
-        { label: `${var3}'${var4}'`, value: 0 },
-        { label: `${var3}'${var4}`, value: 1 },
-        { label: `${var3}${var4}`, value: 3 },
-        { label: `${var3}${var4}'`, value: 2 }
-      ],
-      cells: [
-        [0, 1, 3, 2],
-        [4, 5, 7, 6],
-        [12, 13, 15, 14],
-        [8, 9, 11, 10]
-      ]
-    }
+ /**
+ * ✅ CORREGIDO: Mapa de 4 variables con código Gray
+ */
+/**
+ * ✅ CORREGIDO: Mapa de 4 variables con código Gray
+ */
+create4VarMap(variables) {
+  const [var1, var2, var3, var4] = variables
+  
+  // Código Gray para filas: 00, 01, 11, 10
+  // Código Gray para columnas: 00, 01, 11, 10
+  return {
+    type: '4var',
+    rows: [
+      { label: `${var1}'${var2}'`, values: [0, 1, 3, 2] },     // 00
+      { label: `${var1}'${var2}`, values: [4, 5, 7, 6] },      // 01
+      { label: `${var1}${var2}`, values: [12, 13, 15, 14] },   // 11
+      { label: `${var1}${var2}'`, values: [8, 9, 11, 10] }     // 10
+    ],
+    cols: [
+      { label: `${var3}'${var4}'`, value: 0 },   // 00
+      { label: `${var3}'${var4}`, value: 1 },    // 01
+      { label: `${var3}${var4}`, value: 3 },     // 11
+      { label: `${var3}${var4}'`, value: 2 }     // 10
+    ],
+    // Índices en código Gray bidimensional
+    cells: [
+      [0, 1, 3, 2],       // 0000, 0001, 0011, 0010
+      [4, 5, 7, 6],       // 0100, 0101, 0111, 0110
+      [12, 13, 15, 14],   // 1100, 1101, 1111, 1110
+      [8, 9, 11, 10]      // 1000, 1001, 1011, 1010
+    ]
   }
+}
 
   /**
    * Crea mapa para 5 variables
@@ -330,116 +347,187 @@ export class KarnaughMapper {
   /**
    * Encuentra grupos en mapa simple
    */
-  findGroupsInSingleMap(map, variables, mode, steps = null) {
-    const groups = []
-    const targetValue = mode === 'minTerms' ? 1 : 0
-    const rows = map.cells.length
-    const cols = map.cells[0].length
+  /**
+ * ✅ MEJORADO: Encuentra grupos en mapa simple usando algoritmo greedy
+ */
+findGroupsInSingleMap(map, variables, mode, steps = null) {
+  const targetValue = mode === 'minTerms' ? 1 : 0
+  const rows = map.cells.length
+  const cols = map.cells[0].length
 
-    // Posibles tamaños de rectángulos (alto, ancho) como potencias de 2 y envolviendo
-    const rects = []
-    const possibleHeights = rows === 1 ? [1] : rows === 2 ? [2,1] : [4,2,1]
-    const possibleWidths = cols === 1 ? [1] : cols === 2 ? [2,1] : [4,2,1]
-    for (const h of possibleHeights) {
-      for (const w of possibleWidths) {
-        rects.push([h,w])
-      }
+  console.log('🔍 Buscando grupos en mapa', { rows, cols, targetValue })
+
+  // Generar todos los rectángulos posibles (potencias de 2)
+  const possibleSizes = []
+  
+  // Alturas posibles
+  const heights = []
+  for (let h = rows; h >= 1; h = Math.floor(h / 2)) {
+    heights.push(h)
+  }
+  
+  // Anchos posibles
+  const widths = []
+  for (let w = cols; w >= 1; w = Math.floor(w / 2)) {
+    widths.push(w)
+  }
+  
+  // Combinar alturas y anchos
+  for (const h of heights) {
+    for (const w of widths) {
+      possibleSizes.push({ h, w, area: h * w })
     }
-    // Ordenar por área descendente (grandes primero)
-    rects.sort((a,b) => (b[0]*b[1]) - (a[0]*a[1]))
+  }
+  
+  // Ordenar por área descendente (grupos grandes primero)
+  possibleSizes.sort((a, b) => b.area - a.area)
+  
+  console.log('  Tamaños posibles:', possibleSizes)
 
-    const covered = Array.from({ length: rows }, () => Array(cols).fill(false))
-    const allGroups = []
-
-    for (const [h, w] of rects) {
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const rectCells = this.collectRect(map, r, c, h, w)
-          if (rectCells.length !== h*w) continue
-          const allTarget = rectCells.every(({ cell }) => (cell.value === targetValue) || cell.dontCare)
-          if (!allTarget) continue
-          // Evitar duplicados: normalizar firma por índices
-          const signature = rectCells
-            .map(({ cell }) => cell.index)
-            .sort((a,b) => a-b)
-            .join(',')
-          if (allGroups.some(g => g.signature === signature)) continue
-          const expr = this.generateGroupExpression(rectCells, variables, mode)
-          const candidate = {
-            cells: rectCells,
+  // Encontrar todos los grupos candidatos
+  const allCandidates = []
+  
+  for (const { h, w } of possibleSizes) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const rectCells = this.collectRectWrapping(map, r, c, h, w)
+        
+        if (rectCells.length !== h * w) continue
+        
+        // Verificar que todas las celdas sean del valor objetivo o don't-care
+        const allValid = rectCells.every(({ cell }) => 
+          cell.value === targetValue || cell.dontCare
+        )
+        
+        if (!allValid) continue
+        
+        // Debe contener al menos una celda objetivo (no solo don't-cares)
+        const hasTarget = rectCells.some(({ cell }) => cell.value === targetValue)
+        if (!hasTarget) continue
+        
+        // Crear firma única para evitar duplicados
+        const signature = rectCells
+          .map(({ cell }) => cell.index)
+          .sort((a, b) => a - b)
+          .join(',')
+        
+        // Evitar duplicados
+        if (allCandidates.some(c => c.signature === signature)) continue
+        
+        // Generar expresión
+        const expr = this.generateGroupExpression(rectCells, variables, mode)
+        
+        allCandidates.push({
+          cells: rectCells,
+          expression: expr,
+          size: rectCells.length,
+          signature,
+          indices: rectCells.map(({ cell }) => cell.index)
+        })
+        
+        if (steps) {
+          steps.push({ 
+            action: 'candidate', 
+            rect: { r, c, h, w }, 
             expression: expr,
-            size: rectCells.length,
-            type: rectCells.length === 1 ? 'single' : 'group',
-            signature
-          }
-          allGroups.push(candidate)
-          if (steps) {
-            steps.push({ action: 'candidate', rect: { r, c, h, w }, expression: expr, cells: rectCells.map(({row,col})=>({row,col})) })
-          }
+            indices: rectCells.map(({ cell }) => cell.index)
+          })
         }
       }
     }
-
-    // Selección greedy: cubrir todas las celdas objetivo con el menor número de grupos
-    const targetPositions = []
-    for (let r=0;r<rows;r++) {
-      for (let c=0;c<cols;c++) {
-        if (map.cells[r][c].value === targetValue) targetPositions.push(`${r},${c}`)
-      }
-    }
-
-    const coveredSet = new Set()
-    // Marcar esenciales: celdas cubiertas por un único grupo
-    const coverage = new Map() // key: pos -> groups indices
-    allGroups.forEach((g, gi) => {
-      g.cells.forEach(({row,col}) => {
-        const key = `${row},${col}`
-        if (!coverage.has(key)) coverage.set(key, [])
-        coverage.get(key).push(gi)
-      })
-    })
-
-    const selected = []
-    // Seleccionar esenciales primero
-    for (const [pos, list] of coverage.entries()) {
-      if (targetPositions.includes(pos) && list.length === 1) {
-        const gi = list[0]
-        if (!selected.includes(gi)) selected.push(gi)
-        coveredSet.add(pos)
-        if (steps) steps.push({ action: 'select_essential', group: gi })
-      }
-    }
-    // Completar cobertura con grupos más grandes restantes
-    const remaining = allGroups
-      .map((g,gi)=>({g,gi}))
-      .sort((a,b)=> b.g.size - a.g.size)
-    for (const {g,gi} of remaining) {
-      // si ya seleccionado, omitir
-      if (selected.includes(gi)) continue
-      const addsCoverage = g.cells.some(({row,col}) => !coveredSet.has(`${row},${col}`) && map.cells[row][col].value === targetValue)
-      if (addsCoverage) {
-        selected.push(gi)
-        g.cells.forEach(({row,col}) => coveredSet.add(`${row},${col}`))
-        if (steps) steps.push({ action: 'select_group', group: gi })
-      }
-    }
-
-    // Construir resultado y marcar esenciales
-    const resultGroups = selected.map(gi => allGroups[gi])
-    const cellToCount = new Map()
-    resultGroups.forEach(gr => {
-      gr.cells.forEach(({row,col}) => {
-        const key = `${row},${col}`
-        cellToCount.set(key, (cellToCount.get(key)||0)+1)
-      })
-    })
-    resultGroups.forEach(gr => {
-      const essential = gr.cells.some(({row,col}) => (cellToCount.get(`${row},${col}`)||0) === 1)
-      gr.essential = essential
-    })
-
-    return resultGroups
   }
+  
+  console.log('  Candidatos encontrados:', allCandidates.length)
+
+  // Seleccionar cobertura mínima usando greedy
+  const targetIndices = []
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (map.cells[r][c].value === targetValue) {
+        targetIndices.push(map.cells[r][c].index)
+      }
+    }
+  }
+  
+  console.log('  Índices objetivo a cubrir:', targetIndices)
+
+  // Construir tabla de cobertura
+  const coverage = new Map()
+  targetIndices.forEach(idx => coverage.set(idx, []))
+  
+  allCandidates.forEach((candidate, ci) => {
+    candidate.indices.forEach(idx => {
+      if (coverage.has(idx)) {
+        coverage.get(idx).push(ci)
+      }
+    })
+  })
+
+  // Seleccionar implicantes esenciales
+  const selected = []
+  const covered = new Set()
+  
+  // Paso 1: Implicantes esenciales (cubren índices únicos)
+  coverage.forEach((candidateIndices, targetIdx) => {
+    if (candidateIndices.length === 1) {
+      const ci = candidateIndices[0]
+      if (!selected.includes(ci)) {
+        selected.push(ci)
+        allCandidates[ci].indices.forEach(idx => covered.add(idx))
+        console.log('  ✅ Esencial seleccionado:', ci, allCandidates[ci].expression)
+        
+        if (steps) {
+          steps.push({ action: 'select_essential', group: ci })
+        }
+      }
+    }
+  })
+
+  // Paso 2: Greedy - seleccionar grupos que cubren más índices no cubiertos
+  const remaining = allCandidates
+    .map((c, ci) => ({ candidate: c, index: ci }))
+    .filter(({ index }) => !selected.includes(index))
+    .sort((a, b) => b.candidate.size - a.candidate.size)
+  
+  for (const { candidate, index: ci } of remaining) {
+    const newCoverage = candidate.indices.filter(idx => 
+      targetIndices.includes(idx) && !covered.has(idx)
+    )
+    
+    if (newCoverage.length > 0) {
+      selected.push(ci)
+      candidate.indices.forEach(idx => covered.add(idx))
+      console.log('  ✅ Grupo adicional:', ci, candidate.expression)
+      
+      if (steps) {
+        steps.push({ action: 'select_group', group: ci })
+      }
+    }
+    
+    // Si ya cubrimos todo, terminar
+    if (covered.size >= targetIndices.length) break
+  }
+
+  // Construir resultado final
+  const resultGroups = selected.map(ci => {
+    const candidate = allCandidates[ci]
+    
+    // Marcar como esencial si cubre algún índice único
+    const essential = candidate.indices.some(idx => {
+      const coverers = coverage.get(idx)
+      return coverers && coverers.length === 1
+    })
+    
+    return {
+      ...candidate,
+      essential
+    }
+  })
+
+  console.log('  ✅ Grupos finales:', resultGroups.length)
+  
+  return resultGroups
+}
 
   /**
    * Encuentra un grupo de tamaño específico en una posición
@@ -450,52 +538,81 @@ export class KarnaughMapper {
     return null
   }
 
-  collectRect(map, startRow, startCol, height, width) {
-    const rows = map.cells.length
-    const cols = map.cells[0].length
-    const cells = []
-    for (let dr = 0; dr < height; dr++) {
-      for (let dc = 0; dc < width; dc++) {
-        const r = (startRow + dr) % rows
-        const c = (startCol + dc) % cols
-        const cell = map.cells[r][c]
-        if (!cell) return []
-        cells.push({ row: r, col: c, cell })
+ /**
+ * ✅ MEJORADO: Recolecta celdas de un rectángulo con wrap-around (envolvente)
+ */
+collectRectWrapping(map, startRow, startCol, height, width) {
+  const rows = map.cells.length
+  const cols = map.cells[0].length
+  const cells = []
+  
+  for (let dr = 0; dr < height; dr++) {
+    for (let dc = 0; dc < width; dc++) {
+      const r = (startRow + dr) % rows
+      const c = (startCol + dc) % cols
+      const cell = map.cells[r][c]
+      
+      if (!cell || typeof cell.value === 'undefined') {
+        console.warn('  ⚠️ Celda inválida en', r, c)
+        return []
       }
+      
+      cells.push({ row: r, col: c, cell })
     }
-    return cells
   }
+  
+  return cells
+}
 
   /**
    * Genera expresión para un grupo
    */
-  generateGroupExpression(cells, variables, mode = 'minTerms') {
-    if (!cells || cells.length === 0) return ''
-    const indices = cells.map(({ cell }) => cell.index)
-    // Obtener asignaciones por índice
-    const assignments = indices.map(idx => this.assignmentFromIndex(idx, variables.length))
-    // Determinar variables constantes a lo largo del grupo
-    const literals = []
-    for (let vi = 0; vi < variables.length; vi++) {
-      const allTrue = assignments.every(a => a[vi] === 1)
-      const allFalse = assignments.every(a => a[vi] === 0)
-      if (allTrue || allFalse) {
-        if (mode === 'minTerms') {
-          literals.push(allTrue ? variables[vi] : variables[vi] + "'")
-        } else {
-          // POS: literal en suma, var false -> (var), var true -> (var')
-          literals.push(allFalse ? variables[vi] : variables[vi] + "'")
-        }
+  /**
+ * ✅ CORREGIDO: Genera expresión para un grupo
+ */
+generateGroupExpression(cells, variables, mode = 'minTerms') {
+  if (!cells || cells.length === 0) return ''
+  
+  const indices = cells.map(({ cell }) => cell.index)
+  console.log('🔢 Generando expresión para grupo:', indices)
+  
+  // Obtener asignaciones binarias por índice
+  const assignments = indices.map(idx => this.assignmentFromIndex(idx, variables.length))
+  console.log('  Asignaciones binarias:', assignments)
+  
+  // Determinar qué variables son constantes en todo el grupo
+  const literals = []
+  for (let vi = 0; vi < variables.length; vi++) {
+    const values = assignments.map(a => a[vi])
+    const allTrue = values.every(v => v === 1)
+    const allFalse = values.every(v => v === 0)
+    
+    if (allTrue || allFalse) {
+      if (mode === 'minTerms') {
+        // SOP: variable=1 → variable, variable=0 → variable'
+        literals.push(allTrue ? variables[vi] : variables[vi] + "'")
+      } else {
+        // POS: variable=0 → variable, variable=1 → variable'
+        literals.push(allFalse ? variables[vi] : variables[vi] + "'")
       }
     }
-    if (literals.length === 0) return mode === 'minTerms' ? '1' : '0'
-    if (mode === 'minTerms') {
-      return literals.join('·')
-    }
-    // POS: devolver suma
+  }
+  
+  console.log('  Literales generados:', literals)
+  
+  // Si no hay literales, es un término constante
+  if (literals.length === 0) {
+    return mode === 'minTerms' ? '1' : '0'
+  }
+  
+  if (mode === 'minTerms') {
+    // SOP: producto de literales (A·B·C')
+    return literals.join('·')
+  } else {
+    // POS: suma de literales (A+B+C')
     return literals.join('+')
   }
-
+}
   assignmentFromIndex(index, numVars) {
     const bits = []
     for (let i = numVars - 1; i >= 0; i--) {

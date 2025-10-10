@@ -3,12 +3,13 @@ import { booleanSimplifier } from '../../utils/BooleanSimplifier'
 
 function SimplificationWizard({ expression, parsedExpression, simplificationResult, onSimplification, onExpressionChange }) {
   const [simplificationOptions, setSimplificationOptions] = useState(() => {
-    // ✅ ELIMINADO: localStorage - usar estado en memoria
     return {
       showAllSteps: true,
       targetForm: 'SOP',
       useKarnaugh: true,
-      maxSteps: 50
+      maxSteps: 50,
+      useFormalMethod: true  
+
     }
   })
   const [currentStep, setCurrentStep] = useState(0)
@@ -24,9 +25,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
     }
   }, [simplificationResult])
 
-  // ✅ ELIMINADO: useEffect con localStorage
-
-  // Auto-reproducción de pasos
+ 
   useEffect(() => {
     if (!autoPlay || !simplificationResult || !simplificationResult.success) return
 
@@ -216,6 +215,20 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
             </label>
           </div>
         </div>
+        <div className="flex items-end">
+  <label className="flex items-center cursor-pointer">
+    <input
+      type="checkbox"
+      checked={simplificationOptions.useFormalMethod}
+      onChange={(e) => setSimplificationOptions({
+        ...simplificationOptions,
+        useFormalMethod: e.target.checked
+      })}
+      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+    />
+    <span className="ml-2 text-sm text-gray-700">Método Formal (Quine-McCluskey)</span>
+  </label>
+</div>
 
         {/* Botones de Acción */}
         <div className="flex flex-wrap gap-3">
