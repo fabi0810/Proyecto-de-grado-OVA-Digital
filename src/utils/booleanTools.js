@@ -1,8 +1,30 @@
 import { evaluateCircuitGraph } from './evaluateCircuitGraph'
 
+/**
+ * ✅ CORREGIDO: Evita duplicados por label
+ * Agrupa nodos por su etiqueta única (A, B, C, etc.)
+ */
+/**
+ * ✅ CORREGIDO: Evita duplicados por label
+ * Agrupa nodos por su etiqueta única (A, B, C, etc.)
+ */
 function getInputNodesOrdered(nodes = []) {
   const inputNodes = nodes.filter(n => n?.type === 'input' || n?.type === 'constant');
-  return [...inputNodes].sort((a, b) => {
+  
+  // ← NUEVO: Usar Map para mantener solo UNA entrada por label
+  const uniqueInputs = new Map();
+  
+  inputNodes.forEach(node => {
+    const label = (node?.data?.label ?? node?.id ?? '').toString();
+    
+    // Solo guardar la primera ocurrencia de cada label
+    if (!uniqueInputs.has(label)) {
+      uniqueInputs.set(label, node);
+    }
+  });
+  
+  // Retornar valores ordenados alfabéticamente
+  return [...uniqueInputs.values()].sort((a, b) => {
     const la = (a?.data?.label ?? a?.id ?? '').toString();
     const lb = (b?.data?.label ?? b?.id ?? '').toString();
     return la.localeCompare(lb);
@@ -43,10 +65,19 @@ export function generateTruthTable(nodes = [], edges = [], maxInputs = 6) {
 
   for (let mask = 0; mask < total; mask++) {
     const inputOverrides = {};
+    
+    // ← MEJORADO: Buscar TODOS los nodos con el mismo label
     for (let i = 0; i < inputCount; i++) {
       const bit = (mask >> (inputCount - 1 - i)) & 1;
-      const nodeId = inputs[i].id;
-      inputOverrides[nodeId] = bit ? 1 : 0;
+      const currentLabel = inputNames[i];
+      
+      // Aplicar el mismo valor a TODOS los nodos con este label
+      nodes.forEach(node => {
+        if ((node.type === 'input' || node.type === 'constant') && 
+            (node?.data?.label ?? node?.id ?? '').toString() === currentLabel) {
+          inputOverrides[node.id] = bit ? 1 : 0;
+        }
+      });
     }
 
     const evalResult = evaluateCircuitGraph(nodes, edges, { inputOverrides });
@@ -75,21 +106,34 @@ export function generateTruthTable(nodes = [], edges = [], maxInputs = 6) {
   return { inputNames, outputs, rows };
 }
 
+// REEMPLAZAR esta función completa
 export function sopFromMinterms(minterms = [], inputNames = []) {
   if (!minterms.length) return '0';
   if (minterms.length === (1 << inputNames.length)) return '1';
 
   const terms = minterms.map(idx => {
     const literals = [];
+    const seen = new Set(); // ← NUEVO: Evitar duplicados
+    
     for (let i = 0; i < inputNames.length; i++) {
       const bit = (idx >> (inputNames.length - 1 - i)) & 1;
       const name = inputNames[i];
-      literals.push(bit ? name : `${name}'`);
+      
+      // ← NUEVO: Solo agregar si no se ha visto antes
+      if (!seen.has(name)) {
+        literals.push(bit ? name : `${name}'`);
+        seen.add(name);
+      }
     }
-    return literals.join('·');
+    
+    // ← NUEVO: Eliminar duplicados en el término
+    const uniqueLiterals = [...new Set(literals)];
+    return uniqueLiterals.join('·');
   });
 
-  return terms.join(' + ');
+  // ← NUEVO: Eliminar términos duplicados
+  const uniqueTerms = [...new Set(terms)];
+  return uniqueTerms.join(' + ');
 }
 
 export function expressionFromCircuit(nodes = [], edges = [], maxInputs = 6) {
@@ -118,24 +162,38 @@ export function expressionFromCircuit(nodes = [], edges = [], maxInputs = 6) {
 /**
  * Genera expresión POS (Producto de Sumas) desde maxterms
  */
+/**
+ * ✅ CORREGIDO: Genera expresión POS sin duplicados
+ */
 export function posFromMaxterms(maxterms = [], inputNames = []) {
   if (!maxterms.length) return '1';
   if (maxterms.length === (1 << inputNames.length)) return '0';
 
   const terms = maxterms.map(idx => {
     const literals = [];
+    const seen = new Set(); // ← NUEVO: Evitar duplicados
+    
     for (let i = 0; i < inputNames.length; i++) {
       const bit = (idx >> (inputNames.length - 1 - i)) & 1;
       const name = inputNames[i];
-      // En POS, invertimos la lógica: bit=0 → variable sin negar, bit=1 → variable negada
-      literals.push(bit ? `${name}'` : name);
+      
+      // ← NUEVO: Solo agregar si no se ha visto antes
+      if (!seen.has(name)) {
+        // En POS: bit=0 → variable sin negar, bit=1 → variable negada
+        literals.push(bit ? `${name}'` : name);
+        seen.add(name);
+      }
     }
-    return `(${literals.join(' + ')})`;
+    
+    // ← NUEVO: Eliminar duplicados en el término
+    const uniqueLiterals = [...new Set(literals)];
+    return uniqueLiterals.length > 0 ? `(${uniqueLiterals.join(' + ')})` : '(1)';
   });
 
-  return terms.join('·');
+  // ← NUEVO: Eliminar términos duplicados
+  const uniqueTerms = [...new Set(terms)];
+  return uniqueTerms.join('·');
 }
-
 /**
  * Genera expresiones SOP y POS desde el circuito
  */
@@ -333,6 +391,162 @@ export function simplifySOP(minterms = [], inputNames = []) {
   const impl = quineMcCluskey(minterms, [], numVars);
   return formatQMToSOP(impl, inputNames);
 }
+/**
+ * ✅ NUEVO: Simplifica expresión POS usando Quine-McCluskey
+ * Minimiza maxterms para obtener POS mínima
+ */
+export function simplifyPOS(maxterms = [], inputNames = []) {
+  if (!maxterms.length) return '1';
+  if (maxterms.length === (1 << inputNames.length)) return '0';
+  
+  const numVars = inputNames.length;
+  
+  console.log('📘 Simplificando POS:', { maxterms, inputNames, numVars });
+  
+  // Usar Quine-McCluskey para minimizar maxterms
+  const impl = quineMcCluskey(maxterms, [], numVars);
+  
+  console.log('📘 Implicantes obtenidos:', impl);
+  
+  // Convertir implicantes a formato POS
+  const result = formatQMToPOS(impl, inputNames);
+  
+  console.log('📘 POS formateada:', result);
+  
+  return result;
+
+}
+/**
+ * ✅ NUEVO: Simplificación algebraica adicional para POS
+ * Aplica leyes de absorción y consenso
+ */
+function simplifyPOSAlgebraic(expr) {
+  if (!expr || expr === '0' || expr === '1') return expr;
+  
+  let current = expr;
+  let changed = true;
+  let iterations = 0;
+  const maxIterations = 5;
+  
+  while (changed && iterations < maxIterations) {
+    changed = false;
+    iterations++;
+    const before = current;
+    
+    // Extraer términos
+    const terms = [];
+    let currentTerm = '';
+    let depth = 0;
+    
+    for (let i = 0; i < current.length; i++) {
+      const char = current[i];
+      if (char === '(') depth++;
+      if (char === ')') depth--;
+      
+      if (char === '·' && depth === 0) {
+        if (currentTerm.trim()) terms.push(currentTerm.trim());
+        currentTerm = '';
+      } else {
+        currentTerm += char;
+      }
+    }
+    if (currentTerm.trim()) terms.push(currentTerm.trim());
+    
+    // Aplicar absorción: (A+B)·(A+B+C) → (A+B)
+    const absorbed = [];
+    const toRemove = new Set();
+    
+    for (let i = 0; i < terms.length; i++) {
+      if (toRemove.has(i)) continue;
+      
+      const term1 = terms[i].replace(/[()]/g, '');
+      const literals1 = term1.split('+').map(l => l.trim());
+      
+      for (let j = 0; j < terms.length; j++) {
+        if (i === j || toRemove.has(j)) continue;
+        
+        const term2 = terms[j].replace(/[()]/g, '');
+        const literals2 = term2.split('+').map(l => l.trim());
+        
+        // Si todos los literales de term1 están en term2, term2 es absorbido
+        if (literals1.every(lit => literals2.includes(lit)) && literals1.length < literals2.length) {
+          toRemove.add(j);
+          changed = true;
+        }
+      }
+      
+      if (!toRemove.has(i)) {
+        absorbed.push(terms[i]);
+      }
+    }
+    
+    if (changed) {
+      current = absorbed.join('·');
+    }
+  }
+  
+  return current;
+}
+
+// Exportar
+export { simplifyPOSAlgebraic };
+/**
+ * ✅ NUEVO: Convierte implicantes de Quine-McCluskey a formato POS
+ * Formato: (A+B)·(A'+C)
+ */
+export function formatQMToPOS(implicantsBits = [], inputNames = []) {
+  if (!implicantsBits.length) return '1';
+  
+  const terms = implicantsBits.map(bits => {
+    const literals = [];
+    
+    for (let i = 0; i < bits.length; i++) {
+      const b = bits[i];
+      if (b === -1) continue; // Variable eliminada por simplificación
+      
+      // ✅ CORRECCIÓN CRÍTICA:
+      // En POS de Quine-McCluskey para maxterms:
+      // - bit=0 significa que el maxterm tiene 0 en esa posición
+      //   → En la suma (OR), esa variable aparece SIN negar
+      // - bit=1 significa que el maxterm tiene 1 en esa posición
+      //   → En la suma (OR), esa variable aparece NEGADA
+      
+      if (b === 0) {
+        literals.push(inputNames[i]);  // Variable sin negar
+      } else {
+        literals.push(`${inputNames[i]}'`);  // Variable negada
+      }
+    }
+    
+    if (literals.length === 0) return '(1)';
+    
+    // Ordenar literales alfabéticamente para consistencia
+    literals.sort((a, b) => {
+      // Ordenar por letra base, luego las negadas después
+      const aBase = a.replace(/'/g, '');
+      const bBase = b.replace(/'/g, '');
+      if (aBase === bBase) {
+        return a.includes("'") ? 1 : -1; // Sin negar primero
+      }
+      return aBase.localeCompare(bBase);
+    });
+    
+    return `(${literals.join(' + ')})`;
+  });
+  
+  // Ordenar términos y eliminar duplicados
+  const uniqueTerms = [...new Set(terms)];
+  
+  // Ordenar términos por complejidad (menos literales primero)
+  uniqueTerms.sort((a, b) => {
+    const aLiterals = (a.match(/[A-Z]/g) || []).length;
+    const bLiterals = (b.match(/[A-Z]/g) || []).length;
+    if (aLiterals !== bLiterals) return aLiterals - bLiterals;
+    return a.localeCompare(b);
+  });
+  
+  return uniqueTerms.join('·');
+}
 
 export function expressionsWithSimplification(nodes = [], edges = [], maxInputs = 6) {
   const t = generateTruthTable(nodes, edges, maxInputs);
@@ -343,20 +557,132 @@ export function expressionsWithSimplification(nodes = [], edges = [], maxInputs 
 
   const { rows, inputNames, outputs } = t;
   const results = {};
+  
   for (const outName of outputs) {
     const minterms = [];
+    const maxterms = [];
+    
     for (let idx = 0; idx < rows.length; idx++) {
-      if ((rows[idx].outputs[outName] ?? 0) === 1) minterms.push(idx);
+      if ((rows[idx].outputs[outName] ?? 0) === 1) {
+        minterms.push(idx);
+      } else {
+        maxterms.push(idx);
+      }
     }
+    
+    // Generar SOP y POS originales
+    const sopOriginal = sopFromMinterms(minterms, inputNames);
+    const posOriginal = posFromMaxterms(maxterms, inputNames);
+    
+    // Simplificar SOP
+    let simplifiedSOP = simplifySOP(minterms, inputNames);
+    simplifiedSOP = removeDuplicatesFromExpression(simplifiedSOP);
+    
+    // ✅ MEJORADO: Simplificar POS con post-procesamiento
+    let simplifiedPOS = simplifyPOS(maxterms, inputNames);
+    simplifiedPOS = removeDuplicatesFromExpression(simplifiedPOS);
+    simplifiedPOS = simplifyPOSAlgebraic(simplifiedPOS); // ← NUEVO
+    
     results[outName] = {
-      sop: sopFromMinterms(minterms, inputNames),
+      sop: sopOriginal,
+      pos: posOriginal,
       minterms,
-      simplified: simplifySOP(minterms, inputNames),
+      maxterms,
+      simplifiedSOP: simplifiedSOP,
+      simplifiedPOS: simplifiedPOS,
     };
   }
 
   return { inputNames, outputs, results };
 }
+/**
+ * ✅ NUEVO: Elimina términos duplicados de una expresión
+ * Entrada: "B + A + B" → Salida: "A + B"
+ */
+/**
+ * ✅ MEJORADO: Elimina términos duplicados de una expresión SOP o POS
+ * SOP: "B + A + B" → "A + B"
+ * POS: "(A+B)·(B+A)·(A+B)" → "(A + B)"
+ */
+function removeDuplicatesFromExpression(expr) {
+  if (!expr || expr === '0' || expr === '1') return expr;
+  
+  // Detectar si es POS (tiene paréntesis y ·) o SOP (solo + y ·)
+  const isPOS = expr.includes('(') && expr.includes(')');
+  
+  if (isPOS) {
+    // Procesar POS: (A+B)·(C+D)
+    const terms = [];
+    let currentTerm = '';
+    let depth = 0;
+    
+    for (let i = 0; i < expr.length; i++) {
+      const char = expr[i];
+      
+      if (char === '(') {
+        depth++;
+        currentTerm += char;
+      } else if (char === ')') {
+        depth--;
+        currentTerm += char;
+        if (depth === 0) {
+          terms.push(currentTerm.trim());
+          currentTerm = '';
+        }
+      } else if (char === '·' && depth === 0) {
+        // Separador de términos en POS
+        continue;
+      } else {
+        currentTerm += char;
+      }
+    }
+    
+    // Normalizar cada término POS
+    const normalizedTerms = terms.map(term => {
+      // Extraer contenido entre paréntesis
+      const match = term.match(/\(([^)]+)\)/);
+      if (!match) return term;
+      
+      const content = match[1];
+      const literals = content.split('+').map(l => l.trim()).sort();
+      
+      // Eliminar duplicados dentro del término
+      const uniqueLiterals = [...new Set(literals)];
+      return `(${uniqueLiterals.join(' + ')})`;
+    });
+    
+    // Eliminar términos duplicados
+    const uniqueTerms = [...new Set(normalizedTerms)];
+    
+    // Ordenar términos
+    uniqueTerms.sort();
+    
+    return uniqueTerms.join('·');
+    
+  } else {
+    // Procesar SOP: A·B + C·D
+    const terms = expr.split('+').map(t => t.trim());
+    
+    // Normalizar cada término (ordenar literales alfabéticamente)
+    const normalizedTerms = terms.map(term => {
+      if (term.includes('·')) {
+        const factors = term.split('·').map(f => f.trim()).sort();
+        return factors.join('·');
+      }
+      return term;
+    });
+    
+    // Eliminar duplicados
+    const uniqueTerms = [...new Set(normalizedTerms)];
+    
+    // Ordenar alfabéticamente
+    uniqueTerms.sort();
+    
+    return uniqueTerms.join(' + ');
+  }
+}
 
+// Exportar la función
+export { removeDuplicatesFromExpression };
 
 
