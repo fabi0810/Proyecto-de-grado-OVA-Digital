@@ -1,4 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
+import { exportCircuit } from '../utils/circuitFileHandler'
+
 import ReactFlow, { 
   MiniMap, 
   Controls, 
@@ -358,17 +360,17 @@ function CircuitSimulator() {
     setNodes(prev => [...prev, inputNode])
   }, [inputs, setNodes])
 
-  const handleInputChange = useCallback((inputName, value) => {
-    console.log('handleInputChange called:', { inputName, value })
-    setInputs(prev => ({ ...prev, [inputName]: value }))
-    
-    // Actualizar nodo de entrada visual
-    setNodes(prev => prev.map(node => 
-      node.id === `input-${inputName}` 
-        ? { ...node, data: { ...node.data, value } }
-        : node
-    ))
-  }, [setNodes])
+    const handleInputChange = useCallback((inputName, value) => {
+      console.log('handleInputChange called:', { inputName, value })
+      setInputs(prev => ({ ...prev, [inputName]: value }))
+      
+      // Actualizar nodo de entrada visual
+      setNodes(prev => prev.map(node => 
+        node.id === `input-${inputName}` 
+          ? { ...node, data: { ...node.data, value } }
+          : node
+      ))
+    }, [setNodes])
 
   const handleRemoveInput = useCallback((inputName) => {
     setInputs(prev => {
@@ -389,18 +391,52 @@ function CircuitSimulator() {
     setSimulationResults({})
   }, [setNodes, setEdges])
 
-  const handleSaveCircuit = useCallback((circuitName) => {
-    const circuitData = {
-      name: circuitName,
-      nodes,
-      edges,
-      inputs,
-      timestamp: new Date().toISOString()
+  const handleSaveCircuit = useCallback((circuitName, shouldExport = false) => {
+    if (shouldExport) {
+      // Exportar como archivo
+      try {
+        const result = exportCircuit(circuitName, nodes, edges, inputs)
+        console.log('✅ Exportación exitosa:', result)
+        alert(result.message)
+      } catch (error) {
+        console.error('❌ Error al exportar:', error)
+        alert('Error al exportar el circuito. Intenta nuevamente.')
+      }
+    } else {
+      // Guardar localmente (localStorage - opcional)
+      const circuitData = {
+        name: circuitName,
+        nodes,
+        edges,
+        inputs,
+        timestamp: new Date().toISOString()
+      }
+      console.log(`Guardando circuito "${circuitName}":`, circuitData)
+      alert(`Circuito "${circuitName}" guardado exitosamente`)
     }
-    // En un entorno real usarías una API, aquí simulo con console
-    console.log(`Guardando circuito "${circuitName}":`, circuitData)
-    alert(`Circuito "${circuitName}" guardado exitosamente`)
   }, [nodes, edges, inputs])
+  
+  // AGREGAR nueva función handleLoadCircuit:
+  const handleLoadCircuit = useCallback((circuitData) => {
+    try {
+      // Limpiar circuito actual
+      setNodes([])
+      setEdges([])
+      
+      // Cargar nuevos datos
+      setTimeout(() => {
+        setNodes(circuitData.nodes)
+        setEdges(circuitData.edges)
+        setInputs(circuitData.inputs)
+        
+        console.log('✅ Circuito cargado:', circuitData.name)
+      }, 100)
+      
+    } catch (error) {
+      console.error('❌ Error al cargar circuito:', error)
+      alert('Error al cargar el circuito. El archivo puede estar corrupto.')
+    }
+  }, [setNodes, setEdges])
 
   // Función para iniciar un desafío
   const handleStartChallenge = useCallback((challenge) => {
@@ -544,6 +580,7 @@ function CircuitSimulator() {
         onRemoveInput={handleRemoveInput}
         onClearCircuit={handleClearCircuit}
         onSaveCircuit={handleSaveCircuit}
+        onLoadCircuit={handleLoadCircuit}
       />
 
       {/* Canvas de diseño */}
