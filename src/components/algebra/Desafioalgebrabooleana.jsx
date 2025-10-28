@@ -1,89 +1,88 @@
 // ✅ DESAFÍOS CORREGIDOS - VERSIÓN COMPLETA
 import { useState, useEffect } from 'react'
 import { BooleanEvaluator } from '../../utils/BooleanEvaluator'
+import { karnaughMapper } from '../../utils/KarnaughMapper'
+import { booleanSimplifier } from '../../utils/BooleanSimplifier'
+
+
+
 
 class BooleanChallengeGenerator {
   constructor() {
     this.challenges = [
-      {
-        expression: "A + A·B",
-        simplified: "A",
-        variables: ['A', 'B'],
-        difficulty: 'easy',
-        laws: ['Absorción'],
-        hint: 'Aplica la ley de absorción: A + A·B = A'
-      },
-      {
-        expression: "A·B' + C",
-        simplified: "A·B' + C",
-        variables: ['A', 'B', 'C'],
-        difficulty: 'easy',
-        laws: ['Ya está simplificada'],
-        hint: 'Esta expresión ya está en su forma más simple'
-      },
-      {
-        expression: "(A + B)·(A + C)",
-        simplified: "A + B·C",
-        variables: ['A', 'B', 'C'],
-        difficulty: 'medium',
-        laws: ['Distributiva', 'Absorción'],
-        hint: 'Aplica distributiva: A + A·C + A·B + B·C = A(1+C+B) + B·C = A + B·C'
-      },
+      // NIVEL FÁCIL (2-3 variables)
       {
         expression: "A·B + A·B'",
-        simplified: "A",
-        variables: ['A', 'B'],
         difficulty: 'easy',
-        laws: ['Factorización', 'Complemento'],
-        hint: 'Factoriza A: A(B + B\') = A·1 = A'
-      },
-      {
-        expression: "A'·B + A·B + A·B'",
-        simplified: "A + B",
         variables: ['A', 'B'],
-        difficulty: 'medium',
-        laws: ['Factorización', 'Idempotencia'],
-        hint: 'Simplifica A·B + A·B\' = A, luego A + A\'·B = A + B'
-      },
-      {
-        expression: "A·B + A·C + B·C",
-        simplified: "A·B + A·C",
-        variables: ['A', 'B', 'C'],
-        difficulty: 'hard',
-        laws: ['Consenso'],
-        hint: 'B·C es redundante (consenso de A·B y A·C)'
-      },
-      {
-        expression: "A·B·C + A·B·C' + A·B'·C",
-        simplified: "A·B + A·B'·C",
-        variables: ['A', 'B', 'C'],
-        difficulty: 'medium',
         laws: ['Factorización', 'Complemento'],
-        hint: 'Factoriza A·B de los primeros dos términos: A·B(C+C\')=A·B'
+        hint: 'Factoriza A y aplica B + B\' = 1'
       },
       {
         expression: "(A + B)·(A + B')",
-        simplified: "A",
+        difficulty: 'easy',
         variables: ['A', 'B'],
-        difficulty: 'medium',
         laws: ['Distributiva', 'Complemento'],
-        hint: 'Distribuye: A·A + A·B\' + B·A + B·B\' = A + 0 = A'
+        hint: 'Aplica distributiva y luego B + B\' = 1'
       },
+      // NIVEL MEDIO (3-4 variables)
       {
-        expression: "A'·B'·C + A·B'·C + A·B·C",
-        simplified: "B'·C + A·B·C",
-        variables: ['A', 'B', 'C'],
+        expression: "A·B·C + A·B·C' + A·B'·C + A·B'·C'",
         difficulty: 'medium',
-        laws: ['Factorización'],
-        hint: 'Factoriza B\'·C de los primeros dos términos'
+        variables: ['A', 'B', 'C'],
+        laws: ['Factorización múltiple', 'Complemento'],
+        hint: 'Factoriza A, luego factoriza B y B\''
       },
       {
-        expression: "(A·B)' + (A' + B')'",
-        simplified: "1",
-        variables: ['A', 'B'],
+        expression: "(A + B)·(A + C)·(B + C)",
+        difficulty: 'medium',
+        variables: ['A', 'B', 'C'],
+        laws: ['Distributiva', 'Consenso'],
+        hint: 'El término (B+C) es consenso de los otros dos'
+      },
+      {
+        expression: "A'·B'·C + A'·B·C + A·B'·C + A·B·C",
+        difficulty: 'medium',
+        variables: ['A', 'B', 'C'],
+        laws: ['Factorización', 'Absorción'],
+        hint: 'Factoriza C de todos los términos'
+      },
+      // NIVEL DIFÍCIL (4+ variables)
+      {
+        expression: "A·B·C·D + A·B·C·D' + A·B·C'·D + A·B'·C·D",
         difficulty: 'hard',
-        laws: ['De Morgan', 'Complemento'],
-        hint: 'Aplica De Morgan: (A·B)\'=A\'+B\', (A\'+B\')\'=A·B, luego A\'+B\'+A·B=1'
+        variables: ['A', 'B', 'C', 'D'],
+        laws: ['Factorización compleja', 'Absorción'],
+        hint: 'Factoriza A·B primero, luego busca patrones'
+      },
+      {
+        expression: "(A + B)·(C + D)·(A + C)·(B + D)",
+        difficulty: 'hard',
+        variables: ['A', 'B', 'C', 'D'],
+        laws: ['Distributiva múltiple', 'Consenso'],
+        hint: 'Expande primero dos términos, luego busca redundancias'
+      },
+      {
+        expression: "A'·B'·C'·D + A'·B·C'·D + A·B'·C'·D + A·B·C'·D",
+        difficulty: 'hard',
+        variables: ['A', 'B', 'C', 'D'],
+        laws: ['Factorización', 'Mapa de Karnaugh'],
+        hint: 'Factoriza C\'·D, nota que A y B varían'
+      },
+      // NIVEL EXPERTO (expresiones complejas)
+      {
+        expression: "(A·B + C)·(A' + B')·(C' + D)",
+        difficulty: 'expert',
+        variables: ['A', 'B', 'C', 'D'],
+        laws: ['De Morgan', 'Distributiva', 'Simplificación compleja'],
+        hint: 'Aplica De Morgan a (A\'+B\') y expande cuidadosamente'
+      },
+      {
+        expression: "A·B·C + A·B'·D + A'·B·C + A'·B'·D + B·C·D",
+        difficulty: 'expert',
+        variables: ['A', 'B', 'C', 'D'],
+        laws: ['Consenso múltiple', 'Absorción', 'Factorización'],
+        hint: 'Busca términos que se absorben mutuamente'
       }
     ]
   }
@@ -92,11 +91,17 @@ class BooleanChallengeGenerator {
     const challenge = this.challenges[Math.floor(Math.random() * this.challenges.length)]
     const truthTable = this.generateTruthTable(challenge.expression, challenge.variables)
     const karnaughMap = this.generateKarnaughMap(truthTable, challenge.variables)
-    
+    const simplificationResult = booleanSimplifier.simplify(challenge.expression, {
+      maxSteps: 50,
+      showAllSteps: false,
+      targetForm: 'SOP'
+    })
     return {
       ...challenge,
       truthTable,
       karnaughMap,
+      simplificationSteps: simplificationResult.steps,
+
       id: `challenge-${Date.now()}-${Math.random()}`
     }
   }
@@ -123,29 +128,17 @@ class BooleanChallengeGenerator {
     return table
   }
 
-  generateKarnaughMap(truthTable, variables) {
-    if (variables.length === 2) {
-      return {
-        type: '2var',
-        cells: [
-          [truthTable[0].result, truthTable[1].result],
-          [truthTable[2].result, truthTable[3].result]
-        ],
-        rows: ['0', '1'],
-        cols: ['0', '1']
-      }
-    } else if (variables.length === 3) {
-      return {
-        type: '3var',
-        cells: [
-          [truthTable[0].result, truthTable[1].result, truthTable[3].result, truthTable[2].result],
-          [truthTable[4].result, truthTable[5].result, truthTable[7].result, truthTable[6].result]
-        ],
-        rows: ['0', '1'],
-        cols: ['00', '01', '11', '10']
-      }
+  generateKarnaughMap(expression, variables) {
+    try {
+      const map = karnaughMapper.generateMap(expression, variables, {
+        mode: 'minTerms',
+        showGroups: false
+      })
+      return map.map
+    } catch (error) {
+      console.error('Error generando mapa K:', error)
+      return { type: 'error', cells: [] }
     }
-    return { type: 'unsupported', cells: [] }
   }
 }
 
@@ -174,9 +167,12 @@ function BooleanChallengeModule() {
   const [finalScore, setFinalScore] = useState(null)
   const [timeElapsed, setTimeElapsed] = useState(0)
   const [timerActive, setTimerActive] = useState(false)
+  const [professorMode, setProfessorMode] = useState(false)
+  const [customExpression, setCustomExpression] = useState('')
+  const [selectedDifficulty, setSelectedDifficulty] = useState('medium')
 
-  const startNewChallenge = () => {
-    const challenge = generator.generateChallenge()
+  const startNewChallenge = (difficulty = null) => {
+    const challenge = generator.generateChallenge(difficulty)
     setCurrentChallenge(challenge)
     setUserAnswers({ simplification: '', truthTable: {}, karnaughMap: {} })
     setFeedback({ simplification: null, truthTable: {}, karnaughMap: {} })
@@ -187,6 +183,60 @@ function BooleanChallengeModule() {
     setTimeElapsed(0)
     setTimerActive(true)
     setActiveSection('simplification')
+  
+  }
+  const createCustomChallenge = () => {
+    if (!customExpression.trim()) {
+      alert('Por favor ingresa una expresión válida')
+      return
+    }
+
+    try {
+      const variables = BooleanEvaluator.extractVariables(customExpression)
+      
+      if (variables.length < 2 || variables.length > 6) {
+        alert('La expresión debe tener entre 2 y 6 variables')
+        return
+      }
+
+      // Simplificar usando el motor real
+      const simplificationResult = booleanSimplifier.simplify(customExpression, {
+        maxSteps: 50,
+        showAllSteps: false,
+        targetForm: 'SOP'
+      })
+
+      const truthTable = generator.generateTruthTable(customExpression, variables)
+      const karnaughMap = generator.generateKarnaughMap(customExpression, variables)
+
+      const customChallenge = {
+        expression: customExpression,
+        simplified: simplificationResult.simplifiedExpression,
+        variables: variables,
+        difficulty: selectedDifficulty,
+        laws: ['Personalizado'],
+        hint: 'Ejercicio personalizado del profesor',
+        truthTable,
+        karnaughMap,
+        simplificationSteps: simplificationResult.steps,
+        id: `custom-${Date.now()}`
+      }
+
+      setCurrentChallenge(customChallenge)
+      setUserAnswers({ simplification: '', truthTable: {}, karnaughMap: {} })
+      setFeedback({ simplification: null, truthTable: {}, karnaughMap: {} })
+      setAttempts({ simplification: 0, truthTable: 0, karnaughMap: 0 })
+      setShowHint(false)
+      setChallengeComplete(false)
+      setFinalScore(null)
+      setTimeElapsed(0)
+      setTimerActive(true)
+      setActiveSection('simplification')
+      setProfessorMode(false)
+      setCustomExpression('')
+    } catch (error) {
+      alert(`Error al crear el desafío: ${error.message}`)
+    }
   }
 
   useEffect(() => {
@@ -212,6 +262,16 @@ function BooleanChallengeModule() {
     const validation = BooleanEvaluator.areEquivalent(userInput, correct)
 
     setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
+    if (!userInput) {
+      setFeedback(prev => ({
+        ...prev,
+        simplification: {
+          correct: false,
+          message: 'Por favor ingresa una expresión'
+        }
+      }))
+      return
+    }
 
     if (validation.equivalent) {
       setFeedback(prev => ({
@@ -335,6 +395,7 @@ function BooleanChallengeModule() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-green-50">
+      {/* Header */}
       <div className="bg-white shadow-lg border-b border-emerald-200">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -344,17 +405,100 @@ function BooleanChallengeModule() {
               </h1>
               <p className="text-gray-600">Resuelve las tres secciones para obtener tu calificación</p>
             </div>
-            <div className="text-right space-y-2">
-              <div className="flex items-center space-x-2 text-sm">
-                <span className="text-gray-500">⏱️ Tiempo:</span>
-                <span className="font-mono font-bold text-emerald-600">{formatTime(timeElapsed)}</span>
+            <div className="flex items-center space-x-4">
+              <div className="text-right space-y-2">
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="text-gray-500">⏱️ Tiempo:</span>
+                  <span className="font-mono font-bold text-emerald-600">{formatTime(timeElapsed)}</span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="text-gray-500">📊 Dificultad:</span>
+                  <span className={`font-bold ${
+                    currentChallenge.difficulty === 'easy' ? 'text-green-600' :
+                    currentChallenge.difficulty === 'medium' ? 'text-yellow-600' :
+                    currentChallenge.difficulty === 'hard' ? 'text-orange-600' :
+                    'text-red-600'
+                  }`}>
+                    {currentChallenge.difficulty === 'easy' ? 'Fácil' :
+                     currentChallenge.difficulty === 'medium' ? 'Medio' :
+                     currentChallenge.difficulty === 'hard' ? 'Difícil' : 'Experto'}
+                  </span>
+                </div>
               </div>
+              
+              {/* ✅ NUEVO: Botón modo profesor */}
+              <button
+                onClick={() => setProfessorMode(!professorMode)}
+                className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-semibold"
+              >
+                👨‍🏫 {professorMode ? 'Cerrar' : 'Modo Profesor'}
+              </button>
             </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-6">
+        {/* ✅ NUEVO: Panel modo profesor */}
+        {professorMode && (
+          <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-6 mb-6">
+            <h3 className="text-xl font-bold text-purple-900 mb-4">👨‍🏫 Crear Desafío Personalizado</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-purple-800 mb-2">
+                  Expresión Booleana
+                </label>
+                <input
+                  type="text"
+                  value={customExpression}
+                  onChange={(e) => setCustomExpression(e.target.value)}
+                  placeholder="Ej: A·B·C + A·B'·D + A'·B·C·D"
+                  className="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-lg"
+                />
+                <p className="mt-2 text-sm text-purple-600">
+                  Operadores: · (AND), + (OR), ' (NOT) | Variables: A-Z | Ejemplo: (A+B)·(C'+D)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-purple-800 mb-2">
+                  Dificultad estimada
+                </label>
+                <select
+                  value={selectedDifficulty}
+                  onChange={(e) => setSelectedDifficulty(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="easy">Fácil (2-3 variables)</option>
+                  <option value="medium">Medio (3-4 variables)</option>
+                  <option value="hard">Difícil (4+ variables)</option>
+                  <option value="expert">Experto (expresiones complejas)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={createCustomChallenge}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-semibold shadow-md"
+                >
+                  ✨ Crear Desafío
+                </button>
+                <button
+                  onClick={() => {
+                    setProfessorMode(false)
+                    setCustomExpression('')
+                  }}
+                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Expresión del desafío */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl shadow-lg p-6 mb-6">
           <div className="text-center">
             <h2 className="text-xl font-semibold mb-2">Expresión a Simplificar</h2>
@@ -362,11 +506,12 @@ function BooleanChallengeModule() {
               {currentChallenge.expression}
             </div>
             <div className="mt-3 text-sm text-emerald-100">
-              Variables: {currentChallenge.variables.join(', ')}
+              Variables: {currentChallenge.variables.join(', ')} • {currentChallenge.variables.length} variables
             </div>
           </div>
         </div>
 
+        {/* Navegación de secciones */}
         <div className="bg-white rounded-lg shadow-md p-2 mb-6">
           <div className="flex space-x-2">
             {[
@@ -393,6 +538,7 @@ function BooleanChallengeModule() {
           </div>
         </div>
 
+        {/* Sección: Simplificación */}
         {activeSection === 'simplification' && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -422,8 +568,9 @@ function BooleanChallengeModule() {
                   type="text"
                   value={userAnswers.simplification}
                   onChange={(e) => setUserAnswers(prev => ({ ...prev, simplification: e.target.value }))}
-                  placeholder="Ej: A, A·B, A + B"
+                  placeholder="Ej: A·B, A + C', etc."
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-lg"
+                  disabled={challengeComplete}
                 />
               </div>
 
@@ -444,7 +591,8 @@ function BooleanChallengeModule() {
               <div className="flex items-center space-x-3">
                 <button
                   onClick={validateSimplification}
-                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all font-semibold shadow-md"
+                  disabled={challengeComplete}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Verificar Simplificación
                 </button>
@@ -465,6 +613,7 @@ function BooleanChallengeModule() {
           </div>
         )}
 
+        {/* Sección: Tabla de Verdad */}
         {activeSection === 'truthTable' && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">📊 Tabla de Verdad (25%)</h3>
@@ -490,7 +639,7 @@ function BooleanChallengeModule() {
                     <tr key={rowIndex} className="hover:bg-gray-50">
                       {currentChallenge.variables.map(variable => (
                         <td key={variable} className="border-2 border-gray-300 px-4 py-3 text-center font-mono bg-gray-50">
-                          {row[variable]}
+                          {row[variable] ? 1 : 0}
                         </td>
                       ))}
                       <td className="border-2 border-gray-300 px-4 py-3 text-center">
@@ -517,6 +666,11 @@ function BooleanChallengeModule() {
                           placeholder="?"
                           disabled={challengeComplete}
                         />
+                        {challengeComplete && feedback.truthTable[rowIndex] && !feedback.truthTable[rowIndex].correct && (
+                          <div className="text-xs text-red-600 mt-1">
+                            Correcto: {feedback.truthTable[rowIndex].value}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -531,6 +685,7 @@ function BooleanChallengeModule() {
           </div>
         )}
 
+        {/* Sección: Mapa de Karnaugh */}
         {activeSection === 'karnaugh' && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">🗺️ Mapa de Karnaugh (25%)</h3>
@@ -545,18 +700,18 @@ function BooleanChallengeModule() {
                       <th className="border-2 border-gray-400 px-4 py-2 bg-gray-100"></th>
                       {currentChallenge.karnaughMap.cols.map((col, colIndex) => (
                         <th key={colIndex} className="border-2 border-gray-400 px-6 py-2 bg-gray-100 font-semibold">
-                          {col}
+                          {col.label}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {currentChallenge.karnaughMap.cells.map((row, rowIndex) => (
+                    {currentChallenge.karnaughMap.rows.map((row, rowIndex) => (
                       <tr key={rowIndex}>
                         <td className="border-2 border-gray-400 px-4 py-2 bg-gray-100 font-semibold text-center">
-                          {currentChallenge.karnaughMap.rows[rowIndex]}
+                          {row.label}
                         </td>
-                        {row.map((cell, colIndex) => (
+                        {currentChallenge.karnaughMap.cells[rowIndex].map((cell, colIndex) => (
                           <td key={colIndex} className="border-2 border-gray-400 p-2">
                             <input
                               type="text"
@@ -596,18 +751,18 @@ function BooleanChallengeModule() {
                       <th className="border-2 border-gray-400 px-4 py-2 bg-gray-100"></th>
                       {currentChallenge.karnaughMap.cols.map((col, colIndex) => (
                         <th key={colIndex} className="border-2 border-gray-400 px-4 py-2 bg-gray-100 font-semibold text-sm">
-                          {col}
+                          {col.label}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {currentChallenge.karnaughMap.cells.map((row, rowIndex) => (
+                    {currentChallenge.karnaughMap.rows.map((row, rowIndex) => (
                       <tr key={rowIndex}>
                         <td className="border-2 border-gray-400 px-4 py-2 bg-gray-100 font-semibold text-center">
-                          {currentChallenge.karnaughMap.rows[rowIndex]}
+                          {row.label}
                         </td>
-                        {row.map((cell, colIndex) => (
+                        {currentChallenge.karnaughMap.cells[rowIndex].map((cell, colIndex) => (
                           <td key={colIndex} className="border-2 border-gray-400 p-1">
                             <input
                               type="text"
@@ -639,18 +794,71 @@ function BooleanChallengeModule() {
                   </tbody>
                 </table>
               )}
+
+              {currentChallenge.karnaughMap.type === '4var' && (
+                <table className="border-collapse border-2 border-gray-400">
+                  <thead>
+                    <tr>
+                      <th className="border-2 border-gray-400 px-4 py-2 bg-gray-100"></th>
+                      {currentChallenge.karnaughMap.cols.map((col, colIndex) => (
+                        <th key={colIndex} className="border-2 border-gray-400 px-3 py-2 bg-gray-100 font-semibold text-xs">
+                          {col.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentChallenge.karnaughMap.rows.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        <td className="border-2 border-gray-400 px-3 py-2 bg-gray-100 font-semibold text-center text-xs">
+                          {row.label}
+                        </td>
+                        {currentChallenge.karnaughMap.cells[rowIndex].map((cell, colIndex) => (
+                          <td key={colIndex} className="border-2 border-gray-400 p-1">
+                            <input
+                              type="text"
+                              maxLength="1"
+                              value={userAnswers.karnaughMap[`${rowIndex}-${colIndex}`] || ''}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                if (value === '' || value === '0' || value === '1') {
+                                  setUserAnswers(prev => ({
+                                    ...prev,
+                                    karnaughMap: { ...prev.karnaughMap, [`${rowIndex}-${colIndex}`]: value }
+                                  }))
+                                }
+                              }}
+                              className={`w-10 h-10 text-center font-mono font-bold text-lg border-2 rounded ${
+                                challengeComplete && feedback.karnaughMap[`${rowIndex}-${colIndex}`]
+                                  ? feedback.karnaughMap[`${rowIndex}-${colIndex}`].correct
+                                    ? 'border-green-500 bg-green-50 text-green-700'
+                                    : 'border-red-500 bg-red-50 text-red-700'
+                                  : 'border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                              }`}
+                              placeholder="?"
+                              disabled={challengeComplete}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
             <div className="bg-emerald-50 p-4 rounded-lg">
               <h4 className="font-semibold text-emerald-900 mb-2">Reglas del Mapa de Karnaugh:</h4>
               <ul className="space-y-1 text-sm text-emerald-800">
-                <li>• Usa el código Gray para las etiquetas (solo cambia un bit entre celdas adyacentes)</li>
-                <li>• Los grupos deben ser rectangulares y de tamaño potencia de 2 (1, 2, 4, 8...)</li>
-                <li>• Busca agrupar los 1s para obtener la expresión simplificada</li>
+                <li>• Los valores se colocan según el código Gray (solo cambia un bit entre celdas adyacentes)</li>
+                <li>• Cada celda representa una combinación única de las variables</li>
+                <li>• El orden de filas/columnas sigue: 00, 01, 11, 10</li>
+                <li>• Evalúa la expresión para cada combinación y coloca 1 o 0</li>
               </ul>
             </div>
           </div>
         )}
 
+        {/* Botón de finalización */}
         {!challengeComplete && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between">
@@ -668,6 +876,7 @@ function BooleanChallengeModule() {
           </div>
         )}
 
+        {/* Resultados finales */}
         {challengeComplete && finalScore && (
           <div className="bg-white rounded-xl shadow-2xl p-8 mb-6 border-4 border-yellow-400">
             <div className="text-center mb-6">
@@ -687,28 +896,40 @@ function BooleanChallengeModule() {
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-lg">
                 <h3 className="font-semibold text-gray-700 mb-4">Calificación por Sección</h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">🧮 Simplificación (50%)</span>
-                    <span className="font-bold text-lg">{finalScore.simplification.toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-emerald-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.simplification}%` }}></div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">📊 Tabla de Verdad (25%)</span>
-                    <span className="font-bold text-lg">{finalScore.truthTable.toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-teal-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.truthTable}%` }}></div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm">🧮 Simplificación (50%)</span>
+                      <span className="font-bold text-lg">{finalScore.simplification.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-emerald-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.simplification}%` }}></div>
+                    </div>
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">🗺️ Mapa de Karnaugh (25%)</span>
-                    <span className="font-bold text-lg">{finalScore.karnaugh.toFixed(0)}%</span>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm">📊 Tabla de Verdad (25%)</span>
+                      <span className="font-bold text-lg">{finalScore.truthTable.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-teal-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.truthTable}%` }}></div>
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      {finalScore.truthTableCorrect} de {finalScore.truthTableTotal} correctas
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.karnaugh}%` }}></div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm">🗺️ Mapa de Karnaugh (25%)</span>
+                      <span className="font-bold text-lg">{finalScore.karnaugh.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-green-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.karnaugh}%` }}></div>
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      {finalScore.karnaughCorrect} de {finalScore.karnaughTotal} correctas
+                    </div>
                   </div>
                 </div>
               </div>
@@ -728,40 +949,58 @@ function BooleanChallengeModule() {
                     <span className="text-gray-600">📈 Puntaje total:</span>
                     <span className="font-semibold">{finalScore.total.toFixed(1)}%</span>
                   </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600">📊 Dificultad:</span>
+                    <span className="font-semibold capitalize">{currentChallenge.difficulty}</span>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Mostrar respuesta correcta de simplificación */}
+            {!feedback.simplification?.correct && (
+              <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                <h4 className="font-semibold text-blue-900 mb-2">📘 Respuesta Correcta:</h4>
+                <p className="text-blue-800 font-mono text-lg">{currentChallenge.simplified}</p>
+              </div>
+            )}
 
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded mb-6">
               <h4 className="font-semibold text-yellow-900 mb-2">💡 Recomendaciones:</h4>
               <ul className="space-y-1 text-sm text-yellow-800">
                 {finalScore.simplification < 100 && (
-                  <li>• Revisa las leyes de simplificación booleana (Absorción, De Morgan, Factorización)</li>
+                  <li>• Revisa las leyes de simplificación: {currentChallenge.laws.join(', ')}</li>
                 )}
                 {finalScore.truthTable < 100 && (
-                  <li>• Practica evaluando expresiones para cada combinación de entradas</li>
+                  <li>• Practica evaluando expresiones sistemáticamente para cada combinación</li>
                 )}
                 {finalScore.karnaugh < 100 && (
-                  <li>• Estudia el código Gray y las reglas de agrupamiento en mapas de Karnaugh</li>
+                  <li>• Repasa el código Gray y la estructura de los mapas de Karnaugh</li>
                 )}
                 {finalScore.grade >= 4.0 && (
-                  <li>• ¡Excelente trabajo! Intenta desafíos más complejos</li>
+                  <li>• ¡Excelente trabajo! Intenta ejercicios de mayor dificultad</li>
                 )}
               </ul>
             </div>
 
             <div className="flex justify-center space-x-4">
               <button
-                onClick={startNewChallenge}
+                onClick={() => startNewChallenge()}
                 className="px-8 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-lg hover:from-teal-700 hover:to-emerald-700 transition-all font-semibold shadow-lg"
               >
-                🔄 Nuevo Desafío
+                🔄 Nuevo Desafío Aleatorio
               </button>
               <button
-                onClick={() => window.location.reload()}
-                className="px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all font-semibold shadow-lg"
+                onClick={() => startNewChallenge(currentChallenge.difficulty)}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-lg"
               >
-                🏠 Volver al Inicio
+                🎲 Mismo Nivel
+              </button>
+              <button
+                onClick={() => setProfessorMode(true)}
+                className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-semibold shadow-lg"
+              >
+                👨‍🏫 Ejercicio Personalizado
               </button>
             </div>
           </div>

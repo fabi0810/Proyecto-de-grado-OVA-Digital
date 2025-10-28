@@ -4,11 +4,15 @@ const ChallengeSystem = ({ onStartChallenge }) => {
   const [challenges, setChallenges] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [generatingChallenges, setGeneratingChallenges] = useState(false)
-  const [userStats, setUserStats] = useState({
-    completed: 0,
-    totalAttempts: 0,
-    successRate: 0,
-    favoriteCategory: 'basic'
+  const [showCustomModal, setShowCustomModal] = useState(false)
+  const [customChallenge, setCustomChallenge] = useState({
+    title: '',
+    description: '',
+    expression: '',
+    gates: [],
+    inputs: [],
+    points: 50,
+    timeLimit: 600
   })
 
   const categories = [
@@ -28,39 +32,39 @@ const ChallengeSystem = ({ onStartChallenge }) => {
     expert: 'Experto'
   }
 
-  // 🎯 PLANTILLAS DINÁMICAS DE RETOS MEJORADAS
+  const availableGates = ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR']
+
+  // 🎯 PLANTILLAS MEJORADAS DE RETOS
   const challengeTemplates = {
     basic: [
       {
-        title: "Implementa una función {function} básica",
+        title: "Función {function} con {inputs} entradas",
         functions: ['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR'],
+        inputCounts: [2, 3, 4],
         difficulties: {
-          easy: { maxGates: 2, points: 10, timeLimit: 300 },
-          medium: { maxGates: 3, points: 20, timeLimit: 450 },
-          hard: { maxGates: 2, points: 35, timeLimit: 600, restriction: 'solo NAND' },
-          expert: { maxGates: 1, points: 50, timeLimit: 300, restriction: 'optimización extrema' }
+          easy: { maxGates: 2, points: 15, timeLimit: 300 },
+          medium: { maxGates: 3, points: 25, timeLimit: 450 },
+          hard: { maxGates: 4, points: 40, timeLimit: 600 },
+          expert: { maxGates: 2, points: 60, timeLimit: 400 }
         },
         generator: function(func, difficulty) {
           const config = this.difficulties[difficulty]
+          const numInputs = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 3 : 4
+          const inputs = Array.from({length: numInputs}, (_, i) => String.fromCharCode(65 + i))
+          
           return {
-            title: `Circuito ${func} - ${difficultyLabels[difficulty]}`,
-            description: difficulty === 'hard' ? 
-              `Crea un circuito ${func} usando solo compuertas NAND` :
-              difficulty === 'expert' ?
-              `Optimiza al máximo: ${func} en el menor espacio posible` :
-              `Implementa la función ${func} con dos entradas A y B`,
+            title: `${func} con ${numInputs} entradas - ${difficultyLabels[difficulty]}`,
+            description: difficulty === 'expert' ? 
+              `Implementa ${func} de ${numInputs} entradas usando el mínimo de compuertas` :
+              `Crea un circuito ${func} con ${numInputs} entradas: ${inputs.join(', ')}`,
             requirements: {
-              gates: difficulty === 'hard' ? ['NAND'] : 
-                     difficulty === 'expert' ? [func] : 
-                     [func],
-              inputs: ['A', 'B'],
-              minConnections: 1,
-              maxGates: config.maxGates,
-              restriction: config.restriction
+              gates: difficulty === 'expert' ? availableGates : [func, 'AND', 'OR', 'NOT'],
+              inputs: inputs,
+              minConnections: numInputs - 1,
+              maxGates: config.maxGates
             },
-            truthTable: generateTruthTable(func, ['A', 'B']),
-            hint: difficulty === 'hard' ? 
-              `Las compuertas NAND son universalmente completas` :
+            hint: difficulty === 'expert' ? 
+              'Busca optimizar usando propiedades algebraicas' :
               `La compuerta ${func} ${getFunctionHint(func)}`,
             points: config.points,
             timeLimit: config.timeLimit,
@@ -69,35 +73,39 @@ const ChallengeSystem = ({ onStartChallenge }) => {
         }
       },
       {
-        title: "Compuertas múltiples: {expression}",
+        title: "Expresión compleja: {expression}",
         expressions: [
-          'A AND B AND C',
-          'A OR B OR C', 
-          '(A AND B) OR C',
-          '(A OR B) AND (C OR D)',
-          'NOT (A AND B) OR C',
-          'A XOR B XOR C'
+          'A·B + A·C',
+          'A·B + B·C + A·C',
+          '(A+B)·(A+C)',
+          'A·B·C + A\'·B·C',
+          '(A⊕B)·C',
+          'A·B + A\'·C + B·C\''
         ],
         difficulties: {
-          easy: { maxGates: 3, points: 15, timeLimit: 400 },
-          medium: { maxGates: 5, points: 30, timeLimit: 600 },
-          hard: { maxGates: 4, points: 45, timeLimit: 800 },
-          expert: { maxGates: 3, points: 65, timeLimit: 900 }
+          easy: { maxGates: 4, points: 20, timeLimit: 400 },
+          medium: { maxGates: 6, points: 35, timeLimit: 600 },
+          hard: { maxGates: 5, points: 50, timeLimit: 800 },
+          expert: { maxGates: 3, points: 75, timeLimit: 900 }
         },
-        generator: function(expr, difficulty)  {
+        generator: function(expr, difficulty) {
           const config = this.difficulties[difficulty]
+          
           return {
             title: `${difficultyLabels[difficulty]}: ${expr}`,  
-            description: `Implementa la expresión lógica: ${expr}`,
+            description: difficulty === 'expert' ?
+              `Implementa la expresión minimizada de: ${expr}` :
+              `Construye el circuito para: ${expr}`,
             requirements: {
-              gates: extractGatesFromExpression(expr),
+              gates: difficulty === 'hard' ? ['NAND', 'NOR'] : availableGates,
               inputs: extractInputsFromExpression(expr),
               minConnections: 2,
               maxGates: config.maxGates
             },
             expression: expr,
-            truthTable: generateExpressionTruthTable(expr),
-            hint: `Descompón paso a paso: ${expr}`,
+            hint: difficulty === 'expert' ? 
+              'Simplifica algebraicamente antes de implementar' :
+              `Analiza la expresión paso a paso`,
             points: config.points,
             timeLimit: config.timeLimit,
             difficulty: difficulty
@@ -108,32 +116,38 @@ const ChallengeSystem = ({ onStartChallenge }) => {
     
     arithmetic: [
       {
-        title: "Sumador de {bits} bit(s)",
-        bits: [1, 2, 3, 4],
+        title: "Sumador {type}",
+        types: ['Half-Adder', 'Full-Adder', '2-bit', '3-bit'],
         difficulties: {
-          easy: { maxGates: 3, points: 20, timeLimit: 500 },
-          medium: { maxGates: 6, points: 35, timeLimit: 700 },
-          hard: { maxGates: 8, points: 50, timeLimit: 900 },
-          expert: { maxGates: 10, points: 75, timeLimit: 1200 }
+          easy: { maxGates: 4, points: 25, timeLimit: 500 },
+          medium: { maxGates: 8, points: 40, timeLimit: 700 },
+          hard: { maxGates: 12, points: 60, timeLimit: 900 },
+          expert: { maxGates: 10, points: 85, timeLimit: 1200 }
         },
-        generator: function(bits, difficulty) {
+        generator: function(type, difficulty) {
           const config = this.difficulties[difficulty]
-          const complexBits = difficulty === 'easy' ? 1 : 
-                             difficulty === 'medium' ? Math.min(bits, 2) :
-                             difficulty === 'hard' ? Math.min(bits, 3) : bits
+          
+          const specs = {
+            'Half-Adder': { inputs: ['A', 'B'], outputs: ['S', 'C'] },
+            'Full-Adder': { inputs: ['A', 'B', 'Cin'], outputs: ['S', 'Cout'] },
+            '2-bit': { inputs: ['A0', 'A1', 'B0', 'B1'], outputs: ['S0', 'S1', 'C'] },
+            '3-bit': { inputs: ['A0', 'A1', 'A2', 'B0', 'B1', 'B2'], outputs: ['S0', 'S1', 'S2', 'C'] }
+          }
+          
+          const spec = specs[type] || specs['Half-Adder']
           
           return {
-            title: `Sumador ${complexBits} Bit${complexBits > 1 ? 's' : ''} - ${difficultyLabels[difficulty]}`,
-            description: `Construye un sumador completo de ${complexBits} bit${complexBits > 1 ? 's' : ''}`,
+            title: `${type} - ${difficultyLabels[difficulty]}`,
+            description: `Diseña un ${type} completo`,
             requirements: {
               gates: ['XOR', 'AND', 'OR'],
-              inputs: complexBits === 1 ? ['A', 'B'] : ['A', 'B', 'CIN'],
-              minConnections: complexBits * 2,
+              inputs: spec.inputs,
+              minConnections: spec.inputs.length,
               maxGates: config.maxGates
             },
-            outputs: ['SUMA', 'CARRY'],
-            hint: complexBits === 1 ? 
-              'SUMA = A XOR B, CARRY = A AND B' :
+            outputs: spec.outputs,
+            hint: type === 'Half-Adder' ? 
+              'S = A⊕B, C = A·B' :
               'Conecta sumadores básicos en cascada',
             points: config.points,
             timeLimit: config.timeLimit,
@@ -145,63 +159,28 @@ const ChallengeSystem = ({ onStartChallenge }) => {
 
     logic: [
       {
-        title: "Decodificador {inputs} a {outputs}",
-        configs: [
-          { inputs: 1, outputs: 2 },
-          { inputs: 2, outputs: 4 }, 
-          { inputs: 3, outputs: 8 }
-        ],
-        difficulties: {
-          easy: { maxGates: 4, points: 25, timeLimit: 600 },
-          medium: { maxGates: 8, points: 40, timeLimit: 900 },
-          hard: { maxGates: 12, points: 60, timeLimit: 1200 },
-          expert: { maxGates: 16, points: 85, timeLimit: 1500 }
-        },
-        generator: function(config, difficulty)  {
-          const diffConfig = this.difficulties[difficulty]
-          const actualInputs = Math.min(config.inputs, difficulty === 'easy' ? 2 : 3)
-          const actualOutputs = Math.pow(2, actualInputs)
-          
-          return {
-            title: `Decodificador ${actualInputs}:${actualOutputs} - ${difficultyLabels[difficulty]}`,
-            description: `Diseña un decodificador ${actualInputs} a ${actualOutputs}`,
-            requirements: {
-              gates: ['AND', 'NOT'],
-              inputs: Array.from({length: actualInputs}, (_, i) => String.fromCharCode(65 + i)),
-              minConnections: actualOutputs,
-              maxGates: diffConfig.maxGates
-            },
-            hint: `Cada salida corresponde a una combinación única`,
-            points: diffConfig.points,
-            timeLimit: diffConfig.timeLimit,
-            difficulty: difficulty
-          }
-        }
-      },
-      {
         title: "Multiplexor {size}:1",
-        sizes: [2, 4, 8],
+        sizes: ['2:1', '4:1', '8:1'],
         difficulties: {
           easy: { maxGates: 6, points: 30, timeLimit: 700 },
           medium: { maxGates: 12, points: 50, timeLimit: 1000 },
           hard: { maxGates: 16, points: 70, timeLimit: 1300 },
-          expert: { maxGates: 20, points: 95, timeLimit: 1600 }
+          expert: { maxGates: 14, points: 95, timeLimit: 1600 }
         },
-        generator: function(size, difficulty)  {
+        generator: function(size, difficulty) {
           const config = this.difficulties[difficulty]
-          const actualSize = difficulty === 'easy' ? 2 : 
-                            difficulty === 'medium' ? Math.min(size, 4) : size
+          const numInputs = parseInt(size.split(':')[0])
           
           return {
-            title: `Multiplexor ${actualSize}:1 - ${difficultyLabels[difficulty]}`,
-            description: `Implementa un MUX que seleccione 1 de ${actualSize} entradas`,
+            title: `MUX ${size} - ${difficultyLabels[difficulty]}`,
+            description: `Implementa un multiplexor que seleccione 1 de ${numInputs} entradas`,
             requirements: {
               gates: ['AND', 'OR', 'NOT'],
-              inputs: generateMuxInputs(actualSize),
-              minConnections: actualSize * 2,
+              inputs: generateMuxInputs(numInputs),
+              minConnections: numInputs * 2,
               maxGates: config.maxGates
             },
-            hint: `Usa señales de selección para controlar las entradas`,
+            hint: `Usa ${Math.ceil(Math.log2(numInputs))} señales de selección`,
             points: config.points,
             timeLimit: config.timeLimit,
             difficulty: difficulty
@@ -214,30 +193,35 @@ const ChallengeSystem = ({ onStartChallenge }) => {
       {
         title: "Optimización con {gateType}",
         gateTypes: ['NAND', 'NOR'],
-        functions: ['XOR', 'OR', 'AND', 'NOT'],
         difficulties: {
-          easy: { maxGates: 4, points: 40, timeLimit: 800 },
-          medium: { maxGates: 3, points: 55, timeLimit: 1000 },
-          hard: { maxGates: 2, points: 75, timeLimit: 1200 },
-          expert: { maxGates: 1, points: 100, timeLimit: 900 }
+          easy: { maxGates: 5, points: 40, timeLimit: 800 },
+          medium: { maxGates: 4, points: 55, timeLimit: 1000 },
+          hard: { maxGates: 3, points: 75, timeLimit: 1200 },
+          expert: { maxGates: 2, points: 100, timeLimit: 900 }
         },
-        generator: function(gateType, difficulty)  {
+        generator: function(gateType, difficulty) {
           const config = this.difficulties[difficulty]
-          const functions = ['XOR', 'OR', 'AND', 'NOT']
-          const func = functions[Math.floor(Math.random() * functions.length)]
+          const targetFunctions = {
+            easy: ['OR', 'AND'],
+            medium: ['XOR', 'NOT'],
+            hard: ['XNOR', 'MUX'],
+            expert: ['Full-Adder', 'Majority']
+          }
+          
+          const func = targetFunctions[difficulty][Math.floor(Math.random() * targetFunctions[difficulty].length)]
           
           return {
-            title: `${func} con ${gateType} - ${difficultyLabels[difficulty]}`,
+            title: `${func} solo con ${gateType} - ${difficultyLabels[difficulty]}`,
             description: `Implementa ${func} usando únicamente compuertas ${gateType}`,
             requirements: {
               gates: [gateType],
-              inputs: func === 'NOT' ? ['A'] : ['A', 'B'],
+              inputs: ['A', 'B', 'C'].slice(0, func === 'NOT' ? 1 : 2),
               minConnections: 2,
               maxGates: config.maxGates,
               optimization: true
             },
-            challenge: `Solo compuertas ${gateType} permitidas`,
-            hint: `${gateType} es universalmente completa - busca patrones`,
+            challenge: `Solo ${gateType} permitidas`,
+            hint: `${gateType} es universalmente completa`,
             points: config.points,
             timeLimit: config.timeLimit,
             difficulty: difficulty
@@ -248,20 +232,20 @@ const ChallengeSystem = ({ onStartChallenge }) => {
 
     sequential: [
       {
-        title: "Flip-Flop {type}",
-        types: ['SR', 'JK', 'D', 'T'],
+        title: "Latch {type}",
+        types: ['SR', 'D', 'JK'],
         difficulties: {
           easy: { maxGates: 6, points: 50, timeLimit: 1000 },
           medium: { maxGates: 8, points: 70, timeLimit: 1300 },
           hard: { maxGates: 10, points: 90, timeLimit: 1600 },
           expert: { maxGates: 12, points: 120, timeLimit: 2000 }
         },
-        generator: function(type, difficulty)  {
+        generator: function(type, difficulty) {
           const config = this.difficulties[difficulty]
           
           return {
-            title: `Flip-Flop ${type} - ${difficultyLabels[difficulty]}`,
-            description: `Construye un FF ${type} usando compuertas básicas`,
+            title: `Latch ${type} - ${difficultyLabels[difficulty]}`,
+            description: `Construye un Latch ${type} con compuertas básicas`,
             requirements: {
               gates: ['NAND', 'NOR', 'AND', 'OR', 'NOT'],
               inputs: getFlipFlopInputs(type),
@@ -269,8 +253,8 @@ const ChallengeSystem = ({ onStartChallenge }) => {
               maxGates: config.maxGates,
               sequential: true
             },
-            challenge: 'Circuito con memoria - mantiene estado',
-            hint: `FF ${type}: ${getFlipFlopHint(type)}`,
+            challenge: 'Circuito con memoria',
+            hint: `Latch ${type}: ${getFlipFlopHint(type)}`,
             points: config.points,
             timeLimit: config.timeLimit,
             difficulty: difficulty
@@ -280,6 +264,49 @@ const ChallengeSystem = ({ onStartChallenge }) => {
     ]
   }
 
+  // 🆕 FUNCIÓN PARA AGREGAR DESAFÍO PERSONALIZADO
+  const handleAddCustomChallenge = () => {
+    if (!customChallenge.title || !customChallenge.expression) {
+      alert('⚠️ Por favor completa al menos el título y la expresión booleana')
+      return
+    }
+
+    const newChallenge = {
+      id: `custom-${Date.now()}`,
+      title: customChallenge.title,
+      description: customChallenge.description || 'Desafío personalizado del profesor',
+      expression: customChallenge.expression,
+      requirements: {
+        gates: customChallenge.gates.length > 0 ? customChallenge.gates : availableGates,
+        inputs: customChallenge.inputs.length > 0 ? customChallenge.inputs : extractInputsFromExpression(customChallenge.expression),
+        minConnections: 1,
+        maxGates: 20
+      },
+      points: customChallenge.points,
+      timeLimit: customChallenge.timeLimit,
+      difficulty: 'medium',
+      category: 'custom',
+      custom: true,
+      generated: false
+    }
+
+    setChallenges(prev => [newChallenge, ...prev])
+    setShowCustomModal(false)
+    
+    // Resetear formulario
+    setCustomChallenge({
+      title: '',
+      description: '',
+      expression: '',
+      gates: [],
+      inputs: [],
+      points: 50,
+      timeLimit: 600
+    })
+
+    alert('✅ Desafío personalizado agregado exitosamente')
+  }
+
   const generateVariedChallenges = (category, count = 6) => {
     setGeneratingChallenges(true)
     
@@ -287,7 +314,6 @@ const ChallengeSystem = ({ onStartChallenge }) => {
       const challenges = []
       const usedChallenges = new Set()
       
-      // Determinar categorías a usar
       const categoriesToUse = category === 'all' 
         ? Object.keys(challengeTemplates)
         : [category]
@@ -296,7 +322,6 @@ const ChallengeSystem = ({ onStartChallenge }) => {
       const maxAttempts = count * 15
 
       while (challenges.length < count && attempts < maxAttempts) {
-        // Selección aleatoria de categoría
         const randomCategory = categoriesToUse[Math.floor(Math.random() * categoriesToUse.length)]
         const templates = challengeTemplates[randomCategory] || []
         
@@ -305,10 +330,7 @@ const ChallengeSystem = ({ onStartChallenge }) => {
           continue
         }
 
-        // Selección aleatoria de template
         const template = templates[Math.floor(Math.random() * templates.length)]
-        
-        // Selección aleatoria de dificultad (variada)
         const randomDifficulty = difficulties[Math.floor(Math.random() * difficulties.length)]
         
         const challenge = generateChallengeFromTemplate(template, randomDifficulty, randomCategory, challenges.length)
@@ -325,13 +347,11 @@ const ChallengeSystem = ({ onStartChallenge }) => {
         attempts++
       }
 
-      // Rellenar con retos básicos si faltan
       while (challenges.length < count) {
         const fallback = generateFallbackChallenge(challenges.length)
         challenges.push(fallback)
       }
 
-      // Ordenar por dificultad para mejor presentación
       challenges.sort((a, b) => {
         const diffOrder = { easy: 1, medium: 2, hard: 3, expert: 4 }
         return diffOrder[a.difficulty] - diffOrder[b.difficulty]
@@ -352,14 +372,12 @@ const ChallengeSystem = ({ onStartChallenge }) => {
         return generateBasicChallenge(difficulty, category, id)
       }
 
-      // Seleccionar valores aleatorios
       const selectedOptions = {}
       optionKeys.forEach(key => {
         const options = template[key]
         selectedOptions[key] = options[Math.floor(Math.random() * options.length)]
       })
 
-      // Generar el reto usando el generador del template
       const baseChallenge = template.generator ? 
         template.generator(Object.values(selectedOptions)[0], difficulty) :
         generateBasicChallenge(difficulty, category, id)
@@ -393,8 +411,8 @@ const ChallengeSystem = ({ onStartChallenge }) => {
         timeLimit: 500
       },
       hard: {
-        title: "XOR optimizado con NAND",
-        description: "Implementa XOR usando solo NAND",
+        title: "XOR optimizado",
+        description: "Implementa XOR usando mínimas compuertas",
         points: 45,
         timeLimit: 800
       },
@@ -413,8 +431,8 @@ const ChallengeSystem = ({ onStartChallenge }) => {
       category: category || 'basic',
       ...base,
       requirements: {
-        gates: difficulty === 'hard' ? ['NAND'] : ['AND', 'OR', 'NOT'],
-        inputs: ['A', 'B'],
+        gates: availableGates,
+        inputs: ['A', 'B', 'C'].slice(0, difficulty === 'easy' ? 2 : 3),
         minConnections: 1,
         maxGates: difficulty === 'easy' ? 2 : difficulty === 'medium' ? 4 : 6
       },
@@ -424,55 +442,7 @@ const ChallengeSystem = ({ onStartChallenge }) => {
     }
   }
 
-  // 🔧 FUNCIONES AUXILIARES MEJORADAS
-  const generateTruthTable = (func, inputs) => {
-    const combinations = Math.pow(2, inputs.length)
-    const table = []
-    
-    for (let i = 0; i < combinations; i++) {
-      const row = {}
-      inputs.forEach((input, index) => {
-        row[input] = (i >> (inputs.length - 1 - index)) & 1
-      })
-      
-      row.OUTPUT = calculateFunctionOutput(func, Object.values(row))
-      table.push(row)
-    }
-    
-    return table
-  }
-
-  const generateExpressionTruthTable = (expr) => {
-    const inputs = extractInputsFromExpression(expr)
-    const combinations = Math.pow(2, inputs.length)
-    const table = []
-    
-    for (let i = 0; i < combinations; i++) {
-      const row = {}
-      inputs.forEach((input, index) => {
-        row[input] = (i >> (inputs.length - 1 - index)) & 1
-      })
-      
-      // Evaluar expresión (simplificado)
-      row.OUTPUT = Math.floor(Math.random() * 2) // Placeholder
-      table.push(row)
-    }
-    
-    return table
-  }
-
-  const calculateFunctionOutput = (func, inputs) => {
-    switch (func) {
-      case 'AND': return inputs.every(x => x === 1) ? 1 : 0
-      case 'OR': return inputs.some(x => x === 1) ? 1 : 0
-      case 'NOT': return inputs[0] === 1 ? 0 : 1
-      case 'NAND': return inputs.every(x => x === 1) ? 0 : 1
-      case 'NOR': return inputs.some(x => x === 1) ? 0 : 1
-      case 'XOR': return inputs.filter(x => x === 1).length % 2 === 1 ? 1 : 0
-      default: return 0
-    }
-  }
-
+  // Funciones auxiliares
   const getFunctionHint = (func) => {
     const hints = {
       'AND': 'produce 1 solo cuando todas las entradas son 1',
@@ -485,15 +455,6 @@ const ChallengeSystem = ({ onStartChallenge }) => {
     return hints[func] || 'revisa su tabla de verdad'
   }
 
-  const extractGatesFromExpression = (expr) => {
-    const gates = []
-    if (expr.includes('AND')) gates.push('AND')
-    if (expr.includes('OR')) gates.push('OR')
-    if (expr.includes('NOT')) gates.push('NOT')
-    if (expr.includes('XOR')) gates.push('XOR')
-    return gates.length > 0 ? gates : ['AND', 'OR']
-  }
-
   const extractInputsFromExpression = (expr) => {
     const matches = expr.match(/[A-Z]/g)
     if (matches) {
@@ -504,11 +465,9 @@ const ChallengeSystem = ({ onStartChallenge }) => {
 
   const generateMuxInputs = (size) => {
     const inputs = []
-    // Entradas de datos
     for (let i = 0; i < size; i++) {
       inputs.push(`D${i}`)
     }
-    // Señales de selección
     const selectBits = Math.ceil(Math.log2(size))
     for (let i = 0; i < selectBits; i++) {
       inputs.push(`S${i}`)
@@ -518,30 +477,28 @@ const ChallengeSystem = ({ onStartChallenge }) => {
 
   const getFlipFlopInputs = (type) => {
     const inputs = {
-      'SR': ['S', 'R', 'CLK'],
-      'JK': ['J', 'K', 'CLK'], 
-      'D': ['D', 'CLK'],
-      'T': ['T', 'CLK']
+      'SR': ['S', 'R'],
+      'JK': ['J', 'K'], 
+      'D': ['D'],
+      'T': ['T']
     }
-    return inputs[type] || ['D', 'CLK']
+    return inputs[type] || ['D']
   }
 
   const getFlipFlopHint = (type) => {
     const hints = {
-      'SR': 'Set-Reset con prioridad',
-      'JK': 'Master-Slave sin ambigüedad',
-      'D': 'Data transparente con clock',
+      'SR': 'Set-Reset con retroalimentación',
+      'JK': 'Sin estado prohibido',
+      'D': 'Data latch transparente',
       'T': 'Toggle cambia estado'
     }
-    return hints[type] || 'flip-flop con memoria'
+    return hints[type] || 'circuito con memoria'
   }
 
-  // Cargar retos al inicializar
   useEffect(() => {
     generateVariedChallenges(selectedCategory)
   }, [])
 
-  // Regenerar cuando cambie la categoría
   useEffect(() => {
     generateVariedChallenges(selectedCategory)
   }, [selectedCategory])
@@ -562,7 +519,8 @@ const ChallengeSystem = ({ onStartChallenge }) => {
       arithmetic: '➕',
       logic: '🧠',
       optimization: '⚡',
-      sequential: '🔄'
+      sequential: '🔄',
+      custom: '✏️'
     }
     return icons[category] || '⚙️'
   }
@@ -580,15 +538,6 @@ const ChallengeSystem = ({ onStartChallenge }) => {
         <p className="text-sm text-gray-500 text-center max-w-md">
           Creando desafíos de diferentes niveles...
         </p>
-        <div className="mt-4 flex space-x-1">
-          {[0,1,2,3,4].map(i => (
-            <div 
-              key={i}
-              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-              style={{ animationDelay: `${i * 0.1}s` }}
-            />
-          ))}
-        </div>
       </div>
     )
   }
@@ -598,17 +547,17 @@ const ChallengeSystem = ({ onStartChallenge }) => {
       {/* Header */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          🎯 Retos de Dificultad Variada
+          🎯 Sistema de Retos y Desafíos
         </h2>
         <p className="text-gray-600">
-          Desafíos automáticos que combinan todos los niveles de dificultad
+          Genera desafíos automáticos o crea uno personalizado
         </p>
       </div>
 
-      {/* Controles Simplificados */}
+      {/* 🆕 CONTROLES MEJORADOS CON BOTÓN PERSONALIZADO */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          {/* Solo categoría */}
+          {/* Categoría */}
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Tipo de Retos
@@ -626,20 +575,169 @@ const ChallengeSystem = ({ onStartChallenge }) => {
             </select>
           </div>
 
-          <button
-            onClick={() => generateVariedChallenges(selectedCategory)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-          >
-            🎲 Generar Nuevos Retos
-          </button>
-        </div>
-
-        <div className="mt-4 p-3 bg-blue-50 rounded-md">
-          <p className="text-sm text-blue-700">
-            <strong>✨ Dificultad Automática:</strong> Cada generación incluye retos de todos los niveles (Principiante, Intermedio, Avanzado y Experto) mezclados aleatoriamente.
-          </p>
+          {/* Botones */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => generateVariedChallenges(selectedCategory)}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            >
+              🎲 Generar Automáticos
+            </button>
+            
+            <button
+              onClick={() => setShowCustomModal(true)}
+              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+            >
+              ✏️ Crear Personalizado
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* 🆕 MODAL PARA DESAFÍO PERSONALIZADO */}
+      {showCustomModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900">
+                ✏️ Crear Desafío Personalizado
+              </h3>
+              <button
+                onClick={() => setShowCustomModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Título */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Título del Desafío *
+                </label>
+                <input
+                  type="text"
+                  value={customChallenge.title}
+                  onChange={(e) => setCustomChallenge(prev => ({...prev, title: e.target.value}))}
+                  placeholder="Ej: Implementar compuerta XOR"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Descripción
+                </label>
+                <textarea
+                  value={customChallenge.description}
+                  onChange={(e) => setCustomChallenge(prev => ({...prev, description: e.target.value}))}
+                  placeholder="Describe qué debe hacer el estudiante..."
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Expresión Booleana */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Expresión Booleana *
+                </label>
+                <input
+                  type="text"
+                  value={customChallenge.expression}
+                  onChange={(e) => setCustomChallenge(prev => ({...prev, expression: e.target.value}))}
+                  placeholder="Ej: A·B + A'·C o (A+B)·C"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Usa: · (AND), + (OR), ' (NOT), ⊕ (XOR)
+                </p>
+              </div>
+
+              {/* Compuertas Permitidas */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Compuertas Permitidas (opcional)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableGates.map(gate => (
+                    <button
+                      key={gate}
+                      onClick={() => {
+                        setCustomChallenge(prev => ({
+                          ...prev,
+                          gates: prev.gates.includes(gate) 
+                            ? prev.gates.filter(g => g !== gate)
+                            : [...prev.gates, gate]
+                        }))
+                      }}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        customChallenge.gates.includes(gate)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {gate}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Si no seleccionas ninguna, se permitirán todas
+                </p>
+              </div>
+
+              {/* Puntos y Tiempo */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Puntos
+                  </label>
+                  <input
+                    type="number"
+                    value={customChallenge.points}
+                    onChange={(e) => setCustomChallenge(prev => ({...prev, points: parseInt(e.target.value) || 50}))}
+                    min="10"
+                    max="200"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tiempo Límite (segundos)
+                  </label>
+                  <input
+                    type="number"
+                    value={customChallenge.timeLimit}
+                    onChange={(e) => setCustomChallenge(prev => ({...prev, timeLimit: parseInt(e.target.value) || 600}))}
+                    min="60"
+                    max="3600"
+                    step="60"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Botones */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleAddCustomChallenge}
+                  className="flex-1 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+                >
+                  ✅ Agregar Desafío
+                </button>
+                <button
+                  onClick={() => setShowCustomModal(false)}
+                  className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors font-medium"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lista de Retos */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -648,15 +746,17 @@ const ChallengeSystem = ({ onStartChallenge }) => {
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-2">
                 <span className="text-2xl">{getCategoryIcon(challenge.category)}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getDifficultyColor(challenge.difficulty)}`}>
-                  {difficultyLabels[challenge.difficulty]}
-                </span>
+                {!challenge.custom && (
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getDifficultyColor(challenge.difficulty)}`}>
+                    {difficultyLabels[challenge.difficulty]}
+                  </span>
+                )}
+                {challenge.custom && (
+                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                    Personalizado
+                  </span>
+                )}
               </div>
-              {challenge.generated && (
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                  🎲 Variado
-                </span>
-              )}
             </div>
 
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -667,6 +767,14 @@ const ChallengeSystem = ({ onStartChallenge }) => {
               {challenge.description}
             </p>
 
+            {/* Expresión booleana si existe */}
+            {challenge.expression && (
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mb-3">
+                <div className="text-xs font-semibold text-blue-800 mb-1">📐 Expresión:</div>
+                <div className="text-sm font-mono text-blue-900">{challenge.expression}</div>
+              </div>
+            )}
+
             {/* Requisitos */}
             <div className="bg-gray-50 rounded-md p-3 mb-4">
               <div className="text-xs font-semibold text-gray-700 mb-2">Requisitos:</div>
@@ -675,9 +783,6 @@ const ChallengeSystem = ({ onStartChallenge }) => {
                 <div>• Entradas: {challenge.requirements?.inputs?.join(', ')}</div>
                 {challenge.requirements?.maxGates && (
                   <div>• Max. compuertas: {challenge.requirements.maxGates}</div>
-                )}
-                {challenge.requirements?.restriction && (
-                  <div className="text-red-600">• Restricción: {challenge.requirements.restriction}</div>
                 )}
               </div>
             </div>
@@ -706,14 +811,6 @@ const ChallengeSystem = ({ onStartChallenge }) => {
               </div>
             )}
 
-            {/* Desafío especial */}
-            {challenge.challenge && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-2 mb-4">
-                <div className="text-xs font-semibold text-red-800 mb-1">🎯 Desafío:</div>
-                <div className="text-xs text-red-700">{challenge.challenge}</div>
-              </div>
-            )}
-
             <button
               onClick={() => onStartChallenge(challenge)}
               className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
@@ -724,54 +821,27 @@ const ChallengeSystem = ({ onStartChallenge }) => {
         ))}
       </div>
 
-      {/* Estadísticas */}
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
-        <h3 className="font-semibold text-green-900 mb-3 text-center">
-          📊 Distribución de Dificultades
-        </h3>
-        <div className="grid md:grid-cols-4 gap-4 text-sm">
-          {difficulties.map(diff => {
-            const count = challenges.filter(c => c.difficulty === diff).length
-            const percentage = challenges.length > 0 ? Math.round((count / challenges.length) * 100) : 0
-            return (
-              <div key={diff} className="bg-white p-3 rounded border text-center">
-                <div className="text-2xl mb-2">
-                  {diff === 'easy' ? '🟢' : diff === 'medium' ? '🟡' : diff === 'hard' ? '🔴' : '🟣'}
-                </div>
-                <div className="font-semibold text-gray-800">{difficultyLabels[diff]}</div>
-                <div className="text-gray-600">{count} retos ({percentage}%)</div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Características del sistema */}
+      {/* Info del sistema */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
         <h3 className="font-semibold text-blue-900 mb-3 text-center">
-          🧬 Sistema Inteligente de Generación
+          🎓 Modos de Evaluación
         </h3>
-        <div className="grid md:grid-cols-4 gap-4 text-sm">
-          <div className="bg-white p-3 rounded border text-center">
-            <div className="text-2xl mb-2">🎲</div>
-            <div className="font-semibold text-blue-800">Dificultad Variada</div>
-            <div className="text-blue-600">Automáticamente mezclada</div>
+        <div className="grid md:grid-cols-2 gap-4 text-sm">
+          <div className="bg-white p-4 rounded border">
+            <div className="text-2xl mb-2 text-center">🎲</div>
+            <div className="font-semibold text-blue-800 text-center">Desafíos Automáticos</div>
+            <div className="text-blue-600 text-center">Generados con variedad de dificultades</div>
           </div>
-          <div className="bg-white p-3 rounded border text-center">
-            <div className="text-2xl mb-2">🎯</div>
-            <div className="font-semibold text-purple-800">Siempre Único</div>
-            <div className="text-purple-600">Nunca el mismo reto</div>
+          <div className="bg-white p-4 rounded border">
+            <div className="text-2xl mb-2 text-center">✏️</div>
+            <div className="font-semibold text-green-800 text-center">Desafíos Personalizados</div>
+            <div className="text-green-600 text-center">Creados por el profesor</div>
           </div>
-          <div className="bg-white p-3 rounded border text-center">
-            <div className="text-2xl mb-2">⚡</div>
-            <div className="font-semibold text-green-800">Progresión Natural</div>
-            <div className="text-green-600">De fácil a experto</div>
-          </div>
-          <div className="bg-white p-3 rounded border text-center">
-            <div className="text-2xl mb-2">🔄</div>
-            <div className="font-semibold text-red-800">Infinitos Retos</div>
-            <div className="text-red-600">Generación ilimitada</div>
-          </div>
+        </div>
+        <div className="mt-4 p-3 bg-yellow-50 rounded-md border border-yellow-200">
+          <p className="text-sm text-yellow-800 text-center">
+            <strong>📋 Nota:</strong> Todos los desafíos requieren calificación manual del profesor
+          </p>
         </div>
       </div>
     </div>

@@ -100,6 +100,11 @@ const BoolenaExamModule = () => {
   }
 
   const finishExam = () => {
+    const answeredCount = Object.keys(userAnswers).length
+    if (answeredCount < questions.length) {
+      alert(`⚠️ Debes responder todas las preguntas antes de finalizar. Te faltan ${questions.length - answeredCount} pregunta(s).`)
+      return // No permite finalizar
+    }
     let correctAnswers = 0
     questions.forEach(question => {
       if (userAnswers[question.id] === question.correct) {

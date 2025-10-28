@@ -262,12 +262,10 @@ function CircuitSimulator() {
     simulateCircuit()
   }, [simulateCircuit])
 
-  // Manejar conexiones
   const onConnect = useCallback((params) => {
     setEdges((eds) => addEdge(params, eds))
   }, [setEdges])
 
-  // Manejar drop
   const onDrop = useCallback((event) => {
     event.preventDefault()
     
@@ -282,9 +280,7 @@ function CircuitSimulator() {
     try {
       const payload = JSON.parse(gateData)
       
-      // Manejar diferentes tipos de nodos
       if (payload.type === 'constant') {
-        // Agregar nodo constante
         setNodes((nds) => nds.concat({
           id: `CONST-${Date.now()}`,
           type: 'constant',
@@ -295,7 +291,6 @@ function CircuitSimulator() {
           }
         }))
       } else if (payload.type === 'output') {
-        // Agregar nodo de salida LED
         setNodes((nds) => nds.concat({
           id: `OUT-${Date.now()}`,
           type: 'output',
@@ -453,41 +448,14 @@ function CircuitSimulator() {
   const handleFinishChallenge = useCallback(() => {
     if (!currentChallenge) return
 
-    // Verificar si el circuito cumple con los requisitos del desafío
-    const isCorrect = validateChallenge(currentChallenge, nodes, edges, inputs)
+    alert('✅ Circuito enviado.\n\n⏳ En espera de calificación del profesor.')
     
-    if (isCorrect) {
-      alert('¡Excelente! Has completado el desafío correctamente. 🎉')
-      setCurrentChallenge(null)
-      setShowFinishButton(false)
-    } else {
-      alert('El circuito no cumple con los requisitos del desafío. Revisa tu diseño e intenta de nuevo.')
-    }
-  }, [currentChallenge, nodes, edges, inputs])
+    setShowFinishButton(false)
+    
+    
+  }, [currentChallenge])
 
-  // Función para validar un desafío
-  const validateChallenge = (challenge, nodes, edges, inputs) => {
-    // Verificar que se usen las compuertas requeridas
-    const usedGates = nodes
-      .filter(node => node.type === 'logicGate')
-      .map(node => node.data.gateType)
-    
-    const requiredGates = challenge.requirements.gates
-    const hasRequiredGates = requiredGates.every(gate => usedGates.includes(gate))
-    
-    // Verificar que se usen las entradas requeridas
-    const inputNames = Object.keys(inputs)
-    const requiredInputs = challenge.requirements.inputs
-    const hasRequiredInputs = requiredInputs.every(input => inputNames.includes(input))
-    
-    // Verificar que el circuito tenga al menos una salida
-    const hasOutput = nodes.some(node => 
-      edges.some(edge => edge.source === node.id) && 
-      !edges.some(edge => edge.target === node.id)
-    )
-    
-    return hasRequiredGates && hasRequiredInputs && hasOutput
-  }
+  
 
   // Obtener resultados de las compuertas
   const getResults = () => {
@@ -573,7 +541,6 @@ function CircuitSimulator() {
     </div>
     
     <div className="lg:col-span-3 space-y-4">
-      {/* MOVER EL CONTROL PANEL AQUÍ - ARRIBA DEL CANVAS */}
       <ControlPanel
         inputs={inputs}
         onInputChange={handleInputChange}
@@ -583,7 +550,6 @@ function CircuitSimulator() {
         onLoadCircuit={handleLoadCircuit}
       />
 
-      {/* Canvas de diseño */}
       <div className="h-[600px] border border-gray-300 rounded-lg bg-gray-50 shadow-sm">
         <ReactFlowProvider>
           <ReactFlow
