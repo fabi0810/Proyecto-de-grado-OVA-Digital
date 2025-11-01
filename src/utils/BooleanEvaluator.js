@@ -10,7 +10,17 @@ class BooleanEvaluator {
       .replace(/\||∨|OR/gi, '+')
       .replace(/!|¬|~|NOT\s*/gi, "'")
       .replace(/'/g, "'")
-      .toUpperCase()
+      .replace(/\)\s*\(/g, ')·(')            // (A+B)(C+D) → (A+B)·(C+D)
+      .replace(/([A-Za-z0-9])\s*\(/g, '$1·(') // A(B) → A·(B)
+      .replace(/\)\s*([A-Za-z0-9])/g, ')·$1') // )A → )·A
+      .replace(/([A-Za-z0-9])\s+([A-Za-z0-9])/g, '$1·$2') // A B → A·B
+  
+      // 🔹 Quitar espacios innecesarios
+      .replace(/\s+/g, '')
+  
+      // 🔹 Pasar a mayúsculas para consistencia
+      .toUpperCase();
+  
     
     return normalized
   }

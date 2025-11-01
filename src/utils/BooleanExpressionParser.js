@@ -61,7 +61,15 @@ class BooleanExpressionParser {
       { pattern: /\|\|/g, replacement: '+' },
       { pattern: /\|/g, replacement: '+' },
       { pattern: /[*x]/g, replacement: '·' },
-      { pattern: /[!¬~]/g, replacement: "'" }
+      { pattern: /[!¬~]/g, replacement: "'" },
+      { pattern: /\)\s*\(/g, replacement: ')·(' },
+      // Caso 2: letra ) → letra·)
+      { pattern: /([A-Za-z0-9])\s*\(/g, replacement: '$1·(' },
+      // Caso 3: ) letra → )·letra
+      { pattern: /\)\s*([A-Za-z0-9])/g, replacement: ')·$1' },
+      // Caso 4: letra espacio letra → letra·letra
+      { pattern: /([A-Za-z0-9])\s+([A-Za-z0-9])/g, replacement: '$1·$2' }
+    
     ]
     
     textOperators.forEach(({ pattern, replacement }) => {

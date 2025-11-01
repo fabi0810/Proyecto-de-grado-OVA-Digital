@@ -18,7 +18,18 @@ class BooleanSimplifier {
       .replace(/\*|×|&{2}|AND/gi, '·')
       .replace(/\||∨|OR/gi, '+')
       .replace(/!|¬|~|NOT\s*/gi, "'")
+      .replace(/\)\s*\(/g, ')·(')            // (A+B)(C+D) → (A+B)·(C+D)
+    .replace(/([A-Za-z0-9])\s*\(/g, '$1·(') // A(B) → A·(B)
+    .replace(/\)\s*([A-Za-z0-9])/g, ')·$1') // )A → )·A
+    .replace(/([A-Za-z0-9])\s+([A-Za-z0-9])/g, '$1·$2') // A B → A·B
+
+    // 🔹 Quitar espacios innecesarios
+    .replace(/\s+/g, '')
+
+    // 🔹 Pasar a mayúsculas para consistencia
+
       .toUpperCase()
+
     
     return normalized
   }
@@ -277,29 +288,74 @@ convertImplicantsToExpression(implicants, variables, form = 'SOP') {
    * A·(B+C) → A·B + A·C
    * (A+B)·C → A·C + B·C
    */
-  applyDistributive(expr) {
-    let result = expr
+ /**
+ * ✅ CORREGIDO: Distributiva completa con todos los casos
+ * Maneja: (A+B)·C, C·(A+B), (A·B)+C, etc.
+ */
+applyDistributive(expr) {
+  let result = expr
+  let changed = true
+  let iterations = 0
   
-    // Patrón: Factor·(Suma)
-    result = result.replace(/([A-Z]'?)·\(([^)]+)\)/g, (match, factor, sum) => {
-      if (sum.includes('+')) {
-        const terms = sum.split('+').map(t => t.trim())
-        return terms.map(t => `${factor}·${t}`).join('+')
-      }
-      return match
-    })
-  
-    // Patrón: (Suma)·Factor
+  while (changed && iterations < 20) {
+    const before = result
+    iterations++
+    
+    // Caso 1: (Suma)·Factor → expandir
     result = result.replace(/\(([^)]+)\)·([A-Z]'?)/g, (match, sum, factor) => {
       if (sum.includes('+')) {
-        const terms = sum.split('+').map(t => t.trim())
-        return terms.map(t => `${t}·${factor}`).join('+')
+        const terms = this.splitByTopLevelOperator(sum, '+')
+        return '(' + terms.map(t => `${t.trim()}·${factor}`).join('+') + ')'
       }
       return match
     })
-  
-    return result
+    
+    // Caso 2: Factor·(Suma) → expandir
+    result = result.replace(/([A-Z]'?)·\(([^)]+)\)/g, (match, factor, sum) => {
+      if (sum.includes('+')) {
+        const terms = this.splitByTopLevelOperator(sum, '+')
+        return '(' + terms.map(t => `${factor}·${t.trim()}`).join('+') + ')'
+      }
+      return match
+    })
+    
+    // Caso 3: (Suma1)·(Suma2) → expandir completamente
+    result = result.replace(/\(([^)]+)\)·\(([^)]+)\)/g, (match, sum1, sum2) => {
+      if (sum1.includes('+') && sum2.includes('+')) {
+        const terms1 = this.splitByTopLevelOperator(sum1, '+')
+        const terms2 = this.splitByTopLevelOperator(sum2, '+')
+        const products = []
+        
+        for (const t1 of terms1) {
+          for (const t2 of terms2) {
+            products.push(`${t1.trim()}·${t2.trim()}`)
+          }
+        }
+        
+        return '(' + products.join('+') + ')'
+      } else if (sum1.includes('+')) {
+        const terms = this.splitByTopLevelOperator(sum1, '+')
+        return '(' + terms.map(t => `${t.trim()}·${sum2.trim()}`).join('+') + ')'
+      } else if (sum2.includes('+')) {
+        const terms = this.splitByTopLevelOperator(sum2, '+')
+        return '(' + terms.map(t => `${sum1.trim()}·${t.trim()}`).join('+') + ')'
+      }
+      return match
+    })
+    
+    // Caso 4: (Producto)·(Producto) → combinar
+    result = result.replace(/\(([^)]+)\)·\(([^)]+)\)/g, (match, prod1, prod2) => {
+      if (!prod1.includes('+') && !prod2.includes('+')) {
+        return prod1 + '·' + prod2
+      }
+      return match
+    })
+    
+    changed = (before !== result)
   }
+  
+  return result
+}
   applyFactorizationEnhanced(expr) {
     const terms = this.splitByTopLevelOperator(expr, '+')
     if (terms.length < 2) return expr
@@ -598,49 +654,200 @@ isConsensus(term1, term2, term3) {
   /**
    * Aplica leyes básicas
    */
-  applyBasicLaws(expr) {
-    let result = expr
+ /**
+ * ✅ CORREGIDO: Leyes básicas mejoradas con detección exhaustiva
+ */
+applyBasicLaws(expr) {
+  let result = expr
+  let changed = true
+  let iterations = 0
+  
+  while (changed && iterations < 20) {
+    const before = result
+    iterations++
     
-    // Doble negación
+    // 1. Doble negación: A'' → A
     result = result.replace(/([A-Z])''/g, '$1')
     
-    // Complemento
-    result = result.replace(/([A-Z])·\1'/g, '0')
-    result = result.replace(/([A-Z])'·\1/g, '0')
-    result = result.replace(/([A-Z])\+\1'/g, '1')
-    result = result.replace(/([A-Z])'\+\1/g, '1')
+    // 2. Complemento: A·A' = 0, A+A' = 1
+    result = result.replace(/([A-Z])'?·([A-Z])'?/g, (match, v1, v2) => {
+      const base1 = v1.replace(/'/g, '')
+      const base2 = v2.replace(/'/g, '')
+      if (base1 === base2) {
+        const neg1 = v1.includes("'")
+        const neg2 = v2.includes("'")
+        if (neg1 !== neg2) return '0' // A·A' = 0
+      }
+      return match
+    })
     
-    // Anulación
-    result = result.replace(/([A-Z]'?)·0/g, '0')
-    result = result.replace(/0·([A-Z]'?)/g, '0')
-    result = result.replace(/([A-Z]'?)\+1/g, '1')
-    result = result.replace(/1\+([A-Z]'?)/g, '1')
+    // 3. Complemento en suma: A+A' = 1
+    const sumTerms = this.splitByTopLevelOperator(result, '+')
+    const newSumTerms = []
+    let foundComplement = false
     
-    // Identidad
-    result = result.replace(/([A-Z]'?)·1/g, '$1')
-    result = result.replace(/1·([A-Z]'?)/g, '$1')
-    result = result.replace(/([A-Z]'?)\+0/g, '$1')
-    result = result.replace(/0\+([A-Z]'?)/g, '$1')
+    for (let i = 0; i < sumTerms.length; i++) {
+      const term1 = sumTerms[i].trim()
+      let isComplement = false
+      
+      for (let j = i + 1; j < sumTerms.length; j++) {
+        const term2 = sumTerms[j].trim()
+        const base1 = term1.replace(/'/g, '')
+        const base2 = term2.replace(/'/g, '')
+        
+        if (base1 === base2 && !base1.includes('·') && !base1.includes('+')) {
+          const neg1 = term1.includes("'")
+          const neg2 = term2.includes("'")
+          if (neg1 !== neg2) {
+            foundComplement = true
+            isComplement = true
+            break
+          }
+        }
+      }
+      
+      if (!isComplement && !foundComplement) {
+        newSumTerms.push(term1)
+      }
+    }
     
-    // Idempotencia
-    result = result.replace(/([A-Z]'?)\+\1(?![A-Z])/g, '$1')
-    result = result.replace(/([A-Z]'?)·\1(?![A-Z])/g, '$1')
+    if (foundComplement) {
+      result = '1'
+    } else if (newSumTerms.length > 0) {
+      result = newSumTerms.join('+')
+    }
     
-    return result
+    // 4. Anulación: A·0 = 0, A+1 = 1
+    result = result.replace(/([A-Z]'?(\·[A-Z]'?)*)·0/g, '0')
+    result = result.replace(/0·([A-Z]'?(\·[A-Z]'?)*)/g, '0')
+    result = result.replace(/([^+]*)\+1/g, '1')
+    result = result.replace(/1\+([^+]*)/g, '1')
+    
+    // 5. Identidad: A·1 = A, A+0 = A
+    result = result.replace(/([A-Z]'?(\·[A-Z]'?)*)·1/g, '$1')
+    result = result.replace(/1·([A-Z]'?(\·[A-Z]'?)*)/g, '$1')
+    result = result.replace(/([^+]+)\+0/g, '$1')
+    result = result.replace(/0\+([^+]+)/g, '$1')
+    
+    // 6. Idempotencia en productos: A·A = A, A·A·B = A·B
+    result = result.replace(/([A-Z]'?)·\1(?=(\·|$|\+|\)))/g, '$1')
+    
+    // 7. Idempotencia en productos complejos: A·B·A = A·B
+    const productTerms = result.split('+').map(term => {
+      const factors = term.split('·').map(f => f.trim())
+      const uniqueFactors = []
+      const seen = new Set()
+      
+      for (const factor of factors) {
+        if (!seen.has(factor)) {
+          seen.add(factor)
+          uniqueFactors.push(factor)
+        }
+      }
+      
+      return uniqueFactors.join('·')
+    })
+    
+    result = productTerms.join('+')
+    
+    // 8. Idempotencia en sumas: A+A = A
+    result = result.replace(/([A-Z]'?)\+\1(?=(\+|$|\)))/g, '$1')
+    
+    // 9. Eliminar ceros en sumas
+    result = result.replace(/0\+/g, '')
+    result = result.replace(/\+0/g, '')
+    
+    // 10. Si toda la expresión es 0·X, reducir a 0
+    if (result.includes('0·') || result.includes('·0')) {
+      const terms = result.split('+')
+      result = terms.filter(t => !t.includes('0·') && !t.includes('·0')).join('+')
+      if (result === '') result = '0'
+    }
+    
+    changed = (before !== result)
   }
+  
+  // Limpieza final
+  if (result === '') result = '0'
+  result = result.replace(/^\+/, '').replace(/\+$/, '')
+  
+  return result
+}
 
-  /**
-   * Limpia paréntesis
-   */
-  cleanParentheses(expr) {
-    let result = expr
+expandAndSimplify(expr) {
+  let result = expr
+  let previousResult = ''
+  let iterations = 0
+  
+  // Fase 1: Expansión completa
+  while (result !== previousResult && iterations < 10) {
+    previousResult = result
+    iterations++
+    
+    // Aplicar distributiva
+    result = this.applyDistributive(result)
+    
+    // Limpiar paréntesis innecesarios
+    result = this.cleanParentheses(result)
+    
+    // Aplicar leyes básicas inmediatamente después de cada expansión
+    result = this.applyBasicLaws(result)
+  }
+  
+  // Fase 2: Simplificación exhaustiva
+  iterations = 0
+  while (result !== previousResult && iterations < 10) {
+    previousResult = result
+    iterations++
+    
+    result = this.applyBasicLaws(result)
+    result = this.applyAbsorption(result)
+    result = this.cleanParentheses(result)
+  }
+  
+  return result
+}
+ 
+cleanParentheses(expr) {
+  let result = expr
+  let changed = true
+  let iterations = 0
+  
+  while (changed && iterations < 10) {
+    const before = result
+    iterations++
     
     // (A) → A
     result = result.replace(/\(([A-Z]'?)\)/g, '$1')
+    
+    // ((A)) → (A)
+    result = result.replace(/\(\(([^)]+)\)\)/g, '($1)')
+    
+    // () → vacío
     result = result.replace(/\(\)/g, '')
     
-    return result
+    // Paréntesis alrededor de toda la expresión si es innecesario
+    if (result.startsWith('(') && result.endsWith(')')) {
+      let depth = 0
+      let canRemove = true
+      for (let i = 0; i < result.length; i++) {
+        if (result[i] === '(') depth++
+        if (result[i] === ')') depth--
+        if (depth === 0 && i < result.length - 1) {
+          canRemove = false
+          break
+        }
+      }
+      if (canRemove) {
+        result = result.slice(1, -1)
+      }
+    }
+    
+    changed = (before !== result)
   }
+  
+  return result
+}
 
   /**
    * ✅ PRINCIPAL: Simplifica con validación de equivalencia
@@ -707,12 +914,18 @@ simplify(expression, options = {}) {
       }
     }
   }
+  const beforeExpansion = current
 
-  // Si el método formal falla o está deshabilitado, continuar con método algebraico
+  const expanded = this.expandAndSimplify(current)
+  if (expanded !== current && this.isEquivalent(current, expanded)) {
+    current = expanded
+    this.addStep(beforeExpansion, current, 'expansion', 'Expansión y Simplificación', 'Aplicación distributiva completa')
+  }
+  
   for (let iteration = 0; iteration < maxSteps; iteration++) {
     const before = current
     let applied = false
-
+  
     // 1. De Morgan
     const afterDM = this.applyDeMorgan(current)
     if (afterDM !== current && this.isEquivalent(current, afterDM)) {
@@ -721,25 +934,25 @@ simplify(expression, options = {}) {
       applied = true
       continue
     }
-
-    // 2. Leyes básicas
+  
+    // 2. Leyes básicas (ahora más robustas)
     const afterBasic = this.applyBasicLaws(current)
     if (afterBasic !== current && this.isEquivalent(current, afterBasic)) {
       current = afterBasic
-      this.addStep(before, current, 'basic', 'Leyes Básicas', 'Identidad, Complemento, Anulación')
+      this.addStep(before, current, 'basic', 'Leyes Básicas', 'Identidad, Complemento, Anulación, Idempotencia')
       applied = true
       continue
     }
-
-    // 3. Absorción
-    const afterAbs = this.applyAbsorption(current)
+  
+    // 3. Absorción mejorada
+    const afterAbs = this.applyAbsorptionEnhanced(current)
     if (afterAbs !== current && this.isEquivalent(current, afterAbs)) {
       current = afterAbs
       this.addStep(before, current, 'absorption', 'Absorción', 'A+A·B=A')
       applied = true
       continue
     }
-
+  
     // 4. Consenso
     const afterCons = this.applyConsensus(current)
     if (afterCons !== current && this.isEquivalent(current, afterCons)) {
@@ -748,16 +961,16 @@ simplify(expression, options = {}) {
       applied = true
       continue
     }
-
-    // 5. Factorización
-    const afterFact = this.applyFactorization(current)
+  
+    // 5. Factorización mejorada
+    const afterFact = this.applyFactorizationEnhanced(current)
     if (afterFact !== current && this.isEquivalent(current, afterFact)) {
       current = afterFact
       this.addStep(before, current, 'factorization', 'Factorización', 'A·B+A·C=A·(B+C)')
       applied = true
       continue
     }
-
+  
     // 6. Limpieza
     const cleaned = this.cleanParentheses(current)
     if (cleaned !== current) {
@@ -765,7 +978,7 @@ simplify(expression, options = {}) {
       applied = true
       continue
     }
-
+  
     if (!applied) break
   }
 
