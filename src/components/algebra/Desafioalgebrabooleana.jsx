@@ -90,19 +90,20 @@ class BooleanChallengeGenerator {
   generateChallenge() {
     const challenge = this.challenges[Math.floor(Math.random() * this.challenges.length)]
     const truthTable = this.generateTruthTable(challenge.expression, challenge.variables)
-    const karnaughMap = this.generateKarnaughMap(truthTable, challenge.variables)
+    const karnaughMap = this.generateKarnaughMap(challenge.expression, challenge.variables)
     const simplificationResult = booleanSimplifier.simplify(challenge.expression, {
       maxSteps: 50,
-      showAllSteps: false,
+      showAllSteps: true,
       targetForm: 'SOP'
     })
     return {
       ...challenge,
+      simplified: simplificationResult.simplifiedExpression, 
       truthTable,
       karnaughMap,
       simplificationSteps: simplificationResult.steps,
-
-      id: `challenge-${Date.now()}-${Math.random()}`
+      id: `challenge-${Date.now()}-${Math.random()}`,
+      source: 'system'
     }
   }
 
@@ -219,7 +220,8 @@ function BooleanChallengeModule() {
         truthTable,
         karnaughMap,
         simplificationSteps: simplificationResult.steps,
-        id: `custom-${Date.now()}`
+        id: `custom-${Date.now()}`,
+        source: "custom"
       }
 
       setCurrentChallenge(customChallenge)
@@ -238,7 +240,7 @@ function BooleanChallengeModule() {
       alert(`Error al crear el desafío: ${error.message}`)
     }
   }
-
+   
   useEffect(() => {
     let interval
     if (timerActive && !challengeComplete) {
@@ -254,116 +256,377 @@ function BooleanChallengeModule() {
   }, [])
 
   const validateSimplification = () => {
-    if (!currentChallenge) return
+    validateSimplificationWithHints()
+}
 
-    const userInput = userAnswers.simplification.trim()
-    const correct = currentChallenge.simplified.trim()
+const validateSimplificationWithHints = () => {
+  if (!currentChallenge) return
 
-    const validation = BooleanEvaluator.areEquivalent(userInput, correct)
-
-    setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
-    if (!userInput) {
-      setFeedback(prev => ({
-        ...prev,
-        simplification: {
-          correct: false,
-          message: 'Por favor ingresa una expresión'
-        }
-      }))
-      return
-    }
-
-    if (validation.equivalent) {
-      setFeedback(prev => ({
-        ...prev,
-        simplification: {
-          correct: true,
-          message: '¡Correcto! Excelente simplificación. Las expresiones son lógicamente equivalentes.'
-        }
-      }))
-    } else {
-      let message = getSimplificationHints(currentChallenge.laws, attempts.simplification)
-
-      if (validation.counterExample) {
-        const counterEx = Object.entries(validation.counterExample)
-          .map(([k, v]) => `${k}=${v}`)
-          .join(', ')
-        message += `\n\nContraejemplo: Con ${counterEx}, tu expresión y la esperada dan resultados diferentes.`
+  const userInput = userAnswers.simplification.trim()
+  
+  if (!userInput) {
+    setFeedback(prev => ({
+      ...prev,
+      simplification: {
+        correct: false,
+        message: 'Por favor ingresa una expresión',
+        score: 0,
+        hint: 'Debes ingresar una expresión simplificada'
       }
+    }))
+    setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
+    return
+  }
 
-      setFeedback(prev => ({
-        ...prev,
-        simplification: { correct: false, message }
-      }))
+  // Verificar equivalencia lógica
+  const validation = BooleanEvaluator.areEquivalent(userInput, currentChallenge.simplified)
+
+  // Si es correcto, dar puntaje completo
+  if (validation.equivalent) {
+    setFeedback(prev => ({
+      ...prev,
+      simplification: {
+        correct: true,
+        message: '¡Excelente! Tu simplificación es correcta y equivalente a la solución óptima.',
+        score: 2,
+        hint: null
+      }
+    }))
+    setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
+    return
+  }
+
+  // SISTEMA SOLO: Si no es correcto, analizar qué tan cerca está
+  if (currentChallenge.source !== 'custom') {
+    const analysis = analyzeSimplificationProgress(
+      userInput,
+      currentChallenge.expression,
+      currentChallenge.simplificationSteps,
+      currentChallenge.variables
+    )
+
+    setFeedback(prev => ({
+      ...prev,
+      simplification: {
+        correct: false,
+        message: analysis.message,
+        score: analysis.score,
+        hint: analysis.hint,
+        progress: analysis.progress,
+        counterExample: validation.counterExample
+      }
+    }))
+  } else {
+    // MODO PROFESOR: No dar retroalimentación automática
+    setFeedback(prev => ({
+      ...prev,
+      simplification: {
+        correct: false,
+        message: 'Respuesta registrada. El profesor revisará tu solución.',
+        score: null, // Calificación manual
+        hint: 'Consulta con el profesor si necesitas ayuda',
+        counterExample: validation.counterExample
+      }
+    }))
+  }
+
+  setAttempts(prev => ({ ...prev, simplification: prev.simplification + 1 }))
+}
+
+// Función para analizar el progreso del estudiante
+const analyzeSimplificationProgress = (userExpr, originalExpr, steps, variables) => {
+  console.log('📊 Analizando progreso de simplificación...')
+  
+  // Simplificar la expresión del usuario para ver hasta dónde llegó
+  const userSimplification = booleanSimplifier.simplify(userExpr, {
+    maxSteps: 50,
+    showAllSteps: true,
+    targetForm: 'SOP'
+  })
+
+  // Calcular complejidad de ambas expresiones
+  const userComplexity = countComplexity(userExpr)
+  const optimalComplexity = countComplexity(steps[steps.length - 1].to)
+  const originalComplexity = countComplexity(originalExpr)
+
+  console.log('Complejidades:', { user: userComplexity, optimal: optimalComplexity, original: originalComplexity })
+
+  // Calcular reducción lograda
+  const maxReduction = originalComplexity - optimalComplexity
+  const userReduction = originalComplexity - userComplexity
+  const reductionPercentage = maxReduction > 0 ? (userReduction / maxReduction) * 100 : 0
+
+  console.log('Reducción:', { max: maxReduction, user: userReduction, percentage: reductionPercentage })
+
+  // Identificar en qué paso se quedó
+  const userStepIndex = findClosestStep(userExpr, steps)
+  const totalSteps = steps.length
+  const progressPercentage = totalSteps > 0 ? ((userStepIndex + 1) / totalSteps) * 100 : 0
+
+  console.log('Progreso en pasos:', { userStep: userStepIndex, total: totalSteps, percentage: progressPercentage })
+
+  // SISTEMA DE CALIFICACIÓN PROPORCIONAL
+  let score = 0
+  let message = ''
+  let hint = ''
+  let progress = 'none'
+
+  if (reductionPercentage >= 90 && progressPercentage >= 80) {
+    // Casi perfecto - falta un detalle menor
+    score = 1.5
+    progress = 'excellent'
+    message = '¡Muy bien! Tu simplificación es casi óptima.'
+    hint = `Estás muy cerca. Revisa si puedes aplicar ${getNextLaw(userStepIndex, steps)}.`
+  } else if (reductionPercentage >= 70 || progressPercentage >= 60) {
+    // Bien - falta un paso importante
+    score = 1.0
+    progress = 'good'
+    message = 'Buen trabajo, pero aún se puede simplificar más.'
+    hint = `Te falta aplicar: ${getMissingLaws(userStepIndex, steps).join(', ')}. Intenta factorizar o aplicar absorción.`
+  } else if (reductionPercentage >= 40 || progressPercentage >= 30) {
+    // Regular - faltan varios pasos
+    score = 0.5
+    progress = 'fair'
+    message = 'Has simplificado parcialmente, pero faltan varios pasos.'
+    hint = `Aún necesitas aplicar leyes como: ${getMissingLaws(userStepIndex, steps).slice(0, 2).join(' y ')}. Revisa la pista principal.`
+  } else {
+    // Insuficiente
+    score = 0
+    progress = 'poor'
+    message = 'Tu expresión no está simplificada o es incorrecta.'
+    hint = `Pista: ${currentChallenge.hint}. Intenta aplicar ${steps[0]?.law || 'las leyes básicas'}.`
+  }
+
+  return {
+    score,
+    message,
+    hint,
+    progress,
+    reductionPercentage: Math.round(reductionPercentage),
+    progressPercentage: Math.round(progressPercentage),
+    userStepIndex,
+    totalSteps
+  }
+}
+
+// Función auxiliar: contar complejidad
+const countComplexity = (expr) => {
+  const operators = (expr.match(/[·+]/g) || []).length
+  const negations = (expr.match(/'/g) || []).length
+  const variables = (expr.match(/[A-Z]/g) || []).length
+  return operators * 2 + negations + variables * 0.5
+}
+
+// Función auxiliar: encontrar el paso más cercano
+const findClosestStep = (userExpr, steps) => {
+  let closestIndex = -1
+  let minDistance = Infinity
+
+  for (let i = 0; i < steps.length; i++) {
+    const stepExpr = steps[i].to
+    const distance = expressionDistance(userExpr, stepExpr)
+    
+    if (distance < minDistance) {
+      minDistance = distance
+      closestIndex = i
     }
   }
+
+  return closestIndex
+}
+
+// Función auxiliar: calcular "distancia" entre expresiones
+const expressionDistance = (expr1, expr2) => {
+  const norm1 = expr1.replace(/\s+/g, '').toUpperCase()
+  const norm2 = expr2.replace(/\s+/g, '').toUpperCase()
+  
+  // Distancia de Levenshtein simplificada + diferencia de complejidad
+  const lengthDiff = Math.abs(norm1.length - norm2.length)
+  const complexityDiff = Math.abs(countComplexity(expr1) - countComplexity(expr2))
+  
+  return lengthDiff + complexityDiff * 2
+}
+
+// Función auxiliar: obtener la siguiente ley a aplicar
+const getNextLaw = (currentStep, steps) => {
+  if (currentStep >= 0 && currentStep < steps.length - 1) {
+    return steps[currentStep + 1].law || 'simplificación adicional'
+  }
+  return 'verificación final'
+}
+
+const getMissingLaws = (currentStep, steps) => {
+  const missing = []
+  for (let i = currentStep + 1; i < steps.length; i++) {
+    if (steps[i].law && !missing.includes(steps[i].law)) {
+      missing.push(steps[i].law)
+    }
+  }
+  return missing.length > 0 ? missing : ['Simplificación final']
+}
 
   const finalizeChallenge = () => {
     if (!currentChallenge) return
+  
+  // Validar tabla de verdad
+  const truthTableFeedback = {}
+  let truthTableCorrect = 0
+  currentChallenge.truthTable.forEach((row, index) => {
+    const userValue = parseInt(userAnswers.truthTable[index])
+    const correct =row.result === true || row.result === 1 ? 1 : 0
+    const isCorrect = userValue === correct
     
-    const truthTableFeedback = {}
-    currentChallenge.truthTable.forEach((row, index) => {
-      const userValue = parseInt(userAnswers.truthTable[index])
-      const correct = row.result
-      truthTableFeedback[index] = {
-        correct: userValue === correct,
-        value: correct
-      }
-    })
+    truthTableFeedback[index] = {
+      correct: isCorrect,
+      value: correct
+    }
     
-    const karnaughFeedback = {}
-    if (currentChallenge.karnaughMap.type === '2var') {
-      currentChallenge.karnaughMap.cells.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-          const userValue = parseInt(userAnswers.karnaughMap[`${rowIndex}-${colIndex}`])
-          karnaughFeedback[`${rowIndex}-${colIndex}`] = {
-            correct: userValue === cell,
-            value: cell
-          }
-        })
-      })
-    } else if (currentChallenge.karnaughMap.type === '3var') {
-      currentChallenge.karnaughMap.cells.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-          const userValue = parseInt(userAnswers.karnaughMap[`${rowIndex}-${colIndex}`])
-          karnaughFeedback[`${rowIndex}-${colIndex}`] = {
-            correct: userValue === cell,
-            value: cell
-          }
-        })
+    if (isCorrect) truthTableCorrect++
+  })
+  
+  // Validar mapa de Karnaugh
+  const karnaughFeedback = {}
+  let karnaughCorrect = 0
+  let karnaughTotal = 0
+  
+  if (currentChallenge.karnaughMap && currentChallenge.karnaughMap.cells) {
+    const processKarnaughCells = (cells) => {
+      cells.forEach((row, rowIndex) => {
+        if (Array.isArray(row)) {
+          row.forEach((cell, colIndex) => {
+            karnaughTotal++
+            const cellValue = typeof cell === 'object' ? cell.value : cell
+            const userValue = parseInt(userAnswers.karnaughMap[`${rowIndex}-${colIndex}`])
+            const isCorrect = userValue === cellValue
+            
+            karnaughFeedback[`${rowIndex}-${colIndex}`] = {
+              correct: isCorrect,
+              value: cellValue
+            }
+            
+            if (isCorrect) karnaughCorrect++
+          })
+        }
       })
     }
     
-    setFeedback(prev => ({
-      ...prev,
-      truthTable: truthTableFeedback,
-      karnaughMap: karnaughFeedback
-    }))
-    
-    const simplificationScore = feedback.simplification?.correct ? 100 : 0
-    const truthTableCorrect = Object.values(truthTableFeedback).filter(f => f.correct).length
-    const truthTableTotal = currentChallenge.truthTable.length
-    const truthTableScore = truthTableTotal > 0 ? (truthTableCorrect / truthTableTotal) * 100 : 0
-    const karnaughCorrect = Object.values(karnaughFeedback).filter(f => f.correct).length
-    const karnaughTotal = currentChallenge.karnaughMap.cells.flat().length
-    const karnaughScore = karnaughTotal > 0 ? (karnaughCorrect / karnaughTotal) * 100 : 0
-    const totalScore = (simplificationScore * 0.5) + (truthTableScore * 0.25) + (karnaughScore * 0.25)
-    const grade = (totalScore / 100) * 5
-    const badge = getBadge(grade)
-    
-    setFinalScore({
-      simplification: simplificationScore,
-      truthTable: truthTableScore,
-      karnaugh: karnaughScore,
-      total: totalScore,
-      grade: grade.toFixed(2),
-      badge,
-      time: timeElapsed
-    })
-    
-    setChallengeComplete(true)
-    setTimerActive(false)
+    processKarnaughCells(currentChallenge.karnaughMap.cells)
   }
+  
+  setFeedback(prev => ({
+    ...prev,
+    truthTable: truthTableFeedback,
+    karnaughMap: karnaughFeedback
+  }))
+  
+  // CALCULAR PUNTAJES
+  const simplificationScore = feedback.simplification?.score ?? 0
+  const truthTableTotal = currentChallenge.truthTable.length
+  const truthTableScore = truthTableTotal > 0 ? (truthTableCorrect / truthTableTotal) * 1.5 : 0
+  const karnaughScore = karnaughTotal > 0 ? (karnaughCorrect / karnaughTotal) * 1.5 : 0
+  
+  const totalScore = simplificationScore + truthTableScore + karnaughScore
+  const grade = totalScore // Ya está sobre 5.0
+  const badge = getBadge(grade)
+  
+  // ANÁLISIS DE ÁREAS DE MEJORA
+  const weaknesses = []
+  const strengths = []
+  
+  if (simplificationScore < 1.5) {
+    weaknesses.push({
+      area: 'Simplificación',
+      details: feedback.simplification?.hint || 'Revisa las leyes de simplificación',
+      priority: 'high'
+    })
+  } else {
+    strengths.push('Simplificación')
+  }
+  
+  if (truthTableScore < 1.2) {
+    weaknesses.push({
+      area: 'Tablas de Verdad',
+      details: 'Practica evaluando expresiones booleanas sistemáticamente',
+      priority: truthTableScore < 0.7 ? 'high' : 'medium'
+    })
+  } else {
+    strengths.push('Tablas de Verdad')
+  }
+  
+  if (karnaughScore < 1.2) {
+    weaknesses.push({
+      area: 'Mapas de Karnaugh',
+      details: 'Repasa el código Gray y el llenado de mapas K',
+      priority: karnaughScore < 0.7 ? 'high' : 'medium'
+    })
+  } else {
+    strengths.push('Mapas de Karnaugh')
+  }
+  
+  setFinalScore({
+    simplification: simplificationScore,
+    truthTable: truthTableScore,
+    karnaugh: karnaughScore,
+    total: totalScore,
+    grade: grade.toFixed(2),
+    badge,
+    time: timeElapsed,
+    truthTableCorrect,
+    truthTableTotal,
+    karnaughCorrect,
+    karnaughTotal,
+    weaknesses,
+    strengths,
+    recommendations: generateRecommendations(weaknesses, grade)
+  })
+  
+  setChallengeComplete(true)
+  setTimerActive(false)
+}
+
+// Nueva función para generar recomendaciones personalizadas
+const generateRecommendations = (weaknesses, grade) => {
+  const recommendations = []
+  
+  if (grade >= 4.5) {
+    recommendations.push({
+      type: 'success',
+      message: '¡Excelente dominio! Estás listo para desafíos más complejos.',
+      action: 'Intenta ejercicios de nivel "Experto"'
+    })
+  } else if (grade >= 3.5) {
+    recommendations.push({
+      type: 'good',
+      message: 'Buen trabajo. Con un poco más de práctica llegarás al nivel experto.',
+      action: 'Repasa los temas donde tuviste errores'
+    })
+  } else if (grade >= 2.5) {
+    recommendations.push({
+      type: 'improvement',
+      message: 'Vas por buen camino, pero necesitas reforzar algunos conceptos.',
+      action: 'Dedica tiempo a estudiar las áreas débiles identificadas'
+    })
+  } else {
+    recommendations.push({
+      type: 'study',
+      message: 'Necesitas repasar los fundamentos del álgebra booleana.',
+      action: 'Comienza con ejercicios de nivel "Fácil" y consulta el material teórico'
+    })
+  }
+  
+  // Agregar recomendaciones específicas por área
+  weaknesses.forEach(weakness => {
+    if (weakness.priority === 'high') {
+      recommendations.push({
+        type: 'specific',
+        message: `${weakness.area}: ${weakness.details}`,
+        action: `Practica más ejercicios de ${weakness.area.toLowerCase()}`
+      })
+    }
+  })
+  
+  return recommendations
+}
 
   const getSimplificationHints = (laws, attemptCount) => {
     if (attemptCount === 0) return `Intenta aplicar: ${laws[0]}`
@@ -877,134 +1140,190 @@ function BooleanChallengeModule() {
         )}
 
         {/* Resultados finales */}
-        {challengeComplete && finalScore && (
-          <div className="bg-white rounded-xl shadow-2xl p-8 mb-6 border-4 border-yellow-400">
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">{finalScore.badge.icon}</div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">¡Desafío Completado!</h2>
-              <div className={`text-xl font-semibold mb-4 ${
-                finalScore.badge.color === 'gold' ? 'text-yellow-600' :
-                finalScore.badge.color === 'silver' ? 'text-gray-600' :
-                finalScore.badge.color === 'bronze' ? 'text-orange-600' :
-                'text-gray-500'
-              }`}>
-                {finalScore.badge.name}
-              </div>
+
+{challengeComplete && finalScore && (
+  <div className="bg-white rounded-xl shadow-2xl p-8 mb-6 border-4 border-yellow-400">
+    <div className="text-center mb-6">
+      <div className="text-6xl mb-4">{finalScore.badge.icon}</div>
+      <h2 className="text-3xl font-bold text-gray-900 mb-2">¡Desafío Completado!</h2>
+      <div className={`text-xl font-semibold mb-4 ${
+        finalScore.badge.color === 'gold' ? 'text-yellow-600' :
+        finalScore.badge.color === 'silver' ? 'text-gray-600' :
+        finalScore.badge.color === 'bronze' ? 'text-orange-600' :
+        'text-gray-500'
+      }`}>
+        {finalScore.badge.name}
+      </div>
+    </div>
+
+    <div className="grid md:grid-cols-2 gap-6 mb-6">
+      {/* Columna 1: Calificaciones por sección */}
+      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-lg">
+        <h3 className="font-semibold text-gray-700 mb-4">Calificación por Sección</h3>
+        <div className="space-y-3">
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm">🧮 Simplificación (2.0 pts)</span>
+              <span className="font-bold text-lg">{finalScore.simplification.toFixed(1)}</span>
             </div>
-
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-4">Calificación por Sección</h3>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm">🧮 Simplificación (50%)</span>
-                      <span className="font-bold text-lg">{finalScore.simplification.toFixed(0)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-emerald-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.simplification}%` }}></div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm">📊 Tabla de Verdad (25%)</span>
-                      <span className="font-bold text-lg">{finalScore.truthTable.toFixed(0)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-teal-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.truthTable}%` }}></div>
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      {finalScore.truthTableCorrect} de {finalScore.truthTableTotal} correctas
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm">🗺️ Mapa de Karnaugh (25%)</span>
-                      <span className="font-bold text-lg">{finalScore.karnaugh.toFixed(0)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-600 h-2 rounded-full transition-all" style={{ width: `${finalScore.karnaugh}%` }}></div>
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                      {finalScore.karnaughCorrect} de {finalScore.karnaughTotal} correctas
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-lg">
-                <h3 className="font-semibold text-gray-700 mb-4">Resumen General</h3>
-                <div className="space-y-4">
-                  <div className="text-center p-4 bg-white rounded-lg shadow">
-                    <div className="text-4xl font-bold text-emerald-600 mb-1">{finalScore.grade}</div>
-                    <div className="text-sm text-gray-600">Nota Final (sobre 5.0)</div>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">⏱️ Tiempo total:</span>
-                    <span className="font-semibold">{formatTime(finalScore.time)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">📈 Puntaje total:</span>
-                    <span className="font-semibold">{finalScore.total.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">📊 Dificultad:</span>
-                    <span className="font-semibold capitalize">{currentChallenge.difficulty}</span>
-                  </div>
-                </div>
-              </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${(finalScore.simplification/2)*100}%` }}></div>
             </div>
-
-            {/* Mostrar respuesta correcta de simplificación */}
-            {!feedback.simplification?.correct && (
-              <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-                <h4 className="font-semibold text-blue-900 mb-2">📘 Respuesta Correcta:</h4>
-                <p className="text-blue-800 font-mono text-lg">{currentChallenge.simplified}</p>
+            {feedback.simplification?.progress && (
+              <div className="text-xs text-gray-600 mt-1">
+                Progreso: {feedback.simplification.progress === 'excellent' ? '🌟 Excelente' :
+                          feedback.simplification.progress === 'good' ? '👍 Bueno' :
+                          feedback.simplification.progress === 'fair' ? '📝 Regular' : '📚 Necesita estudio'}
               </div>
             )}
+          </div>
 
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded mb-6">
-              <h4 className="font-semibold text-yellow-900 mb-2">💡 Recomendaciones:</h4>
-              <ul className="space-y-1 text-sm text-yellow-800">
-                {finalScore.simplification < 100 && (
-                  <li>• Revisa las leyes de simplificación: {currentChallenge.laws.join(', ')}</li>
-                )}
-                {finalScore.truthTable < 100 && (
-                  <li>• Practica evaluando expresiones sistemáticamente para cada combinación</li>
-                )}
-                {finalScore.karnaugh < 100 && (
-                  <li>• Repasa el código Gray y la estructura de los mapas de Karnaugh</li>
-                )}
-                {finalScore.grade >= 4.0 && (
-                  <li>• ¡Excelente trabajo! Intenta ejercicios de mayor dificultad</li>
-                )}
-              </ul>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm">📊 Tabla de Verdad (1.5 pts)</span>
+              <span className="font-bold text-lg">{finalScore.truthTable.toFixed(1)}</span>
             </div>
-
-            <div className="flex justify-center space-x-4">
-              <button
-                onClick={() => startNewChallenge()}
-                className="px-8 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-lg hover:from-teal-700 hover:to-emerald-700 transition-all font-semibold shadow-lg"
-              >
-                🔄 Nuevo Desafío Aleatorio
-              </button>
-              <button
-                onClick={() => startNewChallenge(currentChallenge.difficulty)}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-lg"
-              >
-                🎲 Mismo Nivel
-              </button>
-              <button
-                onClick={() => setProfessorMode(true)}
-                className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-semibold shadow-lg"
-              >
-                👨‍🏫 Ejercicio Personalizado
-              </button>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-teal-600 h-2 rounded-full" style={{ width: `${(finalScore.truthTable/1.5)*100}%` }}></div>
+            </div>
+            <div className="text-xs text-gray-600 mt-1">
+              {finalScore.truthTableCorrect} de {finalScore.truthTableTotal} correctas
             </div>
           </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm">🗺️ Mapa de Karnaugh (1.5 pts)</span>
+              <span className="font-bold text-lg">{finalScore.karnaugh.toFixed(1)}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-green-600 h-2 rounded-full" style={{ width: `${(finalScore.karnaugh/1.5)*100}%` }}></div>
+            </div>
+            <div className="text-xs text-gray-600 mt-1">
+              {finalScore.karnaughCorrect} de {finalScore.karnaughTotal} correctas
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Columna 2: Resumen general */}
+      <div className="bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-lg">
+        <h3 className="font-semibold text-gray-700 mb-4">Resumen General</h3>
+        <div className="space-y-4">
+          <div className="text-center p-4 bg-white rounded-lg shadow">
+            <div className="text-4xl font-bold text-emerald-600 mb-1">{finalScore.grade}</div>
+            <div className="text-sm text-gray-600">Nota Final (sobre 5.0)</div>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">⏱️ Tiempo:</span>
+            <span className="font-semibold">{formatTime(finalScore.time)}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">📈 Puntaje:</span>
+            <span className="font-semibold">{finalScore.total.toFixed(1)} / 5.0</span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">📊 Dificultad:</span>
+            <span className="font-semibold capitalize">{currentChallenge.difficulty === 'easy' ? 'Fácil' :
+                     currentChallenge.difficulty === 'medium' ? 'Medio' :
+                     currentChallenge.difficulty === 'hard' ? 'Difícil' : 'Experto'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Fortalezas y Debilidades */}
+    {(finalScore.strengths?.length > 0 || finalScore.weaknesses?.length > 0) && (
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
+        {finalScore.strengths?.length > 0 && (
+          <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+            <h4 className="font-semibold text-green-900 mb-2 flex items-center">
+              <span className="text-xl mr-2">✅</span> Fortalezas
+            </h4>
+            <ul className="space-y-1 text-sm text-green-800">
+              {finalScore.strengths.map((strength, idx) => (
+                <li key={idx}>• {strength}</li>
+              ))}
+            </ul>
+          </div>
         )}
+
+        {finalScore.weaknesses?.length > 0 && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+            <h4 className="font-semibold text-red-900 mb-2 flex items-center">
+              <span className="text-xl mr-2">⚠️</span> Áreas de Mejora
+            </h4>
+            <ul className="space-y-2 text-sm text-red-800">
+              {finalScore.weaknesses.map((weakness, idx) => (
+                <li key={idx} className={weakness.priority === 'high' ? 'font-semibold' : ''}>
+                  • {weakness.area}: {weakness.details}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* Respuesta correcta de simplificación (solo si falló) */}
+    {!feedback.simplification?.correct && currentChallenge.source !== 'custom' && (
+      <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+        <h4 className="font-semibold text-blue-900 mb-2">📘 Respuesta Correcta de Simplificación:</h4>
+        <p className="text-blue-800 font-mono text-lg mb-2">{currentChallenge.simplified}</p>
+        {feedback.simplification?.hint && (
+          <p className="text-sm text-blue-700 mt-2">
+            <strong>Pista:</strong> {feedback.simplification.hint}
+          </p>
+        )}
+      </div>
+    )}
+
+    {/* Recomendaciones personalizadas */}
+    {finalScore.recommendations?.length > 0 && (
+      <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded mb-6">
+        <h4 className="font-semibold text-yellow-900 mb-3">💡 Recomendaciones Personalizadas:</h4>
+        <div className="space-y-3">
+          {finalScore.recommendations.map((rec, idx) => (
+            <div key={idx} className={`text-sm p-3 rounded ${
+              rec.type === 'success' ? 'bg-green-100 text-green-800' :
+              rec.type === 'good' ? 'bg-blue-100 text-blue-800' :
+              rec.type === 'improvement' ? 'bg-orange-100 text-orange-800' :
+              rec.type === 'study' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              <p className="font-medium mb-1">{rec.message}</p>
+              <p className="text-xs opacity-90">→ {rec.action}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Botones de acción */}
+    <div className="flex flex-wrap justify-center gap-4">
+      <button
+        onClick={() => startNewChallenge()}
+        className="px-8 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-lg hover:from-teal-700 hover:to-emerald-700 transition-all font-semibold shadow-lg"
+      >
+        🔄 Nuevo Desafío Aleatorio
+      </button>
+      <button
+        onClick={() => startNewChallenge(currentChallenge.difficulty)}
+        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-lg"
+      >
+        🎲 Mismo Nivel
+      </button>
+      {!currentChallenge.source === 'custom' && (
+        <button
+          onClick={() => setProfessorMode(true)}
+          className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-semibold shadow-lg"
+        >
+          👨‍🏫 Ejercicio Personalizado
+        </button>
+      )}
+    </div>
+  </div>
+)}
       </div>
     </div>
   )
