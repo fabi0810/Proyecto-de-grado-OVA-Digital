@@ -83,11 +83,11 @@ const TheoryExplainer = () => {
         'Educación básica'
       ],
       examples: [
-        { decimal: 0, decimal: '0', explanation: 'Cero' },
-        { decimal: 9, decimal: '9', explanation: 'Máximo dígito decimal' },
-        { decimal: 10, decimal: '10', explanation: '10¹ = 10' },
-        { decimal: 99, decimal: '99', explanation: '9×10¹ + 9×10⁰ = 90 + 9 = 99' },
-        { decimal: 100, decimal: '100', explanation: '10² = 100' }
+        { decimal: 0, value: '0', explanation: 'Cero' },
+        { decimal: 9, value: '9', explanation: 'Máximo dígito decimal' },
+        { decimal: 10, value: '10', explanation: '10¹ = 10' },
+        { decimal: 99, value: '99', explanation: '9×10¹ + 9×10⁰ = 90 + 9 = 99' },
+        { decimal: 100, value: '100', explanation: '10² = 100' }
       ],
       visualization: {
         title: 'Representación Visual del Sistema Decimal',
@@ -207,7 +207,7 @@ const TheoryExplainer = () => {
                     <td className="py-2 font-mono">
                       {activeSystem === 'binary' && `0b${example.binary}`}
                       {activeSystem === 'octal' && `0o${example.octal}`}
-                      {activeSystem === 'decimal' && example.decimal}
+                      {activeSystem === 'decimal' && example.value}
                       {activeSystem === 'hexadecimal' && `0x${example.hex}`}
                     </td>
                     <td className="py-2 text-gray-600">{example.explanation}</td>

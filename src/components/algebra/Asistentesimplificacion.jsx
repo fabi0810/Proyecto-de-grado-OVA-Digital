@@ -100,6 +100,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
       'demorgan': '🔄',
       'distributive': '📊',
       'consensus': '🤝',
+      'post_optimization': '✨',
       'double_negation': '↩️'
     }
     
@@ -151,23 +152,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
 
         {/* Opciones de Simplificación */}
         <div className="grid md:grid-cols-4 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Máximo de Pasos
-            </label>
-            <input
-              type="number"
-              value={simplificationOptions.maxSteps}
-              onChange={(e) => setSimplificationOptions({
-                ...simplificationOptions,
-                maxSteps: parseInt(e.target.value)
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              min="1"
-              max="100"
-            />
-          </div>
-
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Forma Objetivo
@@ -226,7 +211,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
       })}
       className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
     />
-    <span className="ml-2 text-sm text-gray-700">Método Formal (Quine-McCluskey)</span>
+    <span className="ml-2 text-sm text-gray-700">Método Formal libreria (Quine-McCluskey)</span>
   </label>
 </div>
 

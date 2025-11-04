@@ -230,45 +230,6 @@ function KarnaughMapper({ expression, parsedExpression, karnaughMap, onExpressio
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Mapa de Karnaugh</h2>
         <div className="flex items-center space-x-4">
-          <select
-            value={mapMode}
-            onChange={(e) => setMapMode(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          >
-            <option value="minTerms">Mintérminos (SOP)</option>
-            <option value="maxTerms">Maxtérminos (POS)</option>
-          </select>
-          
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={showGrouping}
-              onChange={(e) => setShowGrouping(e.target.checked)}
-              className="mr-2"
-            />
-            <span className="text-sm text-gray-700">Mostrar agrupaciones</span>
-          </label>
-
-        <label className="flex items-center">
-          <span className="mr-2 text-sm text-gray-700">Don't-care (índices, coma):</span>
-          <input
-            type="text"
-            value={dontCares}
-            onChange={(e) => setDontCares(e.target.value)}
-            placeholder="p.ej. 3,5,7"
-            className="px-2 py-1 border border-gray-300 rounded text-sm w-40 focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          />
-        </label>
-
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={showSteps}
-            onChange={(e) => setShowSteps(e.target.checked)}
-            className="mr-2"
-          />
-          <span className="text-sm text-gray-700">Modo Paso a Paso</span>
-        </label>
         </div>
       </div>
 
@@ -366,7 +327,6 @@ function KarnaughMapper({ expression, parsedExpression, karnaughMap, onExpressio
           </div>
         </div>
       )}
-
       {/* Expresión Simplificada */}
       {karnaughMap && karnaughMap.simplifiedExpression && (
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -376,6 +336,7 @@ function KarnaughMapper({ expression, parsedExpression, karnaughMap, onExpressio
           </div>
         </div>
       )}
+
 
       {/* Estadísticas del Mapa */}
       {karnaughMap && karnaughMap.complexity && (
