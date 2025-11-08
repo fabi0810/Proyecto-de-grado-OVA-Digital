@@ -10,7 +10,7 @@ const BoolenaExamModule = () => {
   const [score, setScore] = useState(0)
   const [generatingExam, setGeneratingExam] = useState(false)
 
-  // ⏱ TEMPORIZADOR
+  // Temporizador
   useEffect(() => {
     if (examState === 'active' && timeLeft > 0) {
       const timer = setTimeout(() => {
@@ -26,18 +26,13 @@ const BoolenaExamModule = () => {
     }
   }, [examState, timeLeft])
 
-  //  GENERAR EXAMEN
+  // Generar examen
   const generateExam = () => {
     setGeneratingExam(true)
 
     setTimeout(() => {
       try {
-        console.log('📝 Generando examen de evaluación...')
-        
         const examQuestions = algebraQuestionGenerator.generateAdaptiveQuiz('exam', 10)
-        
-        console.log(`✅ Examen generado: ${examQuestions.length} preguntas`)
-        
         setQuestions(examQuestions)
         setGeneratingExam(false)
         setExamState('active')
@@ -45,9 +40,7 @@ const BoolenaExamModule = () => {
         
       } catch (error) {
         console.error('Error generando examen:', error)
-        
-          //pregubasi        
-          const fallbackQuestions = generateFallbackExam(10)
+        const fallbackQuestions = generateFallbackExam(10)
         setQuestions(fallbackQuestions)
         setGeneratingExam(false)
         setExamState('active')
@@ -79,7 +72,7 @@ const BoolenaExamModule = () => {
     return questions
   }
 
-  // 🎮 FUNCIONES DE CONTROL
+  // Funciones de control
   const handleAnswerSelect = (questionId, answerIndex) => {
     setUserAnswers(prev => ({
       ...prev,
@@ -164,7 +157,7 @@ const BoolenaExamModule = () => {
     return 'Necesitas repasar la teoría. Revisa el módulo completo antes de intentar nuevamente.'
   }
 
-  // 🔄 PANTALLA DE CARGA
+  // Pantalla de carga
   if (generatingExam) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -284,7 +277,7 @@ const BoolenaExamModule = () => {
     )
   }
 
-  // 🎮 PANTALLA DE EXAMEN ACTIVO
+  // Pantalla de examen activo
   if (examState === 'active') {
     const currentQ = questions[currentQuestion]
     const userAnswer = userAnswers[currentQ?.id]
@@ -442,7 +435,7 @@ const BoolenaExamModule = () => {
     )
   }
 
-  // 📊 PANTALLA DE RESULTADOS
+  // Pantalla de resultados
   if (examState === 'results') {
     const percentage = (score / questions.length) * 100
 

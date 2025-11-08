@@ -1,4 +1,4 @@
-// ✅ DESAFÍOS CORREGIDOS - VERSIÓN COMPLETA
+// Desafíos de Álgebra Booleana
 import { useState, useEffect } from 'react'
 import { BooleanEvaluator } from '../../utils/BooleanEvaluator'
 import { karnaughMapper } from '../../utils/KarnaughMapper'
@@ -89,8 +89,8 @@ class BooleanChallengeGenerator {
 
   generateChallenge() {
     const challenge = this.challenges[Math.floor(Math.random() * this.challenges.length)]
-    const truthTable = this.generateTruthTable(challenge.expression, challenge.variables)
-    const karnaughMap = this.generateKarnaughMap(challenge.expression, challenge.variables)
+    const truthTable = this.generarTablaVerdad(challenge.expression, challenge.variables)
+    const karnaughMap = this.generarMapaKarnaugh(challenge.expression, challenge.variables)
     const simplificationResult = booleanSimplifier.simplify(challenge.expression, {
       maxSteps: 50,
       showAllSteps: true,
@@ -107,7 +107,7 @@ class BooleanChallengeGenerator {
     }
   }
 
-  generateTruthTable(expression, variables) {
+  generarTablaVerdad(expression, variables) {
     const rows = Math.pow(2, variables.length)
     const table = []
 
@@ -117,7 +117,7 @@ class BooleanChallengeGenerator {
         values[variable] = (i >> (variables.length - 1 - index)) & 1
       })
 
-      const result = BooleanEvaluator.evaluate(expression, values)
+      const result = BooleanEvaluator.evaluar(expression, values)
 
       table.push({
         ...values,
@@ -129,9 +129,9 @@ class BooleanChallengeGenerator {
     return table
   }
 
-  generateKarnaughMap(expression, variables) {
+  generarMapaKarnaugh(expression, variables) {
     try {
-      const map = karnaughMapper.generateMap(expression, variables, {
+      const map = karnaughMapper.generarMapa(expression, variables, {
         mode: 'minTerms',
         showGroups: false
       })
@@ -193,7 +193,7 @@ function BooleanChallengeModule() {
     }
 
     try {
-      const variables = BooleanEvaluator.extractVariables(customExpression)
+      const variables = BooleanEvaluator.extraerVariables(customExpression)
       
       if (variables.length < 2 || variables.length > 6) {
         alert('La expresión debe tener entre 2 y 6 variables')
@@ -207,8 +207,8 @@ function BooleanChallengeModule() {
         targetForm: 'SOP'
       })
 
-      const truthTable = generator.generateTruthTable(customExpression, variables)
-      const karnaughMap = generator.generateKarnaughMap(customExpression, variables)
+      const truthTable = generator.generarTablaVerdad(customExpression, variables)
+      const karnaughMap = generator.generarMapaKarnaugh(customExpression, variables)
 
       const customChallenge = {
         expression: customExpression,
@@ -279,7 +279,7 @@ const validateSimplificationWithHints = () => {
   }
 
   // Verificar equivalencia lógica
-  const validation = BooleanEvaluator.areEquivalent(userInput, currentChallenge.simplified)
+  const validation = BooleanEvaluator.sonEquivalentes(userInput, currentChallenge.simplified)
 
   // Si es correcto, dar puntaje completo
   if (validation.equivalent) {
@@ -335,7 +335,6 @@ const validateSimplificationWithHints = () => {
 
 // Función para analizar el progreso del estudiante
 const analyzeSimplificationProgress = (userExpr, originalExpr, steps, variables) => {
-  console.log('📊 Analizando progreso de simplificación...')
   
   // Simplificar la expresión del usuario para ver hasta dónde llegó
   const userSimplification = booleanSimplifier.simplify(userExpr, {
@@ -349,21 +348,15 @@ const analyzeSimplificationProgress = (userExpr, originalExpr, steps, variables)
   const optimalComplexity = countComplexity(steps[steps.length - 1].to)
   const originalComplexity = countComplexity(originalExpr)
 
-  console.log('Complejidades:', { user: userComplexity, optimal: optimalComplexity, original: originalComplexity })
-
   // Calcular reducción lograda
   const maxReduction = originalComplexity - optimalComplexity
   const userReduction = originalComplexity - userComplexity
   const reductionPercentage = maxReduction > 0 ? (userReduction / maxReduction) * 100 : 0
 
-  console.log('Reducción:', { max: maxReduction, user: userReduction, percentage: reductionPercentage })
-
   // Identificar en qué paso se quedó
   const userStepIndex = findClosestStep(userExpr, steps)
   const totalSteps = steps.length
   const progressPercentage = totalSteps > 0 ? ((userStepIndex + 1) / totalSteps) * 100 : 0
-
-  console.log('Progreso en pasos:', { userStep: userStepIndex, total: totalSteps, percentage: progressPercentage })
 
   // SISTEMA DE CALIFICACIÓN PROPORCIONAL
   let score = 0
@@ -689,7 +682,7 @@ const generateRecommendations = (weaknesses, grade) => {
                 </div>
               </div>
               
-              {/* ✅ NUEVO: Botón modo profesor */}
+              {/* Botón modo profesor */}
               <button
                 onClick={() => setProfessorMode(!professorMode)}
                 className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors font-semibold"
@@ -702,7 +695,7 @@ const generateRecommendations = (weaknesses, grade) => {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* ✅ NUEVO: Panel modo profesor */}
+        {/* Panel modo profesor */}
         {professorMode && (
           <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-6 mb-6">
             <h3 className="text-xl font-bold text-purple-900 mb-4">👨‍🏫 Crear Desafío Personalizado</h3>

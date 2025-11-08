@@ -18,7 +18,7 @@ function KarnaughMapper({ expression, parsedExpression, karnaughMap, onExpressio
           .filter(s => s !== '')
           .map(n => parseInt(n))
           .filter(n => !Number.isNaN(n))
-        const map = karnaughMapper.generateMap(expression, parsedExpression.variables, {
+        const map = karnaughMapper.generarMapa(expression, parsedExpression.variables, {
           mode: mapMode,
           showGroups: showGrouping,
           dontCares: dc,

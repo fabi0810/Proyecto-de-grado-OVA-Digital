@@ -44,7 +44,6 @@ function BooleanExpressionEditor({ expression, onExpressionChange, parsedExpress
       e.preventDefault()
       if (parsedExpression && parsedExpression.success) {
         // Expresión válida, procesar
-        console.log('Expresión válida procesada')
       }
     }
   }
@@ -83,7 +82,7 @@ function BooleanExpressionEditor({ expression, onExpressionChange, parsedExpress
 
   const handleEvaluate = () => {
     if (parsedExpression && parsedExpression.success) {
-      console.log('Evaluación correcta')
+      // Evaluación correcta
     } else {
       const suggestions = booleanParser.getSuggestions(inputValue)
       setSuggestions(suggestions)

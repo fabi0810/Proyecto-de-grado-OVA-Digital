@@ -122,7 +122,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
 
   return (
     <div className="space-y-6">
-      {/* Panel de Control */}
+      {/* Panel de control */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Asistente de Simplificación</h2>
         
@@ -400,7 +400,7 @@ function SimplificationWizard({ expression, parsedExpression, simplificationResu
                   
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      ✅ Después:
+                      Después:
                     </label>
                     <div className="p-4 bg-white rounded-lg border-2 border-green-400 font-mono text-lg text-green-800 font-bold">
                       {simplificationResult.steps[currentStep].to}
