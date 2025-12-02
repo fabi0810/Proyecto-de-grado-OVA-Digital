@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
 
-const QuizSystem = () => {
+const Examen = () => {
   // Estados principales (mismo patrón que EvaluacionModulo)
   const [examState, setExamState] = useState('intro') // 'intro', 'active', 'results'
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [userAnswers, setUserAnswers] = useState({})
   const [questions, setQuestions] = useState([])
-  const [timeLeft, setTimeLeft] = useState(600) // 10 minutos
+  const [timeLeft, setTimeLeft] = useState(600) 
   const [score, setScore] = useState(0)
   const [generatingQuestions, setGeneratingQuestions] = useState(false)
 
-  // Banco de preguntas (mantenido sin cambios)
+  // Banco de preguntas 
   const questionBank = {
     conversion: {
       easy: [
@@ -185,13 +185,13 @@ const QuizSystem = () => {
     }
   }
 
-  // ⏱️ TEMPORIZADOR (igual que EvaluacionModulo)
+  // TEMPORIZADOR 
   useEffect(() => {
     if (examState === 'active' && timeLeft > 0) {
       const timer = setTimeout(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            finishExam()
+            finalizarExamen()
             return 0
           }
           return prev - 1
@@ -201,8 +201,8 @@ const QuizSystem = () => {
     }
   }, [examState, timeLeft])
 
-  // 🎯 GENERAR EXAMEN (adaptado del código original)
-  const generateExam = () => {
+  // GENERAR EXAMEN (adaptado del código original)
+  const generarExamen = () => {
     setGeneratingQuestions(true)
     
     setTimeout(() => {
@@ -236,7 +236,7 @@ const QuizSystem = () => {
         }
         
         usedQuestions.add(questionKey)
-        const generatedQuestion = createQuestionFromTemplate(questionTemplate, category, difficulty, questions.length + 1)
+  const generatedQuestion = crearPreguntaDesdeTemplate(questionTemplate, category, difficulty, questions.length + 1)
         
         if (generatedQuestion) {
           questions.push(generatedQuestion)
@@ -248,11 +248,11 @@ const QuizSystem = () => {
       // Rellenar con preguntas fallback si es necesario
       while (questions.length < count) {
         const missingIndex = questions.length
-        const fallbackQuestion = createFallbackQuestion(missingIndex + 1)
+  const fallbackQuestion = crearPreguntaFallback(missingIndex + 1)
         questions.push(fallbackQuestion)
       }
       
-      console.log(`✅ Examen generado: ${questions.length} preguntas`)
+  console.log(`Examen generado: ${questions.length} preguntas`)
       
       setQuestions(questions.slice(0, count))
       setGeneratingQuestions(false)
@@ -261,8 +261,8 @@ const QuizSystem = () => {
     }, 1500)
   }
 
-  // 🏭 CREAR PREGUNTA DESDE TEMPLATE (mantenido sin cambios)
-  const createQuestionFromTemplate = (template, category, difficulty, id) => {
+  // CREAR PREGUNTA DESDE TEMPLATE (mantenido sin cambios)
+  const crearPreguntaDesdeTemplate = (template, category, difficulty, id) => {
     let questionData
     
     if (template.question.includes('{number}')) {
@@ -335,7 +335,7 @@ const QuizSystem = () => {
     }
   }
 
-  const createFallbackQuestion = (id) => {
+  const crearPreguntaFallback = (id) => {
     const num = Math.floor(Math.random() * 30) + 10
     
     return {
@@ -361,30 +361,30 @@ const QuizSystem = () => {
     }
   }
 
-  // 🎮 FUNCIONES DE CONTROL
-  const handleAnswerSelect = (questionId, answerIndex) => {
+  // FUNCIONES DE CONTROL
+  const manejarSeleccionRespuesta = (questionId, answerIndex) => {
     setUserAnswers(prev => ({
       ...prev,
       [questionId]: answerIndex
     }))
   }
 
-  const nextQuestion = () => {
+  const siguientePregunta = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1)
     }
   }
 
-  const previousQuestion = () => {
+  const anteriorPregunta = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(prev => prev - 1)
     }
   }
 
-  const finishExam = () => {
+  const finalizarExamen = () => {
     const answeredCount = Object.keys(userAnswers).length
     if (answeredCount < questions.length) {
-      alert(`⚠️ Debes responder todas las preguntas antes de finalizar. Te faltan ${questions.length - answeredCount} pregunta(s).`)
+      alert(`Debes responder todas las preguntas antes de finalizar. Te faltan ${questions.length - answeredCount} pregunta(s).`)
       return // No permite finalizar
     }
     let correctAnswers = 0
@@ -398,7 +398,7 @@ const QuizSystem = () => {
     setExamState('results')
   }
 
-  const resetExam = () => {
+  const reiniciarExamen = () => {
     setExamState('intro')
     setCurrentQuestion(0)
     setUserAnswers({})
@@ -407,20 +407,20 @@ const QuizSystem = () => {
     setTimeLeft(600)
   }
 
-  const formatTime = (seconds) => {
+  const formatearTiempo = (seconds) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  const getScoreColor = (score, total) => {
+  const obtenerColorPuntaje = (score, total) => {
     const percentage = (score / total) * 100
     if (percentage >= 80) return 'text-green-600'
     if (percentage >= 60) return 'text-yellow-600'
     return 'text-red-600'
   }
 
-  const getScoreMessage = (score, total) => {
+  const obtenerMensajePuntaje = (score, total) => {
     const percentage = (score / total) * 100
     if (percentage >= 90) return '¡Excelente! Dominas perfectamente los sistemas numéricos.'
     if (percentage >= 80) return '¡Muy bien! Tienes un buen dominio del tema.'
@@ -435,7 +435,7 @@ const QuizSystem = () => {
         <div className="relative">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600"></div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-2xl">🧠</span>
+            <span className="text-2xl"></span>
           </div>
         </div>
         <h3 className="text-lg font-semibold text-gray-700 mt-4 mb-2">Generando Examen</h3>
@@ -451,9 +451,7 @@ const QuizSystem = () => {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            📝 Evaluación del Módulo
-          </h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">Evaluación del Módulo</h1>
           <p className="text-lg text-gray-600">
             Sistemas Numéricos y Conversión de Bases
           </p>
@@ -461,7 +459,7 @@ const QuizSystem = () => {
 
         <div className="bg-white border-2 border-blue-200 rounded-lg p-8 shadow-lg mb-6">
           <div className="flex items-start space-x-4 mb-6">
-            <div className="text-4xl">📚</div>
+            <div className="text-4xl"></div>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900 mb-3">Sobre este Examen</h2>
               <p className="text-gray-700 mb-4">
@@ -476,7 +474,7 @@ const QuizSystem = () => {
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-blue-900 mb-3">📋 Características del Examen</h3>
+            <h3 className="font-semibold text-blue-900 mb-3">Características del Examen</h3>
             <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
               <div className="flex items-start">
                 <span className="text-blue-600 mr-2">✓</span>
@@ -506,7 +504,7 @@ const QuizSystem = () => {
           </div>
 
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Recomendaciones</h3>
+            <h3 className="font-semibold text-yellow-900 mb-2">Recomendaciones</h3>
             <ul className="text-sm text-yellow-800 space-y-1">
               <li>• Asegúrate de tener una conexión estable a internet</li>
               <li>• Busca un lugar tranquilo sin distracciones</li>
@@ -517,30 +515,28 @@ const QuizSystem = () => {
           </div>
 
           <button
-            onClick={generateExam}
+            onClick={generarExamen}
             className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold text-lg shadow-md"
           >
-            🚀 Comenzar Examen
+            Comenzar Examen
           </button>
         </div>
-
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-          <h3 className="font-semibold text-gray-900 mb-3">📖 Temas Evaluados</h3>
           <div className="grid md:grid-cols-2 gap-3 text-sm">
             <div className="flex items-center space-x-2">
-              <span className="text-blue-600">🔄</span>
+              <span className="text-blue-600"></span>
               <span className="text-gray-700">Conversión entre bases (binario, octal, decimal, hexadecimal)</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-purple-600">📚</span>
+              <span className="text-purple-600"></span>
               <span className="text-gray-700">Teoría de sistemas numéricos</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-green-600">💡</span>
+              <span className="text-green-600"></span>
               <span className="text-gray-700">Aplicaciones prácticas en computación</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-orange-600">🧮</span>
+              <span className="text-orange-600"></span>
               <span className="text-gray-700">Operaciones aritméticas en diferentes bases</span>
             </div>
           </div>
@@ -578,8 +574,7 @@ const QuizSystem = () => {
             <div className={`flex items-center space-x-3 px-4 py-2 rounded-lg ${
               timeLeft < 300 ? 'bg-red-100 text-red-800 border-2 border-red-300' : 'bg-blue-100 text-blue-800'
             }`}>
-              <span className="text-2xl">{timeLeft < 300 ? '⏰' : '⏱️'}</span>
-              <span className="font-mono text-xl font-bold">{formatTime(timeLeft)}</span>
+              <span className="font-mono text-xl font-bold">{formatearTiempo(timeLeft)}</span>
             </div>
           </div>
 
@@ -630,7 +625,7 @@ const QuizSystem = () => {
             {currentQ?.options.map((option, index) => (
               <button
                 key={index}
-                onClick={() => handleAnswerSelect(currentQ.id, index)}
+                onClick={() => manejarSeleccionRespuesta(currentQ.id, index)}
                 className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                   userAnswer === index
                     ? 'border-blue-500 bg-blue-50 shadow-md'
@@ -667,7 +662,7 @@ const QuizSystem = () => {
         {/* Navegación */}
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={previousQuestion}
+            onClick={anteriorPregunta}
             disabled={currentQuestion === 0}
             className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
           >
@@ -693,11 +688,11 @@ const QuizSystem = () => {
           </div>
 
           <button
-            onClick={currentQuestion === questions.length - 1 ? finishExam : nextQuestion}
+            onClick={currentQuestion === questions.length - 1 ? finalizarExamen : siguientePregunta}
             disabled={userAnswer === undefined && currentQuestion === questions.length - 1}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
           >
-            {currentQuestion === questions.length - 1 ? '✓ Finalizar' : 'Siguiente →'}
+            {currentQuestion === questions.length - 1 ? 'Finalizar' : 'Siguiente'}
           </button>
         </div>
 
@@ -729,24 +724,22 @@ const QuizSystem = () => {
         {/* Resumen */}
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-lg p-8 mb-6 shadow-lg">
           <div className="text-center">
-            <div className="text-7xl mb-4">
-              {percentage >= 90 ? '🏆' : percentage >= 70 ? '🎉' : percentage >= 50 ? '👍' : '📚'}
-            </div>
-            <div className={`text-5xl font-bold mb-2 ${getScoreColor(score, questions.length)}`}>
+            <div className="text-7xl mb-4"></div>
+            <div className={`text-5xl font-bold mb-2 ${obtenerColorPuntaje(score, questions.length)}`}>
               {score}/{questions.length}
             </div>
             <div className="text-2xl text-gray-600 mb-4">
               {percentage.toFixed(1)}% de aciertos
             </div>
             <p className="text-lg text-gray-700 mb-6 max-w-2xl mx-auto">
-              {getScoreMessage(score, questions.length)}
+              {obtenerMensajePuntaje(score, questions.length)}
             </p>
             
             <button
-              onClick={resetExam}
+              onClick={reiniciarExamen}
               className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg shadow-md"
             >
-              🔄 Realizar Nuevo Examen
+              Realizar Nuevo Examen
             </button>
           </div>
         </div>
@@ -818,7 +811,7 @@ const QuizSystem = () => {
                   </div>
 
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="font-semibold text-blue-800 mb-2">💡 Explicación:</div>
+                    <div className="font-semibold text-blue-800 mb-2">Explicación:</div>
                     <div className="text-blue-700">{question.explanation}</div>
                   </div>
                 </div>
@@ -829,7 +822,7 @@ const QuizSystem = () => {
 
         <div className="text-center">
           <button
-            onClick={resetExam}
+            onClick={reiniciarExamen}
             className="px-8 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
           >
             ← Volver al Inicio
@@ -842,4 +835,4 @@ const QuizSystem = () => {
   return null
 }
 
-export default QuizSystem
+export default Examen

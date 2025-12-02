@@ -20,7 +20,6 @@ function BooleanAlgebra() {
   const [karnaughMap, setKarnaughMap] = useState(null)
   const [userProgress, setUserProgress] = useState({})
 
-  // Cargar progreso del usuario
   useEffect(() => {
     const savedProgress = localStorage.getItem('booleanAlgebraProgress')
     if (savedProgress) {
@@ -50,7 +49,7 @@ function BooleanAlgebra() {
         
         // Generar mapa de Karnaugh
         try {
-          const map = karnaughMapper.generateMap(newExpression, parseResult.variables)
+          const map = karnaughMapper.generarMapa(newExpression, parseResult.variables)
           setKarnaughMap(map)
         } catch (error) {
           console.error('Error generando mapa de Karnaugh:', error)
@@ -117,21 +116,7 @@ function BooleanAlgebra() {
           Tablas de Verdad, Simplificación y Mapas de Karnaugh
         </p>
         
-        {/* Barra de progreso debajo del header */}
-        <div className="mt-4 max-w-md mx-auto">
-          <div className="text-sm text-gray-500 mb-2">Progreso General</div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ 
-                width: `${Math.min(100, ((userProgress.expressionsTried || 0) + (userProgress.exercisesCompleted || 0)) * 5)}%` 
-              }}
-            ></div>
-          </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {Math.min(100, ((userProgress.expressionsTried || 0) + (userProgress.exercisesCompleted || 0)) * 5)}% completado
-          </div>
-        </div>
+       
       </div>
   
       {/* Tabs */}

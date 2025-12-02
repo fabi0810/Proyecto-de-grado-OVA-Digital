@@ -14,7 +14,7 @@ class QuineMcCluskeyMinimizer {
      * @param {number} numVars - Número de variables
      * @returns {string[]} Array de implicantes primos en formato binario
      */
-    minimize(minterms, dontCares = [], numVars) {
+    minimizar(minterms, dontCares = [], numVars) {
       if (minterms.length === 0) {
         return []
       }
@@ -24,25 +24,25 @@ class QuineMcCluskeyMinimizer {
       
       // Convertir a representación binaria
       const binaryTerms = allTerms.map(term => ({
-        binary: this.decimalToBinary(term, numVars),
+        binary: this.decimalABinario(term, numVars),
         decimal: term,
         used: false
       }))
-  
+      
       // Agrupar por número de 1s
-      const groups = this.groupByOnes(binaryTerms)
+      const groups = this.agruparPorUnos(binaryTerms)
       
       // Encontrar implicantes primos
-      this.primeImplicants = this.findPrimeImplicants(groups, numVars)
+      this.primeImplicants = this.encontrarImplicantesPrimos(groups, numVars)
       
       // Encontrar implicantes primos esenciales
-      this.essentialPrimeImplicants = this.findEssentialPrimeImplicants(
+      this.essentialPrimeImplicants = this.encontrarImplicantesPrimosEsenciales(
         this.primeImplicants,
         minterms
       )
       
       // Resolver cobertura mínima
-      const coverage = this.minimumCoverage(
+      const coverage = this.coberturaMinima(
         this.primeImplicants,
         this.essentialPrimeImplicants,
         minterms
@@ -54,25 +54,25 @@ class QuineMcCluskeyMinimizer {
     /**
      * Convierte decimal a binario con padding
      */
-    decimalToBinary(num, bits) {
+    decimalABinario(num, bits) {
       return num.toString(2).padStart(bits, '0')
     }
   
     /**
      * Cuenta el número de 1s en un string binario
      */
-    countOnes(binary) {
+    contarUnos(binary) {
       return (binary.match(/1/g) || []).length
     }
   
     /**
      * Agrupa términos por número de 1s
      */
-    groupByOnes(terms) {
+    agruparPorUnos(terms) {
       const groups = {}
       
       terms.forEach(term => {
-        const ones = this.countOnes(term.binary)
+        const ones = this.contarUnos(term.binary)
         if (!groups[ones]) {
           groups[ones] = []
         }
@@ -85,7 +85,7 @@ class QuineMcCluskeyMinimizer {
     /**
      * Verifica si dos términos difieren en exactamente un bit
      */
-    canCombine(term1, term2) {
+    puedenCombinarse(term1, term2) {
       let differences = 0
       let diffPosition = -1
       
@@ -102,7 +102,7 @@ class QuineMcCluskeyMinimizer {
     /**
      * Combina dos términos
      */
-    combine(term1, term2, position) {
+    combinar(term1, term2, position) {
       const result = term1.split('')
       result[position] = '-'
       return result.join('')
@@ -111,7 +111,7 @@ class QuineMcCluskeyMinimizer {
     /**
      * Encuentra todos los implicantes primos
      */
-    findPrimeImplicants(initialGroups, numVars) {
+    encontrarImplicantesPrimos(initialGroups, numVars) {
       let currentGroups = initialGroups
       let allImplicants = []
       
@@ -134,11 +134,11 @@ class QuineMcCluskeyMinimizer {
           
           for (const term1 of group1) {
             for (const term2 of group2) {
-              const position = this.canCombine(term1.binary, term2.binary)
+              const position = this.puedenCombinarse(term1.binary, term2.binary)
               
               if (position !== -1) {
-                const combined = this.combine(term1.binary, term2.binary, position)
-                const newOnes = this.countOnes(combined)
+                const combined = this.combinar(term1.binary, term2.binary, position)
+                const newOnes = this.contarUnos(combined)
                 
                 if (!nextGroups[newOnes]) {
                   nextGroups[newOnes] = []
@@ -183,7 +183,7 @@ class QuineMcCluskeyMinimizer {
     /**
      * Encuentra implicantes primos esenciales
      */
-    findEssentialPrimeImplicants(primeImplicants, minterms) {
+    encontrarImplicantesPrimosEsenciales(primeImplicants, minterms) {
       const essential = []
       const coverage = new Map()
       
@@ -216,7 +216,7 @@ class QuineMcCluskeyMinimizer {
     /**
      * Encuentra cobertura mínima
      */
-    minimumCoverage(primeImplicants, essentialImplicants, minterms) {
+    coberturaMinima(primeImplicants, essentialImplicants, minterms) {
       const covered = new Set()
       const result = [...essentialImplicants]
       

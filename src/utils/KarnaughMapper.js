@@ -24,7 +24,7 @@ export class KarnaughMapper {
   /**
    * Genera un mapa de Karnaugh para una expresión booleana
    */
-  generateMap(expression, variables, options = {}) {
+  generarMapa(expression, variables, options = {}) {
     const {
       mode = 'minTerms', // minTerms o maxTerms
       showGroups = true,
@@ -38,20 +38,20 @@ export class KarnaughMapper {
     }
 
     // Generar tabla de verdad
-    const truthTable = this.generateTruthTable(expression, variables, dontCares)
+    const truthTable = this.generarTablaVerdad(expression, variables, dontCares)
     
     // Crear estructura del mapa
-    const map = this.createMapStructure(variables)
+    const map = this.crearEstructuraMapa(variables)
     
     // Llenar el mapa con valores
-    this.fillMap(map, truthTable, variables)
+    this.llenarMapa(map, truthTable, variables)
     
     // Encontrar grupos óptimos
     const steps = enableSteps ? [] : null
-    const groups = this.findOptimalGroups(map, variables, mode, steps)
+    const groups = this.encontrarGruposOptimos(map, variables, mode, steps)
     
     // Generar expresión simplificada
-    const simplifiedExpression = this.generateSimplifiedExpression(groups, variables, mode)
+    const simplifiedExpression = this.generarExpresionSimplificada(groups, variables, mode)
     
     return {
       map: map,
@@ -60,7 +60,7 @@ export class KarnaughMapper {
       variables: variables,
       mode: mode,
       truthTable: truthTable,
-      complexity: this.calculateMapComplexity(map, groups),
+      complexity: this.calcularComplejidadMapa(map, groups),
       steps: steps || []
     }
   }
@@ -68,9 +68,9 @@ export class KarnaughMapper {
   /**
    * Genera tabla de verdad para la expresión
    */
-  generateTruthTable(expression, variables, dontCares = []) {
+  generarTablaVerdad(expression, variables, dontCares = []) {
     const parse = booleanParser.parse(expression)
-    const combinations = this.generateAllCombinations(variables)
+    const combinations = this.generarTodasCombinaciones(variables)
     const truthTable = []
     
     for (let idx = 0; idx < combinations.length; idx++) {
@@ -88,8 +88,8 @@ export class KarnaughMapper {
         index: idx,
         result: result,
         dontCare: isDC,
-        minTerm: this.getMinTerm(combination, variables),
-        maxTerm: this.getMaxTerm(combination, variables)
+      minTerm: this.obtenerMinTermino(combination, variables),
+      maxTerm: this.obtenerMaxTermino(combination, variables)
       })
     }
     
@@ -99,19 +99,19 @@ export class KarnaughMapper {
   /**
    * Crea la estructura del mapa según el número de variables
    */
-  createMapStructure(variables) {
+  crearEstructuraMapa(variables) {
     const numVars = variables.length
     
     if (numVars === 2) {
-      return this.create2VarMap(variables)
+      return this.crearMapa2Variables(variables)
     } else if (numVars === 3) {
-      return this.create3VarMap(variables)
+      return this.crearMapa3Variables(variables)
     } else if (numVars === 4) {
-      return this.create4VarMap(variables)
+      return this.crearMapa4Variables(variables)
     } else if (numVars === 5) {
-      return this.create5VarMap(variables)
+      return this.crearMapa5Variables(variables)
     } else if (numVars === 6) {
-      return this.create6VarMap(variables)
+      return this.crearMapa6Variables(variables)
     }
     
     throw new Error('Número de variables no soportado')
@@ -120,7 +120,7 @@ export class KarnaughMapper {
   /**
    * Crea mapa para 2 variables
    */
-  create2VarMap(variables) {
+  crearMapa2Variables(variables) {
     const [var1, var2] = variables
     
     return {
@@ -143,13 +143,10 @@ export class KarnaughMapper {
   /**
    * Crea mapa para 3 variables
    */
- /**
- * ✅ CORREGIDO: Mapa de 3 variables con código Gray correcto
- */
-/**
- * ✅ CORREGIDO: Mapa de 3 variables con código Gray correcto
- */
-create3VarMap(variables) {
+  /**
+   * Crea mapa para 3 variables con código Gray
+   */
+  crearMapa3Variables(variables) {
   const [var1, var2, var3] = variables
   
   // Código Gray para columnas: 0, 1
@@ -178,13 +175,10 @@ create3VarMap(variables) {
   /**
    * Crea mapa para 4 variables
    */
- /**
- * ✅ CORREGIDO: Mapa de 4 variables con código Gray
- */
-/**
- * ✅ CORREGIDO: Mapa de 4 variables con código Gray
- */
-create4VarMap(variables) {
+  /**
+   * Crea mapa para 4 variables con código Gray
+   */
+  crearMapa4Variables(variables) {
   const [var1, var2, var3, var4] = variables
   
   // Código Gray para filas: 00, 01, 11, 10
@@ -216,14 +210,14 @@ create4VarMap(variables) {
   /**
    * Crea mapa para 5 variables
    */
-  create5VarMap(variables) {
+  crearMapa5Variables(variables) {
     // Mapa de 5 variables se divide en dos mapas de 4 variables
     const [var1, var2, var3, var4, var5] = variables
     
     return {
       type: '5var',
-      leftMap: this.create4VarMap([var1, var2, var3, var4]),
-      rightMap: this.create4VarMap([var1, var2, var3, var4]),
+      leftMap: this.crearMapa4Variables([var1, var2, var3, var4]),
+      rightMap: this.crearMapa4Variables([var1, var2, var3, var4]),
       splitVariable: var5,
       splitValue: 0 // var5' en el mapa izquierdo
     }
@@ -232,7 +226,7 @@ create4VarMap(variables) {
   /**
    * Crea mapa para 6 variables
    */
-  create6VarMap(variables) {
+  crearMapa6Variables(variables) {
     // Mapa de 6 variables se divide en cuatro mapas de 4 variables
     const [var1, var2, var3, var4, var5, var6] = variables
     
@@ -241,19 +235,19 @@ create4VarMap(variables) {
       maps: [
         {
           label: `${var5}'${var6}'`,
-          map: this.create4VarMap([var1, var2, var3, var4])
+          map: this.crearMapa4Variables([var1, var2, var3, var4])
         },
         {
           label: `${var5}'${var6}`,
-          map: this.create4VarMap([var1, var2, var3, var4])
+          map: this.crearMapa4Variables([var1, var2, var3, var4])
         },
         {
           label: `${var5}${var6}`,
-          map: this.create4VarMap([var1, var2, var3, var4])
+          map: this.crearMapa4Variables([var1, var2, var3, var4])
         },
         {
           label: `${var5}${var6}'`,
-          map: this.create4VarMap([var1, var2, var3, var4])
+          map: this.crearMapa4Variables([var1, var2, var3, var4])
         }
       ]
     }
@@ -262,22 +256,22 @@ create4VarMap(variables) {
   /**
    * Llena el mapa con valores de la tabla de verdad
    */
-  fillMap(map, truthTable, variables) {
+  llenarMapa(map, truthTable, variables) {
     const numVars = variables.length
     
     if (numVars <= 4) {
-      this.fillSingleMap(map, truthTable, variables)
+      this.llenarMapaSimple(map, truthTable, variables)
     } else if (numVars === 5) {
-      this.fill5VarMap(map, truthTable, variables)
+      this.llenarMapa5Variables(map, truthTable, variables)
     } else if (numVars === 6) {
-      this.fill6VarMap(map, truthTable, variables)
+      this.llenarMapa6Variables(map, truthTable, variables)
     }
   }
 
   /**
    * Llena un mapa simple (2-4 variables)
    */
-  fillSingleMap(map, truthTable, variables) {
+  llenarMapaSimple(map, truthTable, variables) {
     for (let row = 0; row < map.cells.length; row++) {
       for (let col = 0; col < map.cells[row].length; col++) {
         const cellIndex = map.cells[row][col]
@@ -296,22 +290,22 @@ create4VarMap(variables) {
   /**
    * Llena mapa de 5 variables
    */
-  fill5VarMap(map, truthTable, variables) {
+  llenarMapa5Variables(map, truthTable, variables) {
     const [var1, var2, var3, var4, var5] = variables
     
     // Llenar mapa izquierdo (var5 = 0)
     const leftTruthTable = truthTable.filter(row => !row[var5])
-    this.fillSingleMap(map.leftMap, leftTruthTable, [var1, var2, var3, var4])
+    this.llenarMapaSimple(map.leftMap, leftTruthTable, [var1, var2, var3, var4])
     
     // Llenar mapa derecho (var5 = 1)
     const rightTruthTable = truthTable.filter(row => row[var5])
-    this.fillSingleMap(map.rightMap, rightTruthTable, [var1, var2, var3, var4])
+    this.llenarMapaSimple(map.rightMap, rightTruthTable, [var1, var2, var3, var4])
   }
 
   /**
    * Llena mapa de 6 variables
    */
-  fill6VarMap(map, truthTable, variables) {
+  llenarMapa6Variables(map, truthTable, variables) {
     const [var1, var2, var3, var4, var5, var6] = variables
     
     // Llenar cada submapa
@@ -323,34 +317,31 @@ create4VarMap(variables) {
         row[var5] === var5Value && row[var6] === var6Value
       )
       
-      this.fillSingleMap(submap.map, filteredTable, [var1, var2, var3, var4])
+      this.llenarMapaSimple(submap.map, filteredTable, [var1, var2, var3, var4])
     })
   }
 
   /**
    * Encuentra grupos óptimos en el mapa
    */
-  findOptimalGroups(map, variables, mode, steps = null) {
+  encontrarGruposOptimos(map, variables, mode, steps = null) {
     const numVars = variables.length
     
     if (numVars <= 4) {
-      return this.findGroupsInSingleMap(map, variables, mode, steps)
+      return this.encontrarGruposEnMapaSimple(map, variables, mode, steps)
     } else if (numVars === 5) {
-      return this.findGroupsIn5VarMap(map, variables, mode)
+      return this.encontrarGruposEnMapa5Variables(map, variables, mode)
     } else if (numVars === 6) {
-      return this.findGroupsIn6VarMap(map, variables, mode)
+      return this.encontrarGruposEnMapa6Variables(map, variables, mode)
     }
     
     return []
   }
 
   /**
-   * Encuentra grupos en mapa simple
+   * Encuentra grupos en mapa simple usando algoritmo greedy
    */
-  /**
- * ✅ MEJORADO: Encuentra grupos en mapa simple usando algoritmo greedy
- */
-findGroupsInSingleMap(map, variables, mode, steps = null) {
+  encontrarGruposEnMapaSimple(map, variables, mode, steps = null) {
   const targetValue = mode === 'minTerms' ? 1 : 0
   const rows = map.cells.length
   const cols = map.cells[0].length
@@ -390,7 +381,7 @@ findGroupsInSingleMap(map, variables, mode, steps = null) {
   for (const { h, w } of possibleSizes) {
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const rectCells = this.collectRectWrapping(map, r, c, h, w)
+        const rectCells = this.recolectarRectanguloEnvolvente(map, r, c, h, w)
         
         if (rectCells.length !== h * w) continue
         
@@ -415,7 +406,7 @@ findGroupsInSingleMap(map, variables, mode, steps = null) {
         if (allCandidates.some(c => c.signature === signature)) continue
         
         // Generar expresión
-        const expr = this.generateGroupExpression(rectCells, variables, mode)
+        const expr = this.generarExpresionGrupo(rectCells, variables, mode)
         
         allCandidates.push({
           cells: rectCells,
@@ -530,18 +521,32 @@ findGroupsInSingleMap(map, variables, mode, steps = null) {
 }
 
   /**
-   * Encuentra un grupo de tamaño específico en una posición
+   * Encuentra grupos en mapa de 5 variables
    */
-  findGroupAt(map, startRow, startCol, size, targetValue, variables) {
-    // Deprecated by collectRect-based approach, keep for API compatibility
-    const group = { cells: [], expression: '', size, type: size===1?'single':'group' }
-    return null
+  encontrarGruposEnMapa5Variables(map, variables, mode) {
+    // Los mapas de 5 variables se dividen en dos mapas de 4 variables
+    const leftGroups = this.encontrarGruposEnMapaSimple(map.leftMap, variables.slice(0, 4), mode)
+    const rightGroups = this.encontrarGruposEnMapaSimple(map.rightMap, variables.slice(0, 4), mode)
+    return [...leftGroups, ...rightGroups]
   }
 
- /**
- * ✅ MEJORADO: Recolecta celdas de un rectángulo con wrap-around (envolvente)
- */
-collectRectWrapping(map, startRow, startCol, height, width) {
+  /**
+   * Encuentra grupos en mapa de 6 variables
+   */
+  encontrarGruposEnMapa6Variables(map, variables, mode) {
+    // Los mapas de 6 variables se dividen en cuatro mapas de 4 variables
+    const allGroups = []
+    map.maps.forEach(submap => {
+      const groups = this.encontrarGruposEnMapaSimple(submap.map, variables.slice(0, 4), mode)
+      allGroups.push(...groups)
+    })
+    return allGroups
+  }
+
+  /**
+   * Recolecta celdas de un rectángulo con wrap-around (envolvente)
+   */
+  recolectarRectanguloEnvolvente(map, startRow, startCol, height, width) {
   const rows = map.cells.length
   const cols = map.cells[0].length
   const cells = []
@@ -567,17 +572,14 @@ collectRectWrapping(map, startRow, startCol, height, width) {
   /**
    * Genera expresión para un grupo
    */
-  /**
- * ✅ CORREGIDO: Genera expresión para un grupo
- */
-generateGroupExpression(cells, variables, mode = 'minTerms') {
+  generarExpresionGrupo(cells, variables, mode = 'minTerms') {
   if (!cells || cells.length === 0) return ''
   
   const indices = cells.map(({ cell }) => cell.index)
   console.log('🔢 Generando expresión para grupo:', indices)
   
   // Obtener asignaciones binarias por índice
-  const assignments = indices.map(idx => this.assignmentFromIndex(idx, variables.length))
+      const assignments = indices.map(idx => this.asignacionDesdeIndice(idx, variables.length))
   console.log('  Asignaciones binarias:', assignments)
   
   // Determinar qué variables son constantes en todo el grupo
@@ -613,7 +615,7 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
     return literals.join('+')
   }
 }
-  assignmentFromIndex(index, numVars) {
+  asignacionDesdeIndice(index, numVars) {
     const bits = []
     for (let i = numVars - 1; i >= 0; i--) {
       bits.push((index >> i) & 1)
@@ -621,26 +623,11 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
     return bits
   }
 
-  /**
-   * Verifica si una celda ha sido visitada
-   */
-  isCellVisited(visited, row, col) {
-    return visited.has(`${row},${col}`)
-  }
-
-  /**
-   * Marca celdas como visitadas
-   */
-  markCellsAsVisited(visited, cells) {
-    cells.forEach(cell => {
-      visited.add(`${cell.row},${cell.col}`)
-    })
-  }
 
   /**
    * Genera expresión simplificada a partir de grupos
    */
-  generateSimplifiedExpression(groups, variables, mode) {
+  generarExpresionSimplificada(groups, variables, mode) {
     if (groups.length === 0) {
       return mode === 'minTerms' ? '0' : '1'
     }
@@ -657,19 +644,19 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
   /**
    * Calcula complejidad del mapa
    */
-  calculateMapComplexity(map, groups) {
+  calcularComplejidadMapa(map, groups) {
     return {
-      totalCells: this.countTotalCells(map),
-      filledCells: this.countFilledCells(map),
+      totalCells: this.contarCeldasTotales(map),
+      filledCells: this.contarCeldasLlenas(map),
       groups: groups.length,
-      complexity: groups.length + this.countFilledCells(map)
+      complexity: groups.length + this.contarCeldasLlenas(map)
     }
   }
 
   /**
    * Cuenta celdas totales
    */
-  countTotalCells(map) {
+  contarCeldasTotales(map) {
     if (map.type === '2var') return 4
     if (map.type === '3var') return 8
     if (map.type === '4var') return 16
@@ -681,7 +668,7 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
   /**
    * Cuenta celdas llenas
    */
-  countFilledCells(map) {
+  contarCeldasLlenas(map) {
     let count = 0
     
     if (map.cells) {
@@ -698,7 +685,7 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
   /**
    * Genera todas las combinaciones de variables
    */
-  generateAllCombinations(variables) {
+  generarTodasCombinaciones(variables) {
     const combinations = []
     const numVars = variables.length
     const totalCombinations = Math.pow(2, numVars)
@@ -718,7 +705,7 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
   /**
    * Evalúa una expresión con valores de variables
    */
-  evaluateExpression(expression, variableValues) {
+  evaluarExpresion(expression, variableValues) {
     const parse = booleanParser.parse(expression)
     if (!parse.success) return false
     try {
@@ -731,7 +718,7 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
   /**
    * Obtiene mintérmino para una combinación
    */
-  getMinTerm(combination, variables) {
+  obtenerMinTermino(combination, variables) {
     const terms = variables.map(variable => 
       combination[variable] ? variable : variable + "'"
     )
@@ -741,7 +728,7 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
   /**
    * Obtiene maxtérmino para una combinación
    */
-  getMaxTerm(combination, variables) {
+  obtenerMaxTermino(combination, variables) {
     const terms = variables.map(variable => 
       combination[variable] ? variable + "'" : variable
     )
@@ -751,7 +738,7 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
   /**
    * Valida un mapa de Karnaugh
    */
-  validateMap(map) {
+  validarMapa(map) {
     const errors = []
     
     if (!map.cells) {
@@ -771,7 +758,7 @@ generateGroupExpression(cells, variables, mode = 'minTerms') {
   /**
    * Exporta mapa como JSON
    */
-  exportMap(map) {
+  exportarMapa(map) {
     return {
       type: map.type,
       cells: map.cells,

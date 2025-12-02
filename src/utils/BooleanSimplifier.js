@@ -7,10 +7,7 @@ class BooleanSimplifier {
     this.maxIterations = 100
   }
 
- 
-  // ============================================================================
-  // NORMALIZACIÓN MEJORADA
-  // ============================================================================
+
   normalize(expr) {
     let normalized = expr
       .replace(/\s+/g, '')
@@ -32,20 +29,15 @@ class BooleanSimplifier {
     // Caso: variable seguida de variable (AB → A·B)
     .replace(/([A-Z0-9])([A-Z0-9])/gi, '$1·$2')
 
-    // Caso: variable seguida de paréntesis (A(B+C) → A·(B+C))
     .replace(/([A-Z0-9])\(/gi, '$1·(')
 
-    // Caso: paréntesis seguido de variable (()A → ()·A)
     .replace(/\)([A-Z0-9])/gi, ')·$1')
 
-    // Caso: paréntesis seguido de paréntesis (()() → ()·())
     .replace(/\)\(/g, ')·(')
 
-    // 4️⃣ Limpiar dobles puntos (por si algo quedó repetido)
     .replace(/··+/g, '·')
       .toUpperCase();
     
-    // Asegurar que cada variable tenga un formato consistente
     normalized = normalized.replace(/([A-Z])'+/g, (match, base) => {
       const primes = match.length - 1;
       return primes % 2 === 1 ? base + "'" : base;
@@ -55,7 +47,7 @@ class BooleanSimplifier {
   }
 
   // ============================================================================
-  // DETECCIÓN MEJORADA DE COMPLEMENTOS
+  // Detección de Complementos
   // ============================================================================
   areComplementary(literal1, literal2) {
     const base1 = literal1.replace(/'/g, '');
@@ -78,9 +70,9 @@ class BooleanSimplifier {
   }
 
   // ============================================================================
-  // EXPANSIÓN DISTRIBUTIVA COMPLETA Y CORRECTA
+  // Ley Distributiva
   // ============================================================================
-  applyDistributiveComplete(expr) {
+  aplicarDistributiva(expr) {
     let result = expr;
     let changed = true;
     let iterations = 0;
@@ -216,7 +208,7 @@ class BooleanSimplifier {
   }
 
   // ============================================================================
-  // VERIFICACIÓN DE COMPLEMENTOS EN FACTORES
+  // Verificación de Complementos en Factores
   // ============================================================================
   hasComplementaryFactors(factors) {
     const bases = new Map();
@@ -244,10 +236,10 @@ class BooleanSimplifier {
     return false;
   }
 
-simplifyByTruthTable(expression, variables, targetForm = 'SOP') {
+simplificarPorTablaVerdad(expression, variables, targetForm = 'SOP') {
   try {
     // 1. Generar tabla de verdad completa
-    const truthTableData = BooleanEvaluator.generateTruthTable(expression)
+    const truthTableData = BooleanEvaluator.generarTablaVerdad(expression)
     const { table } = truthTableData
     
     // 2. Extraer mintérminos (índices donde result = 1)
@@ -278,18 +270,18 @@ simplifyByTruthTable(expression, variables, targetForm = 'SOP') {
     
     if (targetForm === 'SOP') {
       // Minimizar mintérminos para SOP
-      const primeImplicants = qm.minimize(minterms, [], variables.length)
+      const primeImplicants = qm.minimizar(minterms, [], variables.length)
       console.log('✅ Implicantes primos (SOP):', primeImplicants)
-      simplified = this.convertImplicantsToExpression(primeImplicants, variables, 'SOP')
+      simplified = this.convertirImplicantesAExpresion(primeImplicants, variables, 'SOP')
     } else {
       // Minimizar maxtérminos para POS
-      const primeImplicants = qm.minimize(maxterms, [], variables.length)
+      const primeImplicants = qm.minimizar(maxterms, [], variables.length)
       console.log('✅ Implicantes primos (POS):', primeImplicants)
-      simplified = this.convertImplicantsToExpression(primeImplicants, variables, 'POS')
+      simplified = this.convertirImplicantesAExpresion(primeImplicants, variables, 'POS')
     }
     
     console.log('🎯 Expresión simplificada:', simplified)
-    const isValid = BooleanEvaluator.areEquivalent(expression, simplified)
+    const isValid = BooleanEvaluator.sonEquivalentes(expression, simplified)
 if (!isValid.equivalent) {
   console.warn('⚠️ La simplificación no es equivalente, usando algebraico como respaldo')
   console.warn('  Contraejemplo:', isValid.counterExample)
@@ -312,7 +304,7 @@ console.log('🎯 Expresión simplificada (validada):', simplified)
 
 
 
-convertImplicantsToExpression(implicants, variables, form = 'SOP') {
+convertirImplicantesAExpresion(implicants, variables, form = 'SOP') {
 if (!implicants || implicants.length === 0) {
   return form === 'SOP' ? '0' : '1'
 }
@@ -347,16 +339,16 @@ console.log('  Términos finales:', terms)
 let result = form === 'SOP' ? terms.join('+') : terms.join('·')
 
 // ✅ NUEVO: Post-optimizar el resultado
-const postOpt = this.postOptimize(result)
-if (postOpt !== result && this.isEquivalent(result, postOpt)) {
+const postOpt = this.optimizarPosterior(result)
+if (postOpt !== result && this.esEquivalente(result, postOpt)) {
   console.log(`  📉 Post-optimizado SOP: ${result} → ${postOpt}`)
 
   result = postOpt
 }
  else {
 // Para POS, usar simplificación específica
-const posOpt = this.simplifyPOSAlgebraic(result)
-if (posOpt !== result && this.isEquivalent(result, posOpt)) {
+const posOpt = this.simplificarPOSAlgebraico(result)
+if (posOpt !== result && this.esEquivalente(result, posOpt)) {
   console.log(`  📉 Post-optimizado POS: ${result} → ${posOpt}`)
   result = posOpt
 }
@@ -415,7 +407,7 @@ return result
   }
 
   
-  applyAbsorptionEnhanced(expr) {
+  aplicarAbsorcionMejorada(expr) {
     const terms = this.splitByTopLevelOperator(expr, '+').map(t => t.trim()).filter(t => t)
     if (terms.length < 2) return expr
   
@@ -460,110 +452,7 @@ return result
     return toKeep.length > 0 ? toKeep.join('+') : '0'
   }
 
-  applyDistributive(expr) {
-    let result = expr
-    let changed = true
-    let iterations = 0
-  
-    while (changed && iterations < 25) {
-      const before = result
-      iterations++
-      
-      // Caso 1: (Suma)·Factor → Distribuir completamente
-      result = result.replace(/\(([^)]+)\)·\(?([A-Z]'?)\)?/g, (match, sum, factor) => {
-        if (sum.includes('+')) {
-          const terms = this.splitByTopLevelOperator(sum, '+')
-          const distributed = terms.map(t => {
-            const trimmed = t.trim()
-            // Evitar productos redundantes como A·A
-            if (trimmed === factor) return trimmed
-            return `${trimmed}·${factor}`
-          }).join('+')
-          console.log(`  📐 Distributiva: ${match} → ${distributed}`)
-          return distributed
-        }
-        return match
-      })
-      
-      // Caso 2: Factor·(Suma) → Distribuir completamente
-      result = result.replace(/\(?([A-Z]'?)\)?·\(([^)]+)\)/g, (match, factor, sum) => {
-        if (sum.includes('+')) {
-          const terms = this.splitByTopLevelOperator(sum, '+')
-          const distributed = terms.map(t => {
-            const trimmed = t.trim()
-            // Evitar productos redundantes como A·A
-            if (trimmed === factor) return trimmed
-            return `${factor}·${trimmed}`
-          }).join('+')
-          console.log(`  📐 Distributiva: ${match} → ${distributed}`)
-          return distributed
-        }
-        return match
-      })
-      
-      // Caso 3: (Suma1)·(Suma2) → Expansión producto cartesiano COMPLETO
-      result = result.replace(/\(([^)]+)\)·\(([^)]+)\)/g, (match, sum1, sum2) => {
-        const hasSuma1 = sum1.includes('+')
-        const hasSuma2 = sum2.includes('+')
-        
-        if (hasSuma1 && hasSuma2) {
-          // Ambas son sumas: producto cartesiano completo
-          const terms1 = this.splitByTopLevelOperator(sum1, '+').map(t => t.trim())
-          const terms2 = this.splitByTopLevelOperator(sum2, '+').map(t => t.trim())
-          const products = []
-          
-          for (const t1 of terms1) {
-            for (const t2 of terms2) {
-              // Combinar factores de ambos términos
-              const factors1 = t1.split('·').map(f => f.trim()).filter(f => f)
-              const factors2 = t2.split('·').map(f => f.trim()).filter(f => f)
-              const combined = [...factors1, ...factors2]
-              
-              // Ordenar y eliminar duplicados inmediatos (A·A → A)
-              const unique = []
-              const seen = new Set()
-              for (const f of combined) {
-                if (!seen.has(f)) {
-                  seen.add(f)
-                  unique.push(f)
-                }
-              }
-              
-              products.push(unique.join('·'))
-            }
-          }
-          
-          const expanded = products.join('+')
-          console.log(`  📐 Producto cartesiano: (${sum1})·(${sum2}) → ${expanded}`)
-          return expanded
-          
-        } else if (hasSuma1) {
-          // Solo sum1 es suma
-          const terms = this.splitByTopLevelOperator(sum1, '+').map(t => t.trim())
-          return terms.map(t => `${t}·(${sum2})`).join('+')
-          
-        } else if (hasSuma2) {
-          // Solo sum2 es suma
-          const terms = this.splitByTopLevelOperator(sum2, '+').map(t => t.trim())
-          return terms.map(t => `(${sum1})·${t}`).join('+')
-          
-        } else {
-          // Ninguna es suma: producto simple
-          const factors1 = sum1.split('·').map(f => f.trim()).filter(f => f)
-          const factors2 = sum2.split('·').map(f => f.trim()).filter(f => f)
-          return [...factors1, ...factors2].join('·')
-        }
-      })
-      
-      // Aplicar leyes básicas después de cada distribución
-      result = this.applyBasicLaws(result)
-      
-      changed = (before !== result)
-    }
-  
-    return result
-  }
-  applyFactorizationEnhanced(expr) {
+  aplicarFactorizacion(expr) {
     const terms = this.splitByTopLevelOperator(expr, '+')
     if (terms.length < 2) return expr
   
@@ -675,95 +564,7 @@ return result
   }
 
 
-applyAbsorption(expr) {
-  let result = expr
-  let changed = true
-  const maxIter = 15
-  let iter = 0
-  
-  while (changed && iter < maxIter) {
-    iter++
-    const before = result
-    
-    const terms = this.splitByTopLevelOperator(result, '+').map(t => t.trim())
-    const absorbed = new Set()
-    
-    // Para cada término, ver si puede absorber a otros
-    for (let i = 0; i < terms.length; i++) {
-      if (absorbed.has(i)) continue
-      
-      const termI = terms[i]
-      const factorsI = termI.split('·').map(f => f.trim())
-      
-      for (let j = 0; j < terms.length; j++) {
-        if (i === j || absorbed.has(j)) continue
-        
-        const termJ = terms[j]
-        const factorsJ = termJ.split('·').map(f => f.trim())
-        
-        // Caso 1: termI es más simple y todos sus factores están en termJ
-        // Ejemplo: A absorbe A·B·C
-        if (factorsI.every(f => factorsJ.includes(f)) && factorsI.length < factorsJ.length) {
-          absorbed.add(j)
-          console.log(`  Absorción: ${termI} absorbe ${termJ}`)
-        }
-        
-        // Caso 2: termJ es más simple y todos sus factores están en termI  
-        // Ejemplo: B absorbe A·B·C
-        if (factorsJ.every(f => factorsI.includes(f)) && factorsJ.length < factorsI.length) {
-          absorbed.add(i)
-          console.log(`  Absorción: ${termJ} absorbe ${termI}`)
-          break
-        }
-      }
-    }
-    
-    const remaining = terms.filter((_, idx) => !absorbed.has(idx))
-    result = remaining.length > 0 ? remaining.join('+') : '0'
-    
-    changed = (before !== result)
-  }
-  
-  return result
-}
-
-
-
-applyConsensus(expr) {
-  const terms = this.splitByTopLevelOperator(expr, '+').map(t => t.trim())
-  const toRemove = new Set()
-  
-  console.log('🔍 Aplicando consenso a:', expr)
-  console.log('  Términos:', terms)
-  
-  // Buscar términos de consenso
-  for (let i = 0; i < terms.length; i++) {
-    for (let j = i + 1; j < terms.length; j++) {
-      for (let k = 0; k < terms.length; k++) {
-        if (k === i || k === j) continue
-        
-        const term1 = terms[i]
-        const term2 = terms[j]
-        const term3 = terms[k]
-        
-        if (this.isConsensus(term1, term2, term3)) {
-          console.log(`  ✅ Consenso encontrado: "${term1}" + "${term2}" implica "${term3}" (redundante)`)
-          toRemove.add(k)
-        }
-      }
-    }
-  }
-  
-  // Eliminar términos consenso
-  const filtered = terms.filter((_, idx) => !toRemove.has(idx))
-  const result = filtered.join('+')
-  
-  console.log(`  Resultado: ${result}`)
-  return result
-}
-
-
-postOptimize(expr) {
+optimizarPosterior(expr) {
 let result = expr
 let changed = true
 let iteration = 0
@@ -779,14 +580,14 @@ while (changed && iteration < maxIterations) {
   
   // PASO 1: Leyes básicas (incluyendo A + A·B = A)
   result = this.applyBasicLaws(result)
-  if (result !== before && this.isEquivalent(before, result)) {
+  if (result !== before && this.esEquivalente(before, result)) {
     console.log('    ✓ Leyes básicas:', result)
     changed = true
     continue
   }
    // PASO 2: Combinar términos complementarios (A·X + A'·X → X)
    result = this.applyComplementaryCombination(result)
-   if (result !== before && this.isEquivalent(before, result)) {
+   if (result !== before && this.esEquivalente(before, result)) {
      console.log('    ✓ Combinación complementaria:', result)
      changed = true
      continue
@@ -794,7 +595,7 @@ while (changed && iteration < maxIterations) {
   
   // PASO 3: Absorción ultra-agresiva (A + B·C donde A implica B·C)
   result = this.applyUltraAbsorption(result)
-  if (result !== before && this.isEquivalent(before, result)) {
+  if (result !== before && this.esEquivalente(before, result)) {
     console.log('    ✓ Absorción ultra:', result)
     changed = true
     continue
@@ -804,14 +605,14 @@ while (changed && iteration < maxIterations) {
   
   // PASO 4: Eliminar consenso (A·B + A·C + B·C → A·B + A·C)
   result = this.eliminateConsensusTerms(result)
-  if (result !== before && this.isEquivalent(before, result)) {
+  if (result !== before && this.esEquivalente(before, result)) {
     console.log('    ✓ Consenso eliminado:', result)
     changed = true
     continue
   }
   result = this.applyLogicalCoverage(result)
   if (result !== before) {
-    if (this.isEquivalent(before, result)) {
+    if (this.esEquivalente(before, result)) {
       console.log('    ✓ Cobertura lógica:', result)
       changed = true
       continue
@@ -822,7 +623,7 @@ while (changed && iteration < maxIterations) {
   
   // PASO 6: Factorización inversa (si reduce complejidad)
   result = this.tryReverseFactorization(result)
-  if (result !== before && this.isEquivalent(before, result)) {
+  if (result !== before && this.esEquivalente(before, result)) {
     console.log('    ✓ Factorización inversa:', result)
     changed = true
     continue
@@ -830,7 +631,7 @@ while (changed && iteration < maxIterations) {
   
   // PASO 7: Simplificación por dominancia (A + A·B·C = A)
   result = this.applyDominanceSimplification(result)
-  if (result !== before && this.isEquivalent(before, result)) {
+  if (result !== before && this.esEquivalente(before, result)) {
     console.log('    ✓ Dominancia:', result)
     changed = true
     continue
@@ -843,57 +644,11 @@ console.log('✅ Post-optimización completada:', result)
 return result
 }
 
-convertSOPtoPOS(sopExpr) {
-  try {
-    console.log('🔄 Convirtiendo SOP a POS:', sopExpr)
-    
-    // Casos especiales
-    if (sopExpr === '0') return '0'
-    if (sopExpr === '1') return '1'
-    
-    // ⚠️ IMPORTANTE: No se puede convertir directamente con De Morgan
-    // Necesitamos usar la tabla de verdad
-    console.warn('⚠️ Conversión directa SOP→POS requiere tabla de verdad')
-    console.warn('   Retornando expresión original. Use método formal para POS correcto.')
-    
-    return sopExpr // No intentar convertir, usar método formal
-    
-  } catch (error) {
-    console.error('❌ Error convirtiendo SOP a POS:', error)
-    return sopExpr
-  }
-}
-
-isMinimalForm(expr) {
-  // Si es una sola variable o constante
-  if (!expr.includes('·') && !expr.includes('+')) {
-    return true;
-  }
-
-  // Si es POS ya minimal: (A+B)·(C+D)
-  if (this.isPOSForm(expr)) {
-    const factors = this.splitByTopLevelOperator(expr, '·');
-    // Verificar que cada factor sea una suma simple
-    const allSimple = factors.every(f => {
-      const inner = f.replace(/[()]/g, '');
-      const literals = inner.split('+').map(l => l.trim());
-      // Cada literal debe ser una variable simple (A, B', etc)
-      return literals.every(lit => /^[A-Z]'?$/.test(lit));
-    });
-    
-    if (allSimple) {
-      console.log('✅ Expresión ya en forma POS minimal:', expr);
-      return true;
-    }
-  }
-
-  return false;
-}
 
 /**
  * ✅ NUEVO: Detecta si es forma POS
  */
-isPOSForm(expr) {
+esFormaPOS(expr) {
   // POS: (A+B)·(C+D)·...
   if (!expr.includes('(') || !expr.includes('·')) return false;
 
@@ -912,7 +667,7 @@ isPOSForm(expr) {
 /**
  * ✅ NUEVO: Detecta si es forma SOP
  */
-isSOPForm(expr) {
+esFormaSOP(expr) {
   // SOP: A·B + C·D + ...
   if (expr.includes('(') && expr.includes(')')) {
     return false;
@@ -924,7 +679,7 @@ isSOPForm(expr) {
     const factors = term.split('·').map(f => f.trim());
     return factors.every(f => /^[A-Z]'?$/.test(f));
   }); }
-simplifyPOSAlgebraic(expr) {
+simplificarPOSAlgebraico(expr) {
   let result = expr
   let changed = true
   let iteration = 0
@@ -935,10 +690,10 @@ simplifyPOSAlgebraic(expr) {
   while (changed && iteration < maxIterations) {
     iteration++
     const before = result
-    result = this.applyBasicLawsPOS(result)
-    result = this.applyAbsorptionPOS(result)
-    result = this.applyComplementaryCombinationPOS(result)
-    result = this.cleanParentheses(result)
+    result = this.aplicarLeyesBasicasPOS(result)
+    result = this.aplicarAbsorcionPOS(result)
+    result = this.aplicarCombinacionComplementariaPOS(result)
+    result = this.limpiarParentesis(result)
     changed = (before !== result)
     
     if (changed) {
@@ -952,7 +707,7 @@ simplifyPOSAlgebraic(expr) {
 /**
  * ✅ Leyes básicas adaptadas para POS
  */
-applyBasicLawsPOS(expr) {
+aplicarLeyesBasicasPOS(expr) {
   let result = expr
   
   // Identidad: (A+0) = A, (A·1) = A
@@ -994,7 +749,7 @@ applyBasicLawsPOS(expr) {
 /**
  * ✅ Absorción en POS: (A+B)·(A+B+C) = (A+B)
  */
-applyAbsorptionPOS(expr) {
+aplicarAbsorcionPOS(expr) {
   const factors = expr.split('·').map(f => f.trim())
   if (factors.length < 2) return expr
   
@@ -1029,7 +784,7 @@ applyAbsorptionPOS(expr) {
 /**
  * ✅ Combinación complementaria en POS: (A+B)·(A'+B) = B
  */
-applyComplementaryCombinationPOS(expr) {
+aplicarCombinacionComplementariaPOS(expr) {
   const factors = expr.split('·').map(f => f.trim())
   if (factors.length < 2) return expr
   
@@ -1209,7 +964,7 @@ tryReverseFactorization(expr) {
 const factorPattern = /([A-Z]'?(?:·[A-Z]'?)*)·\(([^)]+)\)/g
 let match
 let bestResult = expr
-let bestComplexity = this.countOperators(expr)
+let bestComplexity = this.contarOperadores(expr)
 
 while ((match = factorPattern.exec(expr)) !== null) {
   const factor = match[1]
@@ -1223,9 +978,9 @@ while ((match = factorPattern.exec(expr)) !== null) {
   
   // Simplificar la versión expandida
   const simplified = this.applyBasicLaws(testExpr)
-  const testComplexity = this.countOperators(simplified)
+  const testComplexity = this.contarOperadores(simplified)
   
-  if (testComplexity < bestComplexity && this.isEquivalent(expr, simplified)) {
+  if (testComplexity < bestComplexity && this.esEquivalente(expr, simplified)) {
     bestResult = simplified
     bestComplexity = testComplexity
     console.log(`    🔄 Expansión beneficiosa: ${match[0]} → ${expanded} → ${simplified}`)
@@ -1394,151 +1149,10 @@ if (toRemove.size > 0) {
 
 return expr
 }
-applyTautologySimplification(expr) {
-const terms = this.splitByTopLevelOperator(expr, '+').map(t => t.trim())
-
-// Para cada par de términos, verificar si cubren todos los casos de una variable
-for (let i = 0; i < terms.length; i++) {
-  for (let j = i + 1; j < terms.length; j++) {
-    const term1 = terms[i]
-    const term2 = terms[j]
-    
-    const factors1 = term1.split('·').map(f => f.trim())
-    const factors2 = term2.split('·').map(f => f.trim())
-    
-    // Buscar factores comunes
-    const common = factors1.filter(f => factors2.includes(f))
-    
-    if (common.length > 0) {
-      // Buscar una variable que aparece negada en uno y positiva en otro
-      const diff1 = factors1.filter(f => !common.includes(f))
-      const diff2 = factors2.filter(f => !common.includes(f))
-      
-      // Si solo difieren en una variable y sus negaciones
-      if (diff1.length === 1 && diff2.length === 1) {
-        const var1 = diff1[0].replace(/'/g, '')
-        const var2 = diff2[0].replace(/'/g, '')
-        
-        if (var1 === var2 && diff1[0] !== diff2[0]) {
-          // Encontramos A·X + A'·X, podemos reducir a X
-          const replacement = common.length > 0 ? common.join('·') : '1'
-          
-          // Reemplazar ambos términos
-          const newTerms = terms.filter((_, idx) => idx !== i && idx !== j)
-          if (!newTerms.includes(replacement)) {
-            newTerms.push(replacement)
-          }
-          
-          return newTerms.join('+')
-        }
-      }
-    }
-  }
-}
-
-return expr
-}
-
-applyAdvancedAbsorption(expr) {
-let result = expr
-const terms = this.splitByTopLevelOperator(result, '+').map(t => t.trim())
-
-if (terms.length < 2) return expr
-
-const absorbed = new Set()
-
-// Ordenar por número de factores (más simple primero)
-const sorted = terms.map((t, idx) => ({
-  term: t,
-  idx,
-  count: t.split('·').length
-})).sort((a, b) => a.count - b.count)
-
-// Absorción directa: X absorbe X·Y
-for (let i = 0; i < sorted.length; i++) {
-  if (absorbed.has(sorted[i].idx)) continue
-  
-  const termI = sorted[i].term
-  const factorsI = termI.split('·').map(f => f.trim())
-  
-  for (let j = 0; j < sorted.length; j++) {
-    if (i === j || absorbed.has(sorted[j].idx)) continue
-    
-    const termJ = sorted[j].term
-    const factorsJ = termJ.split('·').map(f => f.trim())
-    
-    // Si todos los factores de I están en J, J es redundante
-    if (factorsI.every(f => factorsJ.includes(f)) && factorsI.length < factorsJ.length) {
-      console.log(`    🧲 "${termI}" absorbe "${termJ}"`)
-      absorbed.add(sorted[j].idx)
-    }
-  }
-}
-
-if (absorbed.size > 0) {
-  const remaining = terms.filter((_, idx) => !absorbed.has(idx))
-  result = remaining.length > 0 ? remaining.join('+') : '0'
-}
-
-return result
-}
-
-applyReverseConsensus(expr) {
-const terms = this.splitByTopLevelOperator(expr, '+').map(t => t.trim())
-const toRemove = new Set()
-
-// Buscar términos que son "generalizaciones" de otros
-for (let i = 0; i < terms.length; i++) {
-  const termI = terms[i]
-  const factorsI = termI.split('·').map(f => f.trim())
-  
-  // Contar cuántos otros términos contienen todos los factores de I
-  let absorbs = 0
-  
-  for (let j = 0; j < terms.length; j++) {
-    if (i === j) continue
-    
-    const termJ = terms[j]
-    const factorsJ = termJ.split('·').map(f => f.trim())
-    
-    // Si I es subconjunto de J, I puede absorber J
-    if (factorsI.every(f => factorsJ.includes(f)) && factorsI.length < factorsJ.length) {
-      toRemove.add(j)
-      absorbs++
-    }
-  }
-}
-
-if (toRemove.size > 0) {
-  const remaining = terms.filter((_, idx) => !toRemove.has(idx))
-  return remaining.join('+')
-}
-
-return expr
-}
-
-applySelectiveFactorization(expr) {
-const originalComplexity = this.countOperators(expr)
-
-// Intentar factorización
-const factored = this.applyFactorization(expr)
-
-if (factored === expr) return expr
-
-// Simplificar el resultado factorado
-const simplified = this.applyBasicLaws(factored)
-const newComplexity = this.countOperators(simplified)
-
-// Solo aceptar si reduce complejidad Y es equivalente
-if (newComplexity < originalComplexity && this.isEquivalent(expr, simplified)) {
-  return simplified
-}
-
-return expr
-}
 
 
-countOperators(expr) {
+
+contarOperadores(expr) {
 const ands = (expr.match(/·/g) || []).length
 const ors = (expr.match(/\+/g) || []).length
 const nots = (expr.match(/'/g) || []).length
@@ -1626,9 +1240,9 @@ isConsensus(term1, term2, term3) {
   }
 
   // ============================================================================
-  // LEYES BÁSICAS MEJORADAS CON VALIDACIÓN ESTRICTA
+  // Leyes Básicas
   // ============================================================================
-  applyBasicLawsStrict(expr) {
+  aplicarLeyesBasicas(expr) {
     let result = expr;
     let changed = true;
     let iterations = 0;
@@ -1730,9 +1344,9 @@ isConsensus(term1, term2, term3) {
   }
 
   // ============================================================================
-  // COMBINACIÓN COMPLEMENTARIA MEJORADA
+  // Combinación Complementaria
   // ============================================================================
-  applyComplementaryCombinationStrict(expr) {
+  aplicarCombinacionComplementaria(expr) {
     let result = expr;
     let madeChange = true;
     let iterations = 0;
@@ -1815,9 +1429,9 @@ isConsensus(term1, term2, term3) {
   }
 
   // ============================================================================
-  // ABSORCIÓN MEJORADA
+  // Absorción
   // ============================================================================
-  applyAbsorptionStrict(expr) {
+  aplicarAbsorcion(expr) {
     const terms = this.splitByTopLevelOperator(expr, '+').map(t => t.trim()).filter(t => t);
     if (terms.length < 2) return expr;
     console.log('🧲 Aplicando absorción:', expr);
@@ -2067,53 +1681,7 @@ isConsensus(term1, term2, term3) {
   return result
 }
 
-expandAndSimplify(expr) {
-  let result = expr
-  let previousResult = ''
-  let iterations = 0
-  const maxIterations = 20
-
-  console.log('🔧 Expandiendo:', expr)
-
-  // Fase 1: Expansión completa y agresiva
-  while (result !== previousResult && iterations < maxIterations) {
-    previousResult = result
-    iterations++
-    
-    // Paso 1: Aplicar distributiva
-    result = this.applyDistributive(result)
-    
-    // Paso 2: Limpiar paréntesis
-    result = this.cleanParentheses(result)
-    
-    // Paso 3: Aplicar leyes básicas
-    result = this.applyBasicLaws(result)
-    
-    // Paso 4: Si aún hay paréntesis anidados, continuar
-    if (!result.includes('(') || result === previousResult) break
-    
-    console.log(`  Iteración ${iterations}:`, result)
-  }
-
-  // Fase 2: Simplificación post-expansión
-  previousResult = ''
-  iterations = 0
-  
-  while (result !== previousResult && iterations < 15) {
-    previousResult = result
-    iterations++
-    
-    // Aplicar todas las simplificaciones
-    result = this.applyBasicLaws(result)
-    result = this.applyComplementaryCombination(result)
-    result = this.applyAbsorptionEnhanced(result)
-    result = this.cleanParentheses(result)
-  }
-
-  console.log('✅ Expansión completada:', result)
-  return result
-}
-cleanParentheses(expr) {
+limpiarParentesis(expr) {
   let result = expr
   let changed = true
   let iterations = 0
@@ -2154,12 +1722,12 @@ cleanParentheses(expr) {
   return result
 }
 
-convertSOPtoPOSFormal(sopExpr, variables) {
+convertirSOPaPOSFormal(sopExpr, variables) {
   try {
     console.log('🔄 Convirtiendo SOP a POS formal:', sopExpr);
     
     // Generar tabla de verdad
-    const truthTableData = BooleanEvaluator.generateTruthTable(sopExpr);
+    const truthTableData = BooleanEvaluator.generarTablaVerdad(sopExpr);
     const { table } = truthTableData;
     
     // Extraer maxterms (donde result = 0)
@@ -2174,11 +1742,11 @@ convertSOPtoPOSFormal(sopExpr, variables) {
     
     // Aplicar Quine-McCluskey
     const qm = new QuineMcCluskeyMinimizer();
-    const primeImplicants = qm.minimize(maxterms, [], variables.length);
+    const primeImplicants = qm.minimizar(maxterms, [], variables.length);
     
     console.log('✅ Implicantes primos (POS):', primeImplicants);
     
-    const posExpr = this.convertImplicantsToExpression(primeImplicants, variables, 'POS');
+    const posExpr = this.convertirImplicantesAExpresion(primeImplicants, variables, 'POS');
     
     console.log('✅ POS generada:', posExpr);
     
@@ -2191,12 +1759,12 @@ convertSOPtoPOSFormal(sopExpr, variables) {
 }
 
 
-convertPOStoSOPFormal(posExpr, variables) {
+convertirPOSaSOPFormal(posExpr, variables) {
   try {
     console.log('🔄 Convirtiendo POS a SOP formal:', posExpr);
     
     // Generar tabla de verdad
-    const truthTableData = BooleanEvaluator.generateTruthTable(posExpr);
+    const truthTableData = BooleanEvaluator.generarTablaVerdad(posExpr);
     const { table } = truthTableData;
     
     // Extraer minterms (donde result = 1)
@@ -2211,11 +1779,11 @@ convertPOStoSOPFormal(posExpr, variables) {
     
     // Aplicar Quine-McCluskey
     const qm = new QuineMcCluskeyMinimizer();
-    const primeImplicants = qm.minimize(minterms, [], variables.length);
+    const primeImplicants = qm.minimizar(minterms, [], variables.length);
     
     console.log('✅ Implicantes primos (SOP):', primeImplicants);
     
-    const sopExpr = this.convertImplicantsToExpression(primeImplicants, variables, 'SOP');
+    const sopExpr = this.convertirImplicantesAExpresion(primeImplicants, variables, 'SOP');
     
     console.log('✅ SOP generada:', sopExpr);
     
@@ -2229,7 +1797,7 @@ convertPOStoSOPFormal(posExpr, variables) {
 
 
   // ============================================================================
-  // SIMPLIFICACIÓN PRINCIPAL REORDENADA
+  // Simplificación Principal
   // ============================================================================
   simplify(expression, options = {}) {
     const {
@@ -2242,15 +1810,15 @@ convertPOStoSOPFormal(posExpr, variables) {
     this.steps = [];
     let current = this.normalize(expression);
     const originalExpression = current;
-    const variables = BooleanEvaluator.extractVariables(expression);
+    const variables = BooleanEvaluator.extraerVariables(expression);
     this.addStepWithValidation(current, current, 'normalization', 'Normalización', 'Expresión normalizada', originalExpression);
     // FASE 1: Expansión completa (si hay paréntesis)
     if (current.includes('(') && current.includes(')')) {
       console.log('📐 FASE 1: Expansión completa');
       
-      const expanded = this.applyDistributiveComplete(current);
+      const expanded = this.aplicarDistributiva(current);
       
-      if (expanded !== current && this.isEquivalent(originalExpression, expanded)) {
+      if (expanded !== current && this.esEquivalente(originalExpression, expanded)) {
         this.addStepWithValidation(current, expanded, 'distributive', 'Expansión Distributiva', 'Expandir todos los productos', originalExpression);
         current = expanded;
       }
@@ -2258,9 +1826,9 @@ convertPOStoSOPFormal(posExpr, variables) {
     // FASE 2: Aplicar leyes básicas (eliminar productos imposibles)
     console.log('⚖️ FASE 2: Leyes básicas');
     
-    const afterBasic = this.applyBasicLawsStrict(current);
+    const afterBasic = this.aplicarLeyesBasicas(current);
     
-    if (afterBasic !== current && this.isEquivalent(originalExpression, afterBasic)) {
+    if (afterBasic !== current && this.esEquivalente(originalExpression, afterBasic)) {
       this.addStepWithValidation(current, afterBasic, 'basic', 'Leyes Básicas', 'Eliminar complementos y simplificar', originalExpression);
       current = afterBasic;
     }
@@ -2274,15 +1842,15 @@ convertPOStoSOPFormal(posExpr, variables) {
       previousComb = current;
       combIterations++;
       
-      const afterComb = this.applyComplementaryCombinationStrict(current);
+      const afterComb = this.aplicarCombinacionComplementaria(current);
       
-      if (afterComb !== current && this.isEquivalent(originalExpression, afterComb)) {
+      if (afterComb !== current && this.esEquivalente(originalExpression, afterComb)) {
         this.addStepWithValidation(current, afterComb, 'complementary', 'Combinación Complementaria', `A·X + A'·X = X (iteración ${combIterations})`, originalExpression);
         current = afterComb;
         
         // Aplicar leyes básicas después de cada combinación
-        const afterBasic2 = this.applyBasicLawsStrict(current);
-        if (afterBasic2 !== current && this.isEquivalent(originalExpression, afterBasic2)) {
+        const afterBasic2 = this.aplicarLeyesBasicas(current);
+        if (afterBasic2 !== current && this.esEquivalente(originalExpression, afterBasic2)) {
           current = afterBasic2;
         }
       } else {
@@ -2299,9 +1867,9 @@ convertPOStoSOPFormal(posExpr, variables) {
       previousAbs = current;
       absIterations++;
       
-      const afterAbs = this.applyAbsorptionStrict(current);
+      const afterAbs = this.aplicarAbsorcion(current);
       
-      if (afterAbs !== current && this.isEquivalent(originalExpression, afterAbs)) {
+      if (afterAbs !== current && this.esEquivalente(originalExpression, afterAbs)) {
         this.addStepWithValidation(current, afterAbs, 'absorption', 'Absorción', `A + A·B = A (iteración ${absIterations})`, originalExpression);
         current = afterAbs;
       } else {
@@ -2312,16 +1880,16 @@ convertPOStoSOPFormal(posExpr, variables) {
     if (useFormalMethod && variables.length >= 2 && variables.length <= 5) {
       console.log('🔬 FASE 5: Método formal (Quine-McCluskey)');
       
-      const formalResult = this.simplifyByTruthTable(originalExpression, variables, targetForm);
+      const formalResult = this.simplificarPorTablaVerdad(originalExpression, variables, targetForm);
       
       if (formalResult && formalResult.expression) {
         const formalExpr = formalResult.expression;
-        const currentComplexity = this.countOperators(current);
-        const formalComplexity = this.countOperators(formalExpr);
+        const currentComplexity = this.contarOperadores(current);
+        const formalComplexity = this.contarOperadores(formalExpr);
         
         // Usar resultado formal si es mejor
         if (formalComplexity <= currentComplexity && 
-            this.isEquivalent(originalExpression, formalExpr)) {
+            this.esEquivalente(originalExpression, formalExpr)) {
           
           console.log('✅ Método formal dio mejor o igual resultado');
           this.addStepWithValidation(current, formalExpr, 'quine_mccluskey', 'Quine-McCluskey', 'Minimización formal por tabla de verdad', originalExpression);
@@ -2330,27 +1898,27 @@ convertPOStoSOPFormal(posExpr, variables) {
       }
     }
     // FASE 6: Conversión a forma objetivo (si es necesario)
-    if (targetForm === 'POS' && !this.isPOSForm(current)) {
+      if (targetForm === 'POS' && !this.esFormaPOS(current)) {
       console.log('🔄 FASE 6: Conversión a POS');
       
-      const posResult = this.convertSOPtoPOSFormal(current, variables);
+      const posResult = this.convertirSOPaPOSFormal(current, variables);
       
-      if (posResult && this.isEquivalent(originalExpression, posResult)) {
+      if (posResult && this.esEquivalente(originalExpression, posResult)) {
         this.addStepWithValidation(current, posResult, 'pos_conversion', 'Conversión a POS', 'Usando tabla de verdad', originalExpression);
         current = posResult;
       }
-    } else if (targetForm === 'SOP' && !this.isSOPForm(current)) {
+    } else if (targetForm === 'SOP' && !this.esFormaSOP(current)) {
       console.log('🔄 FASE 6: Conversión a SOP');
       
-      const sopResult = this.convertPOStoSOPFormal(current, variables);
+      const sopResult = this.convertirPOSaSOPFormal(current, variables);
       
-      if (sopResult && this.isEquivalent(originalExpression, sopResult)) {
+      if (sopResult && this.esEquivalente(originalExpression, sopResult)) {
         this.addStepWithValidation(current, sopResult, 'sop_conversion', 'Conversión a SOP', 'Usando tabla de verdad', originalExpression);
         current = sopResult;
       }
     }
     // Validación final
-    const finalEquivalence = BooleanEvaluator.areEquivalent(originalExpression, current);
+    const finalEquivalence = BooleanEvaluator.sonEquivalentes(originalExpression, current);
     
     if (!finalEquivalence.equivalent) {
       console.error('❌ ERROR: La expresión final NO es equivalente a la original');
@@ -2375,29 +1943,18 @@ convertPOStoSOPFormal(posExpr, variables) {
     };
   }
 
-  isEquivalent(expr1, expr2) {
-    const result = BooleanEvaluator.areEquivalent(expr1, expr2)
+  esEquivalente(expr1, expr2) {
+    const result = BooleanEvaluator.sonEquivalentes(expr1, expr2)
     return result.equivalent
   }
 
  
-  isSOP(expr) {
-    // SOP: suma de productos (A·B + C·D)
-    return expr.includes('+') && expr.includes('·')
-  }
-
-
-  convertToPOS(expr) {
-    // Esta es una conversión simplificada
-    // Para una implementación completa, usar tabla de verdad
-    return expr
-  }
 
   /**
    * Agrega un paso con validación
    */
   addStep(from, to, theorem, law, explanation) {
-    const equivalence = BooleanEvaluator.areEquivalent(from, to)
+    const equivalence = BooleanEvaluator.sonEquivalentes(from, to)
     
     this.steps.push({
       from,
@@ -2410,11 +1967,11 @@ convertPOStoSOPFormal(posExpr, variables) {
   }
 
   // ============================================================================
-  // AGREGAR PASO CON VALIDACIÓN AUTOMÁTICA
+  // Agregar Paso con Validación
   // ============================================================================
   addStepWithValidation(from, to, theorem, law, explanation, original) {
     // Validar que el paso mantiene equivalencia con la expresión original
-    const equivalence = BooleanEvaluator.areEquivalent(original, to);
+    const equivalence = BooleanEvaluator.sonEquivalentes(original, to);
     
     if (!equivalence.equivalent) {
       console.warn(`⚠️ PASO NO VÁLIDO: ${law}`);
@@ -2434,65 +1991,6 @@ convertPOStoSOPFormal(posExpr, variables) {
     });
     
     return true;
-  }
-  convertToMinimalPOS(expr) {
-    try {
-      // Obtener la expresión en SOP mínima primero
-      const sopMinimal = this.postOptimize(expr)
-      
-      // Aplicar De Morgan para convertir a POS
-      // SOP: A + B·C → POS: (A+B)·(A+C) usando A+B·C = (A+B)·(A+C)
-      
-      // Método: negar, convertir con De Morgan, negar de nuevo
-      const negated = this.negateTerm(sopMinimal)
-      const demorgan = this.applyDeMorgan(negated)
-      const posForm = this.negateTerm(demorgan)
-      
-      // Simplificar el resultado POS
-      const simplified = this.simplifyPOSForm(posForm)
-      
-      return simplified
-    } catch (error) {
-      console.warn('Error en conversión POS:', error)
-      return expr
-    }
-  }
-  
-  simplifyPOSForm(expr) {
-    // Eliminar factores redundantes en POS
-    // (A+B)·(A+C)·(B+C) → (A+B)·(A+C)
-    
-    const factors = this.splitByTopLevelOperator(expr, '·').map(f => f.trim())
-    if (factors.length < 2) return expr
-    
-    const absorbed = new Set()
-    
-    for (let i = 0; i < factors.length; i++) {
-      if (absorbed.has(i)) continue
-      
-      const factorI = factors[i].replace(/[()]/g, '')
-      const termsI = factorI.split('+').map(t => t.trim()).sort()
-      
-      for (let j = 0; j < factors.length; j++) {
-        if (i === j || absorbed.has(j)) continue
-        
-        const factorJ = factors[j].replace(/[()]/g, '')
-        const termsJ = factorJ.split('+').map(t => t.trim()).sort()
-        
-        // Si todos los términos de I están en J, J es redundante
-        if (termsI.every(t => termsJ.includes(t)) && termsI.length < termsJ.length) {
-          console.log(`    POS: (${termsI.join('+')}) absorbe (${termsJ.join('+')})`)
-          absorbed.add(j)
-        }
-      }
-    }
-    
-    if (absorbed.size > 0) {
-      const remaining = factors.filter((_, idx) => !absorbed.has(idx))
-      return remaining.join('·')
-    }
-    
-    return expr
   }
   
 

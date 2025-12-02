@@ -5,7 +5,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Variables de colores UTS */
 :root {
   --uts-green-50: #f0fdf4;
   --uts-green-100: #dcfce7;

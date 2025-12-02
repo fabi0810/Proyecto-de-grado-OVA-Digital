@@ -1,5 +1,5 @@
 // src/utils/AlgebraQuestionGenerator.js
-// 🧠 SISTEMA INTELIGENTE PARA ÁLGEBRA DE BOOLE Y SIMPLIFICACIÓN
+//  SISTEMA INTELIGENTE PARA ÁLGEBRA DE BOOLE Y SIMPLIFICACIÓN
 
 export class AlgebraQuestionGenerator {
     constructor() {
@@ -9,7 +9,7 @@ export class AlgebraQuestionGenerator {
       this.performanceAnalyzer = new AlgebraPerformanceAnalyzer()
     }
   
-    // 🎯 GENERADOR ADAPTATIVO DE PREGUNTAS
+    //  GENERADOR ADAPTATIVO DE PREGUNTAS
     generateAdaptiveQuiz(mode, count = 5) {
       const userLevel = this.determineAlgebraLevel()
       const weakAreas = this.identifyWeakAlgebraAreas()
@@ -29,7 +29,7 @@ export class AlgebraQuestionGenerator {
       })
     }
   
-    // 🔍 ANÁLISIS DE NIVEL DEL USUARIO
+    //  ANÁLISIS DE NIVEL DEL USUARIO
     determineAlgebraLevel() {
       const stats = this.userProfile.algebraStats
       
@@ -55,7 +55,7 @@ export class AlgebraQuestionGenerator {
       return ['laws', 'simplification', 'canonical', 'karnaugh']
     }
   
-    // 🏭 CREADOR DE PREGUNTAS PERSONALIZADAS
+    //  CREADOR DE PREGUNTAS PERSONALIZADAS
     createPersonalizedAlgebraQuestions(mode, count, profile) {
       const questions = []
       const difficultyDistribution = this.getAlgebraDifficultyDistribution(mode, profile.level)
@@ -83,7 +83,7 @@ export class AlgebraQuestionGenerator {
       return questions
     }
   
-    // 📊 DISTRIBUCIÓN INTELIGENTE DE DIFICULTAD
+    //  DISTRIBUCIÓN INTELIGENTE DE DIFICULTAD
     getAlgebraDifficultyDistribution(mode, userLevel) {
       const distributions = {
         beginner: {
@@ -119,7 +119,7 @@ export class AlgebraQuestionGenerator {
         : types[Math.floor(Math.random() * types.length)]
     }
   
-    // 🎭 GENERADORES ESPECÍFICOS DE PREGUNTAS
+    //  GENERADORES ESPECÍFICOS DE PREGUNTAS
     generateSpecificAlgebraQuestion(type, difficulty, id, usedTemplates) {
       const generators = {
         laws: this.generateLawsQuestion.bind(this),
@@ -132,7 +132,7 @@ export class AlgebraQuestionGenerator {
       return generator(difficulty, id, usedTemplates)
     }
   
-    // ⚖️ GENERADOR DE PREGUNTAS SOBRE LEYES BOOLEANAS
+    //  GENERADOR DE PREGUNTAS SOBRE LEYES BOOLEANAS
     generateLawsQuestion(difficulty, id, usedTemplates) {
       const templates = {
         easy: [
@@ -328,7 +328,7 @@ export class AlgebraQuestionGenerator {
       }
     }
   
-    // 🔄 GENERADOR DE PREGUNTAS DE SIMPLIFICACIÓN
+    //  GENERADOR DE PREGUNTAS DE SIMPLIFICACIÓN
     generateSimplificationQuestion(difficulty, id, usedTemplates) {
       const templates = {
         easy: [
@@ -526,7 +526,7 @@ export class AlgebraQuestionGenerator {
       }
     }
   
-    // 📐 GENERADOR DE PREGUNTAS DE FORMAS CANÓNICAS
+    //  GENERADOR DE PREGUNTAS DE FORMAS CANÓNICAS
     generateCanonicalQuestion(difficulty, id, usedTemplates) {
       const templates = {
         easy: [
@@ -734,7 +734,7 @@ export class AlgebraQuestionGenerator {
       }
     }
   
-    // 🗺️ GENERADOR DE PREGUNTAS DE MAPAS DE KARNAUGH
+    //  GENERADOR DE PREGUNTAS DE MAPAS DE KARNAUGH
     generateKarnaughQuestion(difficulty, id, usedTemplates) {
       const templates = {
         easy: [
@@ -955,7 +955,7 @@ export class AlgebraQuestionGenerator {
       }
     }
   
-    // 🔧 FUNCIONES AUXILIARES
+    //  FUNCIONES AUXILIARES
     getLawExplanation(lawName) {
       const explanations = {
         'Identidad': 'El elemento neutro no cambia el valor',
@@ -983,7 +983,7 @@ export class AlgebraQuestionGenerator {
       }
     }
   
-    // 💾 PERSISTENCIA DE DATOS
+    //  PERSISTENCIA DE DATOS
     loadUserProfile() {
       const defaultProfile = {
         algebraStats: { 
@@ -1062,7 +1062,7 @@ export class AlgebraQuestionGenerator {
       }
     }
   
-    // 📈 ESTADÍSTICAS Y ANÁLISIS
+    //  ESTADÍSTICAS Y ANÁLISIS
     getDetailedAlgebraStats() {
       return {
         profile: this.userProfile,
@@ -1141,7 +1141,7 @@ export class AlgebraQuestionGenerator {
     }
   }
   
-  // 📊 ANALIZADOR DE RENDIMIENTO
+  //  ANALIZADOR DE RENDIMIENTO
   class AlgebraPerformanceAnalyzer {
     analyzeQuizResults(questions, userAnswers) {
       const analysis = {

@@ -27,7 +27,7 @@ export class CircuitQuestionGenerator {
     })
   }
 
-  // 🎲 GENERADOR ADAPTATIVO DE RETOS
+  //  GENERADOR ADAPTATIVO DE RETOS
   generateAdaptiveChallenges(difficulty, category, count = 6) {
     const userLevel = this.determineCircuitLevel()
     const challengePrefs = this.getChallengePreferences()
@@ -45,7 +45,7 @@ export class CircuitQuestionGenerator {
     })
   }
 
-  // 🔍 ANÁLISIS DE NIVEL DEL USUARIO
+  // ANÁLISIS DE NIVEL DEL USUARIO
   determineCircuitLevel() {
     const stats = this.userProfile.circuitStats
     
@@ -82,7 +82,7 @@ export class CircuitQuestionGenerator {
     return preferences
   }
 
-  // 🏭 CREADOR DE PREGUNTAS PERSONALIZADAS
+  //  CREADOR DE PREGUNTAS PERSONALIZADAS
   createPersonalizedCircuitQuestions(mode, count, profile) {
     const questions = []
     const difficultyDistribution = this.getCircuitDifficultyDistribution(mode, profile.level)
@@ -110,7 +110,7 @@ export class CircuitQuestionGenerator {
     return questions
   }
 
-  // 🏗️ CREADOR DE RETOS PERSONALIZADOS
+  //  CREADOR DE RETOS PERSONALIZADOS
   createPersonalizedChallenges(difficulty, category, count, profile) {
     const challenges = []
     const usedTemplates = new Set()
@@ -129,7 +129,7 @@ export class CircuitQuestionGenerator {
     return challenges
   }
 
-  // 📊 DISTRIBUCIÓN INTELIGENTE DE DIFICULTAD
+  // DISTRIBUCIÓN INTELIGENTE DE DIFICULTAD
   getCircuitDifficultyDistribution(mode, userLevel) {
     const distributions = {
       beginner: {
@@ -166,7 +166,7 @@ export class CircuitQuestionGenerator {
       : types[Math.floor(Math.random() * types.length)]
   }
 
-  // 🎭 GENERADORES ESPECÍFICOS DE PREGUNTAS
+  //  GENERADORES ESPECÍFICOS DE PREGUNTAS
   generateSpecificCircuitQuestion(type, difficulty, id, usedTemplates) {
     const generators = {
       gates: this.generateGateQuestion,
@@ -328,7 +328,7 @@ export class CircuitQuestionGenerator {
     }
   }
 
-  // 🎯 GENERADORES ESPECÍFICOS DE RETOS
+  //  GENERADORES ESPECÍFICOS DE RETOS
   generateSpecificCircuitChallenge(category, difficulty, id, usedTemplates) {
     const generators = {
       basic: this.generateBasicChallenge,
@@ -433,7 +433,7 @@ export class CircuitQuestionGenerator {
     }
   }
 
-  // 🔧 FUNCIONES AUXILIARES
+  //  FUNCIONES AUXILIARES
   calculateGateOutput(gate, inputs) {
     switch (gate) {
       case 'AND': return inputs.every(x => x === 1) ? 1 : 0
@@ -560,7 +560,7 @@ export class CircuitQuestionGenerator {
     return adjustments[userLevel]?.[difficulty] || difficulty
   }
 
-  // 💾 PERSISTENCIA DE DATOS
+  //  PERSISTENCIA DE DATOS
   loadUserProfile() {
     const defaultProfile = {
       circuitStats: { 
@@ -681,7 +681,7 @@ export class CircuitQuestionGenerator {
     }
   }
 
-  // 📈 ESTADÍSTICAS Y ANÁLISIS
+  // ESTADÍSTICAS Y ANÁLISIS
   getDetailedCircuitStats() {
     return {
       profile: this.userProfile,
@@ -784,7 +784,7 @@ export class CircuitQuestionGenerator {
     return 'stable'
   }
 
-  // 🎯 VALIDACIÓN DE RETOS
+  //  VALIDACIÓN DE RETOS
   validateCircuitChallenge(challenge, circuit) {
     const validation = {
       valid: true,
@@ -876,9 +876,7 @@ export class CircuitQuestionGenerator {
   }
 
   verifyTruthTable(circuit, expectedTable) {
-    // Simular el circuito con todas las combinaciones de entrada
-    // y comparar con la tabla de verdad esperada
-    // Esta es una implementación simplificada
+    
     return expectedTable.length > 0
   }
 
@@ -889,7 +887,7 @@ export class CircuitQuestionGenerator {
   }
 }
 
-// 📊 ANALIZADOR DE RENDIMIENTO PARA CIRCUITOS
+//  ANALIZADOR DE RENDIMIENTO PARA CIRCUITOS
 class CircuitPerformanceAnalyzer {
   analyzeQuizResults(questions, userAnswers) {
     const analysis = {

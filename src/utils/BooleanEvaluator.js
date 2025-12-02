@@ -3,7 +3,7 @@ class BooleanEvaluator {
   /**
    * Normaliza una expresión booleana a formato estándar
    */
-  static normalizeExpression(expr) {
+  static normalizarExpresion(expr) {
     let normalized = expr
       .replace(/\s+/g, '')
       .replace(/\*|×|&{2}|AND/gi, '·')
@@ -27,11 +27,11 @@ class BooleanEvaluator {
     
 
   /**
-   * ✅ CORREGIDO: Aplica De Morgan ANTES de evaluar
+   * Aplica De Morgan antes de evaluar
    * (A+B)' = A'·B'
    * (A·B)' = A' + B'
    */
-  static applyDeMorganForEval(expr) {
+  static aplicarDeMorganParaEvaluar(expr) {
     let result = expr
     let changed = true
     
@@ -77,14 +77,14 @@ class BooleanEvaluator {
   }
 
   /**
-   * ✅ CORREGIDO: Evalúa una expresión booleana con valores específicos
+   * Evalúa una expresión booleana con valores específicos
    */
-  static evaluate(expression, values) {
+  static evaluar(expression, values) {
     try {
-      let expr = this.normalizeExpression(expression)
+      let expr = this.normalizarExpresion(expression)
       
       // PASO 1: Aplicar De Morgan primero
-      expr = this.applyDeMorganForEval(expr)
+      expr = this.aplicarDeMorganParaEvaluar(expr)
       
       // PASO 2: Reemplazar variables por sus valores
       Object.keys(values).forEach(variable => {
@@ -97,7 +97,7 @@ class BooleanEvaluator {
       expr = expr.replace(/1'/g, '0')
       
       // PASO 4: Evaluar la expresión resultante
-      return this.evaluateSimple(expr)
+      return this.evaluarSimple(expr)
     } catch (error) {
       console.error('Error evaluando expresión:', error)
       return 0
@@ -107,13 +107,13 @@ class BooleanEvaluator {
   /**
    * Evalúa una expresión simple sin complementos
    */
-  static evaluateSimple(expr) {
+  static evaluarSimple(expr) {
     expr = expr.replace(/\s+/g, '')
     
     // Evaluar paréntesis más internos primero
     while (expr.includes('(')) {
       expr = expr.replace(/\(([^()]+)\)/g, (match, inner) => {
-        return this.evaluateSimple(inner).toString()
+        return this.evaluarSimple(inner).toString()
       })
     }
     
@@ -137,8 +137,8 @@ class BooleanEvaluator {
   /**
    * Extrae todas las variables únicas de una expresión
    */
-  static extractVariables(expression) {
-    const normalized = this.normalizeExpression(expression)
+  static extraerVariables(expression) {
+    const normalized = this.normalizarExpresion(expression)
     const matches = normalized.match(/[A-Z]/g) || []
     return [...new Set(matches)].sort()
   }
@@ -146,8 +146,8 @@ class BooleanEvaluator {
   /**
    * Genera todas las combinaciones posibles de valores para las variables
    */
-  static generateTruthTable(expression) {
-    const variables = this.extractVariables(expression)
+  static generarTablaVerdad(expression) {
+    const variables = this.extraerVariables(expression)
     const numCombinations = Math.pow(2, variables.length)
     const table = []
     
@@ -157,7 +157,7 @@ class BooleanEvaluator {
         values[variable] = (i >> (variables.length - 1 - index)) & 1
       })
       
-      const result = this.evaluate(expression, values)
+      const result = this.evaluar(expression, values)
       table.push({ ...values, result, index: i })
     }
     
@@ -165,19 +165,19 @@ class BooleanEvaluator {
   }
 
   /**
-   * ✅ MEJORADO: Verifica si dos expresiones son lógicamente equivalentes
+   * Verifica si dos expresiones son lógicamente equivalentes
    */
-  static areEquivalent(expr1, expr2) {
+  static sonEquivalentes(expr1, expr2) {
     try {
       // Obtener todas las variables de ambas expresiones
-      const vars1 = this.extractVariables(expr1)
-      const vars2 = this.extractVariables(expr2)
+      const vars1 = this.extraerVariables(expr1)
+      const vars2 = this.extraerVariables(expr2)
       const allVars = [...new Set([...vars1, ...vars2])].sort()
       
       if (allVars.length === 0) {
         // Expresiones constantes
-        const result1 = this.evaluate(expr1, {})
-        const result2 = this.evaluate(expr2, {})
+        const result1 = this.evaluar(expr1, {})
+        const result2 = this.evaluar(expr2, {})
         return {
           equivalent: result1 === result2,
           counterExample: null
@@ -193,8 +193,8 @@ class BooleanEvaluator {
           values[variable] = (i >> (allVars.length - 1 - index)) & 1
         })
         
-        const result1 = this.evaluate(expr1, values)
-        const result2 = this.evaluate(expr2, values)
+        const result1 = this.evaluar(expr1, values)
+        const result2 = this.evaluar(expr2, values)
         
         if (result1 !== result2) {
           return {
@@ -214,8 +214,8 @@ class BooleanEvaluator {
   /**
    * Verifica si una simplificación es correcta
    */
-  static validateSimplification(original, simplified) {
-    const comparison = this.areEquivalent(original, simplified)
+  static validarSimplificacion(original, simplified) {
+    const comparison = this.sonEquivalentes(original, simplified)
     
     if (!comparison.equivalent) {
       return {
@@ -225,7 +225,7 @@ class BooleanEvaluator {
         details: {
           original: original,
           simplified: simplified,
-          variables: this.extractVariables(original)
+          variables: this.extraerVariables(original)
         }
       }
     }
@@ -236,27 +236,27 @@ class BooleanEvaluator {
       details: {
         original: original,
         simplified: simplified,
-        variables: this.extractVariables(original)
+        variables: this.extraerVariables(original)
       }
     }
   }
 
   /**
-   * Genera un mapa de Karnaugh correcto usando código Gray
+   * Genera un mapa de Karnaugh usando código Gray
    */
-  static generateKarnaughMap(expression, variables) {
+  static generarMapaKarnaugh(expression, variables) {
     if (variables.length === 2) {
       const [A, B] = variables
       return {
         type: '2var',
         cells: [
           [
-            this.evaluate(expression, { [A]: 0, [B]: 0 }),
-            this.evaluate(expression, { [A]: 0, [B]: 1 })
+            this.evaluar(expression, { [A]: 0, [B]: 0 }),
+            this.evaluar(expression, { [A]: 0, [B]: 1 })
           ],
           [
-            this.evaluate(expression, { [A]: 1, [B]: 0 }),
-            this.evaluate(expression, { [A]: 1, [B]: 1 })
+            this.evaluar(expression, { [A]: 1, [B]: 0 }),
+            this.evaluar(expression, { [A]: 1, [B]: 1 })
           ]
         ],
         rows: ['0', '1'],
@@ -271,16 +271,16 @@ class BooleanEvaluator {
         type: '3var',
         cells: [
           [
-            this.evaluate(expression, { [A]: 0, [B]: 0, [C]: 0 }),
-            this.evaluate(expression, { [A]: 0, [B]: 0, [C]: 1 }),
-            this.evaluate(expression, { [A]: 0, [B]: 1, [C]: 1 }),
-            this.evaluate(expression, { [A]: 0, [B]: 1, [C]: 0 })
+            this.evaluar(expression, { [A]: 0, [B]: 0, [C]: 0 }),
+            this.evaluar(expression, { [A]: 0, [B]: 0, [C]: 1 }),
+            this.evaluar(expression, { [A]: 0, [B]: 1, [C]: 1 }),
+            this.evaluar(expression, { [A]: 0, [B]: 1, [C]: 0 })
           ],
           [
-            this.evaluate(expression, { [A]: 1, [B]: 0, [C]: 0 }),
-            this.evaluate(expression, { [A]: 1, [B]: 0, [C]: 1 }),
-            this.evaluate(expression, { [A]: 1, [B]: 1, [C]: 1 }),
-            this.evaluate(expression, { [A]: 1, [B]: 1, [C]: 0 })
+            this.evaluar(expression, { [A]: 1, [B]: 0, [C]: 0 }),
+            this.evaluar(expression, { [A]: 1, [B]: 0, [C]: 1 }),
+            this.evaluar(expression, { [A]: 1, [B]: 1, [C]: 1 }),
+            this.evaluar(expression, { [A]: 1, [B]: 1, [C]: 0 })
           ]
         ],
         rows: ['0', '1'],
